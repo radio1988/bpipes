@@ -1,0 +1,25 @@
+#!/bin/bash
+#BSUB -J "star_idx"
+#BSUB -P "LiR"
+#BSUB -R rusage[mem=3000]
+#BSUB -n 12
+#BSUB -q short
+#BSUB -W 2:00
+#BSUB -N
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+
+hostname
+lscpu 
+
+module load java/1.8.0_77
+module load star/2.5.3a
+
+mkdir -p star_idx
+
+#BSUB -o star_idx/%J.out
+#BSUB -e star_idx/%J.err
+
+STAR --runThreadN 12 --runMode genomeGenerate \
+--genomeDir ./star_idx \
+--genomeFastaFiles ./genome.fa \
+--sjdbGTFfile ./annotation.gtf

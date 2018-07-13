@@ -27,3 +27,8 @@ module load python3/3.5.0_packages/multiqc/1.4
 cd ../fastqc
 multiqc .
 echo 'multiqc finished'
+
+## organize folder
+rm -rf *zip
+mkdir details
+mv *fastqc.html details/
