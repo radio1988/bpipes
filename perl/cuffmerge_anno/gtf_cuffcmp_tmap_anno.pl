@@ -36,7 +36,9 @@ while(<GTFREF>){
     }
     
     my($tr_id) = $attribute =~ /transcript_id "([^"]+)"/;
+    if (!$tr_id){warn "NO TRANS_ID: $_\n"}
     my($gene_id) = $attribute =~ /gene_id "([^"]+)"/;
+    if (!$gene_id){warn "NO GENE_ID: $_\n"}
     $reftr2regene{$tr_id} = $gene_id;
 }
 close GTFREF;
