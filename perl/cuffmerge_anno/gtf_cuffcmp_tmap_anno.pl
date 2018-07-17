@@ -34,11 +34,25 @@ while(<GTFREF>){
         # some lines don't have trans_id
         next;
     }
-    
-    my($tr_id) = $attribute =~ /transcript_id "([^"]+)"/;
+   
+    my$tr_id;
+    if ($attribute =~ /transcript_id \"/){
+        ($tr_id) = $attribute =~ /transcript_id "([^"]+)"/;
+    }else{
+         #without quotes "
+         ($tr_id) = $attribute =~ /transcript_id ([^;]+);/;
+
+    }
     if (!$tr_id){warn "NO TRANS_ID: $_\n"}
-    my($gene_id) = $attribute =~ /gene_id "([^"]+)"/;
+
+    my$gene_id;
+    if($attribute =~ /gene_id \"/){
+        ($gene_id) = $attribute =~ /gene_id "([^"]+)"/;
+    }elsif($attribute =~ /gene_id/){
+        ($gene_id) = $attribute =~ /gene_id ([^;]+);/;
+    }
     if (!$gene_id){warn "NO GENE_ID: $_\n"}
+    
     $reftr2regene{$tr_id} = $gene_id;
 }
 close GTFREF;
@@ -72,7 +86,7 @@ while(<GTF>){
 
     my$genename = $tr2genename{$tr_id};
     my$classcode = $tr2classcode{$tr_id};
-    if ($classcode =~ /[=cjeo]/){
+    if ($classcode =~ /[=cje]/){
         my$attribute_new = "gene_id \"$gene_id\"; transcript_id \"$tr_id\"; exon_number \"$exon\"; gene_name \"$genename\"; class_code \"$classcode\";";
         my$out = join("\t", $seqname, $source, $feature, $start, $end, $score, $strand, $frame, $attribute_new);	
         print OUT $out, "\n";
