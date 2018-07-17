@@ -1,0 +1,35 @@
+#BSUB -P 'Rui'
+#BSUB -J 'trim[1-16]'
+#BSUB -R rusage[mem=5000]
+#BSUB -n 2
+#BSUB -R span[hosts=1]
+mkdir -p trimmed
+#BSUB -o ./trimmed/trim.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+##BSUB -N
+
+module load java/1.8.0_171
+trimmomatic='java -jar /project/umw_mccb/software/Trimmomatic-0.36/trimmomatic-0.36.jar'
+
+R1s=(`ls *R1*q.gz`)
+i=$(($LSB_JOBINDEX- 1))
+R1=${R1s[$i]}
+R2=${R1/R1/R2}
+name=${R1/_R1.fastq.gz/}
+
+out1=${name}_R1.trim.fastq.gz
+out2=${name}_R2.trim.fastq.gz
+trash1=${name}_R1.unpaired.fastq.gz
+trash2=${name}_R2.unpaired.fastq.gz
+echo 'For' $i 
+echo 'Input' $R1 $R2 $name
+echo 'Output trimmed' $out1 $out2
+echo 'Unpaired trash' $trash1 $trash2
+
+$trimmomatic PE -threads 2 \
+$R1 $R2 \
+./trimmed/$out1 ./trimmed/$trash1 \
+./trimmed/$out2 ./trimmed/$trash2 \
+LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 \
+TOPHRED33
