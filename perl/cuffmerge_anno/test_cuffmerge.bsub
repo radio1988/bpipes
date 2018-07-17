@@ -1,0 +1,17 @@
+#BSUB -P 'LiR'
+#BSUB -J 'cuffmerge'
+#BSUB -n 4
+#BSUB -R rusage[mem=2000]
+#BSUB -o cuffmerge.%J.%I.log
+#BSUB -W 1:30
+#BSUB -q short
+#BSUB -N
+
+module load cufflinks/2.2.1
+
+cuffmerge -g Danio_rerio.GRCz11.92.gtf \
+-s /project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa \
+--min-isoform-fraction 0 \
+-p 4 --keep-tmp \
+list.txt 
+

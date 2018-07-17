@@ -1,0 +1,8 @@
+#BSUB -R rusage[mem=8000]
+#BSUB -o igv.log
+
+module load java/1.8.0_77
+igvtools sort cuffmerge_anno.GRCz11.gtf cuffmerge_anno.GRCz11.sort.gtf
+mv cuffmerge_anno.GRCz11.sort.gtf cuffmerge_anno.GRCz11.gtf
+igvtools index cuffmerge_anno.GRCz11.gtf 
+

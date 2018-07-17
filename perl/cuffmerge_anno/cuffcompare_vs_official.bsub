@@ -1,0 +1,16 @@
+#BSUB -P 'LiR'
+#BSUB -J 'cuffcompare'
+#BSUB -n 4
+#BSUB -R rusage[mem=4000]
+#BSUB -o cuffcompare.%J.%I.log
+#BSUB -W 1:30
+#BSUB -q short
+#BSUB -N
+
+module load cufflinks/2.2.1
+
+cuffcompare -G \
+-s /project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa \
+-r Danio_rerio.GRCz11.92.gtf \
+-o vs_official \
+cuffmerge.GRCz11.gtf \
