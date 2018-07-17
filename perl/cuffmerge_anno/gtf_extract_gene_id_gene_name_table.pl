@@ -14,8 +14,8 @@ while(<>){
 
 
     if ($attribute =~ /gene_name/ && $attribute =~ /gene_id/){
-        my($gene_id) = $attribute =~ /gene_id "([^"]+)"/;
-        my($gene_name) = $attribute =~ /gene_name "([^"]+)"/;
+        my($gene_id) = $attribute =~ /gene_id "([^"]+)"/ || $attribute =~ /gene_id ([^;]+);/;
+        my($gene_name) = $attribute =~ /gene_name "([^"]+)"/ || $attribute =~ /gene_name ([^;]+);/;
         if (!$gene_id || $gene_id eq '-'){warn "NO GENE_ID: $gene_id; $_"}
         if (!$gene_name || $gene_name eq '-'){warn "NO Gene_name: $gene_name; $_"}
         $id2name{$gene_id} = $gene_name;
@@ -23,7 +23,7 @@ while(<>){
 
 
     if ($attribute =~ /transcript_id/){
-        my($trans_id) = $attribute =~ /transcript_id "([^"]+)"/;
+        my($trans_id) = $attribute =~ /transcript_id "([^"]+)"/ || $attribute =~ /transcript_id ([^;]+);/;
         if (!$trans_id || $trans_id eq '-'){warn "NO trans_id: $trans_id; $_"}
     }
 
