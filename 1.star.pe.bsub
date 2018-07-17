@@ -1,6 +1,6 @@
 #BSUB -P "Rui"
-#BSUB -J "starwt[1-6]" # same as num-fastqs
-#BSUB -R rusage[mem=2000] # 20 for zb, 29 for mouse 
+#BSUB -J "star[1-6]" # same as num-fastqs
+#BSUB -R rusage[mem=2000] # 30-40G/num-threads * num-fastqs
 #BSUB -n 10
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 #BSUB -q short
@@ -23,16 +23,16 @@ gtf='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/in_house_merged/cuffmerge_a
 bam_dir=star
 
 ## sample info
-R1s=( 07_WT_kdrl-27748739_R1.fastq.gz 08_WT_negative-27726816_R1.fastq.gz 10_wt_kdrl-27735756_R1.fastq.gz 11_wt_negative-27727797_R1.fastq.gz 13_WT_kdrl-27678658_R1.fastq.gz 14_WT_negative-27667691_R1.fastq.gz)
-
+R1s=(`ls ../fastq/*R1*q.gz`)
 echo 'R1s:' ${#R1s[@]} ${R1s[@]}
 
 ## input names
-fq_dir='../fastq'
-R1=${fq_dir}/${R1s[$i]}
+R1=${R1s[$i]}  # without dir_name
 R2=${R1/R1/R2}
+
 name=${R1s[$i]}  # without dir_name
 name=${name/_R1.fastq.gz/} #need to change
+name=${name/..\/fastq\//} #need to change
 
 echo ' '
 echo 'For' $i $R1 $R2 $name

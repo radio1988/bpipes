@@ -1,0 +1,17 @@
+#!/bin/bash
+#BSUB -J "count.r.I11"
+#BSUB -P "LiR"
+#BSUB -R rusage[mem=2000]
+#BSUB -n 8
+#BSUB -q short
+#BSUB -W 4:00
+#BSUB -R "span[hosts=1]"
+mkdir -p ../featureCount
+mkdir -p ../featureCount/log
+#BSUB -o ../featureCount/log/featureCount_gene_id.%J.%I.out
+#BSUB -N
+
+gtf='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/in_house_merged/cuffmerge_anno.GRCz11.gtf'
+featureCounts='/project/umw_mccb/software/subreads/subread-1.5.2-source/bin/featureCounts'
+
+$featureCounts -a $gtf -o ../featureCount/counts.gene_id.txt -g gene_id -M -Q 20 -p -T 8 ../star/*bam
