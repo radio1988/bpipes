@@ -1,3 +1,8 @@
+## WARNING!!!
+# Some times, cluster glitches and fail to load variables in config
+# So avoid using config, just test code with interactive mode on a small test sample
+# then modify each code
+
 ## genome info
 genome_idx='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/in_house_merged/star_idx'
 genome_fa='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa'
