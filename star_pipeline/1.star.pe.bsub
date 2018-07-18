@@ -16,9 +16,9 @@ mkdir -p ../star/log
 i=$(($LSB_JOBINDEX- 1))
 
 ## genome info
-genome_idx='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/in_house_merged/star_idx'
 genome_fa='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa'
-gtf='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/in_house_merged/cuffmerge_anno.GRCz11.gtf'
+genome_idx='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/official/star_idx/'
+gtf='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/official/Danio_rerio.GRCz11.92.gtf'
 ## aligner info
 bam_dir=star
 
@@ -61,3 +61,19 @@ STAR --runThreadN 10 \
 --outSAMtype BAM SortedByCoordinate \
 --quantMode GeneCounts \
 --outReadsUnmapped Fastx
+
+## post star
+bam_file=`ls ../${bam_dir}/${name}*bam`
+mkdir -p ../${bam_dir}/idxstats
+mkdir -p ../${bam_dir}/flagstat
+
+module load samtools/dev-2016_06_06
+samtools index $bam_file ${bam_file}.bai
+samtools idxstats $bam_file > ../$bam_dir/idxstats/${name}.idxstats.txt
+samtools flagstat $bam_file > ../$bam_dir/flagstat/${name}.flagstat.txt
+
+module purge
+bamCoverage='/home/rl44w/.local/bin/bamCoverage'
+$bamCoverage --bam $bam_file -o ${bam_file}.bw \
+--normalizeUsing RPKM  \
+--outFileFormat bigwig
