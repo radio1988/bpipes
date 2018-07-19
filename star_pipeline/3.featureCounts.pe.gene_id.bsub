@@ -11,7 +11,6 @@ mkdir -p ../featureCount/log
 #BSUB -o ../featureCount/log/featureCount_gene_id.%J.%I.out
 #BSUB -N
 
-gtf='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/in_house_merged/cuffmerge_anno.GRCz11.gtf'
-featureCounts='/project/umw_mccb/software/subreads/subread-1.5.2-source/bin/featureCounts'
+gtf='/project/umw_mccb/Rui/genomes/Saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.90.gtf'
 
-$featureCounts -a $gtf -o ../featureCount/counts.gene_id.txt -g gene_id -M -Q 20 -p -T 8 ../star/*bam
+featureCounts -a $gtf -o ../featureCount/counts.gene_id.txt -g gene_id -M -Q 20 -p -T 8 ../star/*Aligned.out.bam
