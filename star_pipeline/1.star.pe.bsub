@@ -1,5 +1,5 @@
 #BSUB -P "Rui"
-#BSUB -J "star[1-6]" # same as num-fastqs
+#BSUB -J "star[1-12]" # same as num-fastqs
 #BSUB -R rusage[mem=2000] # 30-40G/num-threads * num-fastqs
 #BSUB -n 10
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
@@ -16,14 +16,13 @@ mkdir -p ../star/log
 i=$(($LSB_JOBINDEX- 1))
 
 ## genome info
-genome_fa='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/Danio_rerio.GRCz11.dna_sm.primary_assembly.fa'
-genome_idx='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/official/star_idx/'
-gtf='/project/umw_mccb/Rui/genomes/zebra_fish/GRCz11/official/Danio_rerio.GRCz11.92.gtf'
+genome_idx='/project/umw_mccb/Rui/genomes/Saccharomyces_cerevisiae/star_idx'
+gtf='/project/umw_mccb/Rui/genomes/Saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.90.gtf'
 ## aligner info
 bam_dir=star
 
 ## sample info
-R1s=(`ls ../fastq/*R1*q.gz`)
+R1s=(`ls ../fastq/*R1.fastq.gz`)
 echo 'R1s:' ${#R1s[@]} ${R1s[@]}
 
 ## input names
@@ -50,7 +49,7 @@ STAR --runThreadN 10 \
 --outFilterType BySJout \
 --outFilterMultimapNmax 20 \
 --alignSJoverhangMin 8 \
---alignSJDBoverhangMin 1 \
+--alignSJDBoverhangMin 3 \
 --outFilterMismatchNmax 999 \
 --outFilterMismatchNoverReadLmax 0.05 \
 --alignIntronMin 20 \
@@ -58,12 +57,13 @@ STAR --runThreadN 10 \
 --alignMatesGapMax 1000000 \
 --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
 --outSAMstrandField None \
---outSAMtype BAM SortedByCoordinate \
+--outSAMtype BAM Unsorted SortedByCoordinate \
 --quantMode GeneCounts \
 --outReadsUnmapped Fastx
 
 ## post star
-bam_file=`ls ../${bam_dir}/${name}*bam`
+bam_files=`ls ../${bam_dir}/${name}*sort*bam`
+bam_file=${bam_files[$i]}
 mkdir -p ../${bam_dir}/idxstats
 mkdir -p ../${bam_dir}/flagstat
 
