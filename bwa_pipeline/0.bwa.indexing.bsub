@@ -1,0 +1,18 @@
+#!/bin/bash
+#BSUB -J "bwa_idx"
+#BSUB -P "LiR"
+#BSUB -R rusage[mem=2000]
+#BSUB -n 4
+#BSUB -q long
+#BSUB -W 8:00
+#BSUB -N
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p bwa_idx
+#BSUB -o bwa_idx/%J.out
+
+hostname
+lscpu 
+
+module load bwa/0.7.15
+
+bwa index -a bwtsw hg19.fa
