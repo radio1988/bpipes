@@ -34,4 +34,4 @@ module load samtools/dev-2016_06_06
 mkdir -p idxstats
 samtools idxstats ${name}.bam > ./idxstats/${name}.idxstats.txt
 mkdir -p flagstat
-samtools flagstat ${name}.bam > ./flagstat/$name}.flagstat.txt
+samtools flagstat ${name}.bam > ./flagstat/${name}.flagstat.txt
