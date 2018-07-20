@@ -1,6 +1,7 @@
+#!/bin/bash
 #BSUB -P "Rui"
 #BSUB -J "star[1-12]" # same as num-fastqs
-#BSUB -R rusage[mem=2000] # 30-40G/num-threads * num-fastqs
+#BSUB -R rusage[mem=3200] # 30-40G/num-threads * num-fastqs
 #BSUB -n 10
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 #BSUB -q short
@@ -16,8 +17,8 @@ mkdir -p ../star/log
 i=$(($LSB_JOBINDEX- 1))
 
 ## genome info
-genome_idx='/project/umw_mccb/Rui/genomes/Saccharomyces_cerevisiae/star_idx'
-gtf='/project/umw_mccb/Rui/genomes/Saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.90.gtf'
+genome_idx='/home/rl44w/genomes/human/hg19/star_idx'
+gtf='none'
 ## aligner info
 bam_dir=star
 
@@ -64,6 +65,7 @@ STAR --runThreadN 10 \
 ## post star
 bam_files=`ls ../${bam_dir}/${name}*sort*bam`
 bam_file=${bam_files[$i]}
+echo $i 'bam_file' $bam_file
 mkdir -p ../${bam_dir}/idxstats
 mkdir -p ../${bam_dir}/flagstat
 
