@@ -1,12 +1,12 @@
 #!/bin/bash
 #BSUB -P "LiR"
-#BSUB -J 'bwa[1-7]'
-#BSUB -R rusage[mem=2200]
-#BSUB -n 16
+#BSUB -J 'post_bwa[1-7]'
+#BSUB -R rusage[mem=4000]
+#BSUB -n 1
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 mkdir -p ../bwa
 mkdir -p ../bwa/log
-#BSUB -o ../bwa/log/bwa.%J.%I.log
+#BSUB -o ../bwa/log/post_bwa.%J.%I.log
 #BSUB -W 4:00
 #BSUB -q short
 #BSUB -N
@@ -14,7 +14,6 @@ mkdir -p ../bwa/log
 bwa_idx='/home/rl44w/genomes/human/hg19/hg19.fa'
 
 hostname
-lscpu
 
 i=$(($LSB_JOBINDEX- 1))
 R1s=(`ls ../fastq/*R1*fastq.gz`)
@@ -30,25 +29,9 @@ echo 'For' $i $R1 $R2 $name
 
 cd ../bwa
 
-module load bwa/0.7.15
-bwa mem -t 20 \
-$bwa_idx \
-$R1 $R2 \
-1> ${name}.sam 2> ./log/${name}.sam.err
-
 module load samtools/dev-2016_06_06
-samtools view -Sb ${name}.sam > ${name}.bam &&
-samtools sort -m 16000000000 ${name}.bam ${name}.sort &&
-mv ${name}.sort.bam ${name}.bam &&
-samtools index ${name}.bam &&
-rm -f ${name}.sam
 
 mkdir -p idxstats
 samtools idxstats ${name}.bam > ./idxstats/${name}.idxstats.txt
 mkdir -p flagstat
 samtools flagstat ${name}.bam > ./flagstat/$name}.flagstat.txt
-
-module purge
-bamCoverage --bam ${name}.bam -o  ${name}.bw \
---numberOfProcessors 16 \
---normalizeUsing RPKM --outFileFormat bigwig
