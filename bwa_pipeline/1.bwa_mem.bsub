@@ -1,7 +1,7 @@
 #!/bin/bash
 #BSUB -P "LiR"
 #BSUB -J 'bwa[1-7]'
-#BSUB -R rusage[mem=2200]
+#BSUB -R rusage[mem=1000]
 #BSUB -n 16
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 mkdir -p ../bwa
@@ -9,7 +9,7 @@ mkdir -p ../bwa/log
 #BSUB -o ../bwa/log/bwa.%J.%I.log
 #BSUB -W 4:00
 #BSUB -q short
-#BSUB -N
+##BSUB -N
 
 bwa_idx='/home/rl44w/genomes/human/hg19/hg19.fa'
 
@@ -35,10 +35,11 @@ bwa mem -t 20 \
 $bwa_idx \
 $R1 $R2 \
 1> ${name}.sam 2> ./log/${name}.sam.err
+# -U
 
 module load samtools/dev-2016_06_06
 samtools view -Sb ${name}.sam > ${name}.bam &&
-samtools sort -m 16000000000 ${name}.bam ${name}.sort &&
+samtools sort -m 16G ${name}.bam ${name}.sort &&
 mv ${name}.sort.bam ${name}.bam &&
 samtools index ${name}.bam &&
 rm -f ${name}.sam
@@ -51,4 +52,4 @@ samtools flagstat ${name}.bam > ./flagstat/${name}.flagstat.txt
 module purge
 bamCoverage --bam ${name}.bam -o  ${name}.bw \
 --numberOfProcessors 16 \
---normalizeUsing RPKM --outFileFormat bigwig
+--outFileFormat bigwig
