@@ -41,7 +41,7 @@ echo 'For' $i $R1 $R2 $name
 module load java/1.8.0_77
 module load star/2.5.3a
 
-STAR --runThreadN 10 \
+STAR --runThreadN 16 \
 --genomeDir $genome_idx \
 --sjdbGTFfile $gtf \
 --readFilesCommand zcat \
