@@ -119,7 +119,7 @@ name <- name5 #fly
 ## Contrast specific Summary
 sink(paste(name, 'summary.txt', sep = '.'))
 name
-summary(res)
+summary(res, alpha=thresh_p)
 table(res$padj<thresh_p)
 sink()
 
