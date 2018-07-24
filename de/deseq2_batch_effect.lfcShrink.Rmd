@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # biocLite("apeglm")
 library(DESeq2)
 library('apeglm')
-thresh_p <- 0.1
+thresh_p <- 0.05
 thresh_FC <- 1
 ```
 
@@ -227,10 +227,10 @@ sampleDists <- dist(t(assay(vsd)))
 library("RColorBrewer")
 library('pheatmap')
 sampleDistMatrix <- as.matrix(sampleDists)
-rownames(sampleDistMatrix) <- paste(vsd$type, vsd$batch, sep="-")  # change factor name
-colnames(sampleDistMatrix) <- NULL
+rownames(sampleDistMatrix) <- paste(vsd$condition, sep="-")  # change factor name
+colnames(sampleDistMatrix) <- paste(vsd$condition, sep="-")
 colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
-png("qc-heatmap-samples.png", w=1000, h=1000, pointsize=20)
+png(paste("qc-heatmap-samples", name, "png", sep = '.'), w=1000, h=1000, pointsize=20)
 pheatmap(sampleDistMatrix,
          clustering_distance_rows=sampleDists,
          clustering_distance_cols=sampleDists,
