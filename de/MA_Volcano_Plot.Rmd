@@ -1,0 +1,127 @@
+---
+title: "MA Plot and Volcano Plot for Costomized Gene List"
+author: "RuiLi"
+date: "7/31/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(scales)  # for alpha
+```
+
+```{r}
+df <- read.csv('../refseq_ucsc_compatible.all3comparisons.csv')
+colnames(df)
+
+gene_list = c('acta2','tagln','fbln5','myocd','pecam1','egfl7','cdh5')
+```
+
+## a_pos_vs_a_neg
+```{r, echo=FALSE,  results='asis'}
+name <- 'a_pos_vs_a_neg'
+paste('comparison:', name)
+
+colname_lfc <- paste(name, 'log2FoldChange', sep='.')
+colname_mean <- paste(name, 'baseMean', sep='.')
+colname_padj <- paste(name, 'padj', sep='.')
+colname_pvalue <- paste(name, 'pvalue', sep='.')
+
+
+df_ <- df[, c('gene_symbol', colname_mean, colname_lfc, colname_padj, colname_pvalue)]
+colnames(df_) <- c('gene', 'baseMean', 'log2FoldChange', 'padj', 'pvalue')
+row.names(df_) <- df_[,1]
+df_ <- df_[,-1]
+df_[is.na(df_$padj), 'padj'] <- 1  # remove NA
+head(df_)
+
+df_list <- df_[gene_list,]
+df_listnot <- df_[!row.names(df_) %in% gene_list,]
+
+df_listnot_sig <- df_listnot[df_listnot$padj<0.05, ]
+df_listnot_signot <- df_listnot[df_listnot$padj>=0.05, ]
+
+```
+### MA Plot (labeled)
+```{r}
+plot(df_$baseMean, df_$log2FoldChange,
+     pch=20, cex=.5, log="x", col='white', 
+     main = paste("MA Plot", name, sep = "\n"),
+     xlab = 'Mean Expression',
+     ylab = 'log2 Fold Change')
+points(df_listnot_signot$baseMean, df_listnot_signot$log2FoldChange,
+     pch=20, cex=.5, col=alpha('lightgray',0.8))
+points(df_listnot_sig$baseMean, df_listnot_sig$log2FoldChange,
+       pch=20, cex=.5, col=alpha('black',0.8))
+points(df_list$baseMean, df_list$log2FoldChange,
+       pch=20, cex=1.0, col=alpha('red',0.8))
+text(df_list$baseMean, df_list$log2FoldChange,
+     labels = row.names(df_list), pos = 4, col=alpha('red',0.7))
+legend("topleft",
+       legend=c("FDR<0.05", "FDR≥0.05"),
+       pch = c(19, 19),
+       col = c("black", "lightgray"))
+```
+
+### MA Plot (no label)
+```{r}
+plot(df_$baseMean, df_$log2FoldChange,
+     pch=20, cex=.5, log="x", col='white', 
+     main = paste("MA Plot", name, sep = "\n"),
+     xlab = 'Mean Expression',
+     ylab = 'log2 Fold Change')
+points(df_listnot_signot$baseMean, df_listnot_signot$log2FoldChange,
+     pch=20, cex=.5, col=alpha('lightgray',0.8))
+points(df_listnot_sig$baseMean, df_listnot_sig$log2FoldChange,
+       pch=20, cex=.5, col=alpha('black',0.8))
+points(df_list$baseMean, df_list$log2FoldChange,
+       pch=20, cex=1.0, col=alpha('red',0.8))
+legend("topleft",
+       legend=c("FDR<0.05", "FDR≥0.05"),
+       pch = c(19, 19),
+       col = c("black", "lightgray"))
+```
+
+### Vocanoplot labeled
+```{r}
+plot(df_$log2FoldChange, -log10(df_$pvalue), 
+     pch=20,cex=0.5,col=alpha('white',0.8),
+     main= paste("Volcano Plot", name, sep = "\n"),
+     xlab = 'log2 Fold Change',
+     ylab = '-log10 pvalue'
+     )
+points(df_listnot_signot$log2FoldChange, -log10(df_listnot_signot$pvalue), 
+     pch=20,cex=0.5,col=alpha('lightgray',0.8))
+points(df_listnot_sig$log2FoldChange, -log10(df_listnot_sig$pvalue), 
+     pch=20,cex=0.5,col=alpha('black',0.8))
+points(df_list$log2FoldChange, -log10(df_list$pvalue), 
+     pch=20,cex=1.0,col=alpha('red',0.8))
+text(df_list$log2FoldChange, -log10(df_list$pvalue),
+     labels = row.names(df_list), pos = 2, col=alpha('red',0.7))
+legend("topleft",
+       legend=c("FDR<0.05", "FDR≥0.05"),
+       pch = c(19, 19),
+       col = c("black", "lightgray"))
+```
+
+### Vocanoplot no-label
+```{r}
+plot(df_$log2FoldChange, -log10(df_$pvalue), 
+     pch=20,cex=0.5,col=alpha('white',0.8),
+     main= paste("Volcano Plot", name, sep = "\n"),
+     xlab = 'log2 Fold Change',
+     ylab = '-log10 pvalue'
+     )
+points(df_listnot_signot$log2FoldChange, -log10(df_listnot_signot$pvalue), 
+     pch=20,cex=0.5,col=alpha('lightgray',0.8))
+points(df_listnot_sig$log2FoldChange, -log10(df_listnot_sig$pvalue), 
+     pch=20,cex=0.5,col=alpha('black',0.8))
+points(df_list$log2FoldChange, -log10(df_list$pvalue), 
+     pch=20,cex=1.0,col=alpha('red',0.8))
+legend("topleft",
+       legend=c("FDR<0.05", "FDR≥0.05"),
+       pch = c(19, 19),
+       col = c("black", "lightgray"))
+```
+
