@@ -1,0 +1,101 @@
+---
+title: "AnnotationDbi_Yeast"
+author: "RuiLi"
+date: "7/26/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+source("https://bioconductor.org/biocLite.R")
+biocLite("org.Sc.eg.db")
+
+```{r}
+df = read.csv('merged.csv', stringsAsFactors=FALSE)  #adjust
+colnames(df)
+uniKeys <- as.vector(as.character(df[,'Gene' ]))
+head(uniKeys)
+```
+
+
+```{r}
+library("AnnotationDbi") 
+library("org.Sc.sgd.db")
+columns(org.Sc.sgd.db)
+keytypes(org.Sc.sgd.db)
+
+df$gene_name <- as.character(mapIds(org.Sc.sgd.db, 
+              keys=uniKeys, 
+              column="GENENAME", 
+              keytype="ENSEMBL",
+              multiVals="first"))
+
+# some ids are not ensembl, but non-coding RNA gene names (90 gtf)
+df$gene_name2 <- as.character(mapIds(org.Sc.sgd.db, 
+              keys=uniKeys, 
+              column="GENENAME", 
+              keytype="GENENAME",
+              multiVals="first"))
+
+df <- within(df, gene_name <- ifelse(is.na(gene_name), gene_name2, gene_name))
+df <- df[, !names(df) %in% c("gene_name2")]
+
+
+df$description <- mapIds(org.Sc.sgd.db,
+              keys=uniKeys,
+              column="DESCRIPTION",
+              keytype="ENSEMBL",
+              multiVals="first")
+
+df$description2 <- mapIds(org.Sc.sgd.db,
+              keys=uniKeys,
+              column="DESCRIPTION",
+              keytype="GENENAME",
+              multiVals="first")
+
+df <- within(df, description <- ifelse(is.na(description), description2, description))
+df <- df[, !names(df) %in% c("description2")]
+
+
+df$GO <- mapIds(org.Sc.sgd.db,
+              keys=uniKeys,
+              column="GO",
+              keytype="ENSEMBL",
+              multiVals="first")
+
+df$GO2 <- mapIds(org.Sc.sgd.db,
+              keys=uniKeys,
+              column="GO",
+              keytype="GENENAME",
+              multiVals="first")
+
+df <- within(df, GO <- ifelse(is.na(GO), GO2, GO))
+df <- df[, !names(df) %in% c("GO2")]
+
+
+df$SGD <- mapIds(org.Sc.sgd.db,
+              keys=uniKeys,
+              column="SGD",
+              keytype="ENSEMBL",
+              multiVals="first")
+
+df$SGD2 <- mapIds(org.Sc.sgd.db,
+              keys=uniKeys,
+              column="SGD",
+              keytype="GENENAME",
+              multiVals="first")
+
+df <- within(df, SGD <- ifelse(is.na(SGD), SGD2, SGD))
+df <- df[, !names(df) %in% c("SGD2")]
+```
+
+```{r}
+df <- df[,c(1,39:42, 2:38)]
+
+write.csv(df, 'merged.anno.csv', row.names = FALSE)
+library(xlsx)
+write.xlsx(df, "merged.anno.xlsx")
+```
+
