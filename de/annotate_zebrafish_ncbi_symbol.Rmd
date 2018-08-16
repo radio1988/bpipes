@@ -1,0 +1,95 @@
+---
+title: "annotate_zebrafish_ncbi_symbol"
+author: "RuiLi"
+date: "7/24/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+## Convert IDs
+library(ChIPpeakAnno)
+library(org.Dr.eg.db)
+library(biomaRt)
+
+tab_deseq = read.csv('a_pos_vs_a_neg.deseq.csv')  #adjust
+input_names = as.vector(as.character(tab_deseq[,'Gene' ]))
+
+if(interactive()){
+mart = useMart("ensembl")
+mart=useMart(biomart="ensembl", dataset="drerio_gene_ensembl")  #adjust: http://useast.ensembl.org/biomart/martview/
+}
+
+?addGeneIDs
+tab_anno=addGeneIDs(input_names, 
+           orgAnn = org.Dr.eg.db,
+           IDs2Add = c("genename"),
+           feature_id_type = "gene_symbol",
+           silence=TRUE, 
+           mart)
+sum(is.na(tab_anno$genename))
+# tab_anno_temp <- data.frame(tab_anno)
+# idx = is.na(tab_anno_temp$ensembl)
+# tab_anno_temp[idx,1:2]
+# tab_anno_temp[idx,2]=tab_anno_temp[idx,1]
+# tab_anno_temp$new[idx]<-tab_anno_temp$gene_alias[idx]
+
+tab_merged = merge(tab_deseq, tab_anno,
+                       by.x='Gene', by.y='gene_symbol')
+
+# fix name
+names(tab_merged)[1] = 'gene_symbol'
+# fix order
+d2 = dim(tab_merged)[2]
+tab_merged = tab_merged[,c(1, d2, 2:(d2-1))]
+
+write.csv(tab_merged, 
+          paste('a_pos_vs_a_neg.deseq.anno.csv', sep = '.'), 
+          row.names = FALSE)
+```
+```{r}
+## Convert IDs
+library(ChIPpeakAnno)
+library(org.Dr.eg.db)
+library(biomaRt)
+
+tab_deseq = read.csv('pos_pos_vs_neg_neg.deseq.csv')  #adjust
+input_names = as.vector(as.character(tab_deseq[,'Gene' ]))
+
+if(interactive()){
+mart = useMart("ensembl")
+mart=useMart(biomart="ensembl", dataset="drerio_gene_ensembl")  #adjust: http://useast.ensembl.org/biomart/martview/
+}
+
+?addGeneIDs
+tab_anno=addGeneIDs(input_names, 
+           orgAnn = org.Dr.eg.db,
+           IDs2Add = c("genename"),
+           feature_id_type = "gene_symbol",
+           silence=TRUE, 
+           mart)
+sum(is.na(tab_anno$genename))
+# tab_anno_temp <- data.frame(tab_anno)
+# idx = is.na(tab_anno_temp$ensembl)
+# tab_anno_temp[idx,1:2]
+# tab_anno_temp[idx,2]=tab_anno_temp[idx,1]
+# tab_anno_temp$new[idx]<-tab_anno_temp$gene_alias[idx]
+
+tab_merged = merge(tab_deseq, tab_anno,
+                       by.x='Gene', by.y='gene_symbol')
+
+# fix name
+names(tab_merged)[1] = 'gene_symbol'
+# fix order
+d2 = dim(tab_merged)[2]
+tab_merged = tab_merged[,c(1, d2, 2:(d2-1))]
+
+write.csv(tab_merged, 
+          paste('pos_pos_vs_neg_neg.deseq.anno.csv', sep = '.'), 
+          row.names = FALSE)
+```
+
