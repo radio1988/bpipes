@@ -12,6 +12,8 @@ mkdir -p ../bwa/log
 ##BSUB -N
 
 bwa_idx='/home/rl44w/genomes/human/hg19/hg19.fa'
+module purge
+module list
 
 hostname
 lscpu
