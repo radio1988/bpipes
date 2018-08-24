@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#BSUB -n 4 # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=8000] # ask for memory 5G
+#BSUB -W 72:00 #limit the job to be finished in 12 hours
+#BSUB -J "bwamem[1-5]"
+#BSUB -q long # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+
+mkdir -p logs
+module load bwa/0.7.12
+module load samtools/1.4.1
+
+i=$(($LSB_JOBINDEX - 1))
+
+cd /project/umw_andreas_bergmann/Alicia/ExomeSeq/July2018/fastq
+
+read1=(`ls *_1.fq.gz`)
+read2=(`ls *_2.fq.gz`)
+out_bam=(`ls *_1.fq.gz |perl -p -e 's/_DSW.*_1.fq.gz/.bam/'`)
+
+## genome index prefix
+
+fasta=/project/umw_mccb/genome/Drosophila_melanogaster/ENSEMBL/Drosophila_melanogaster.BDGP6.dna.toplevel.fa
+
+bwa mem -t 8   -M  $fasta ${read1[${i}]}  ${read2[${i}]} | samtools view -b -h -o   ${out_bam[${i}]}  -@ 8  -1  -
+

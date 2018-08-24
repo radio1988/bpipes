@@ -1,0 +1,76 @@
+#!/bin/bash
+#BSUB -J "B[1]"
+#BSUB -P "ExomeBWA"
+#BSUB -R rusage[mem=16000]
+#BSUB -R "select[chassisno>0] same[chassisno]" # All hosts on the same chassis
+#BSUB -n 4
+#BSUB -q long
+#BSUB -W 72:00
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis
+#BSUB -o logs/bwa.out.%J.%I.txt
+#BSUB -e logs/bwa.err.%J.%I.txt
+
+
+mkdir -p logs
+mkdir -p GATK
+module load java/1.8.0_77
+
+
+GATK="/project/umw_mccb/bin/GenomeAnalysisTK-3.7/GenomeAnalysisTK.jar"
+fasta=/home/hl24w/project/umw_mccb/genome/Drosophila_melanogaster/ENSEMBL/Drosophila_melanogaster.BDGP6.dna.toplevel.fa
+ID=( eyF82_5 Ch3R_12)
+gatk=/home/hl24w/project/umw_andreas_bergmann/Alicia/ExomeSeq/July2018/results/GATK
+
+### Perform joint genotyping on gVCF files produced by HaplotypeCaller
+# Only gVCF files produced by HaplotypeCaller (or CombineGVCFs) can be used as input for this tool.
+variant=()
+for i in {0..1}
+do
+     variant+=("--variant ${gatk}/${ID[$i]}.g.vcf")
+done
+
+java -Xmx16G -jar $GATK -T GenotypeGVCFs \
+    -R $fasta \
+    ${variant[@]}  \
+    -L 3R \
+    -o ${gatk}/Dmel-GheF-eyF82-3R.joint.vcf
+
+
+
+####1. separate SNP and INDELs
+java -Xmx16G -jar $GATK -T SelectVariants \
+    -R $fasta \
+    -V /Dmel-GheF-eyF82-3R.joint.vcf \
+    -selectType SNP \
+    -o GATK/Dmel-GheF-eyF82-3R.joint.SNP.vcf 
+
+### 2. Determine parameters for filtering SNPs
+## see https://software.broadinstitute.org/gatk/documentation/article?id=2806
+## see https://software.broadinstitute.org/gatk/documentation/article.php?id=6925
+## This creates a VCF file called filtered_snps.vcf, containing all the original SNPs from the raw_snps.vcf file, but now the SNPs are annotated with either PASS or FILTER depending on whether or not they passed the filters.
+java -Xmx16G -jar $GATK \
+    -T VariantFiltration \
+    -R $fasta \
+    -V ${gatk}/Dmel-GheF-eyF82-3R.joint.SNP.vcf  \
+    --filterExpression "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0" \
+    --filterName "default_snp_filter" \
+    -o ${gatk}/Dmel-GheF-eyF82-3R.filtered_snps.vcf 
+
+### 3. Extract the Indels from the call set
+
+java -Xmx16G -jar $GATK \
+    -T SelectVariants \
+    -R $fasta \
+    -V ${gatk}/Dmel-GheF-eyF82-3R.joint.vcf  \
+    -selectType INDEL \
+    -o ${gatk}/Dmel-GheF-eyF82-3R.joint.INDEL.vcf
+    
+### 4. Determine parameters for filtering Indels.
+java -Xmx16G -jar $GATK \
+    -T VariantFiltration \
+    -R $fasta \
+    -V ${gatk}/Dmel-GheF-eyF82-3R.joint.INDEL.vcf \
+    --filterExpression "QD < 2.0 || FS > 200.0 || ReadPosRankSum < -20.0 || SOR > 10.0" \
+    --filterName "default_indel_filter" \
+    -o ${gatk}/Dmel-GheF-eyF82-3R.filtered_indels.vcf
+    

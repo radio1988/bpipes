@@ -1,0 +1,39 @@
+#!/bin/bash
+#BSUB -J "B[1-5]"
+#BSUB -P "ExomeBWA"
+#BSUB -R rusage[mem=8000]
+#BSUB -R "select[chassisno>0] same[chassisno]" # All hosts on the same chassis
+#BSUB -n 4
+#BSUB -q long
+#BSUB -W 72:00
+#BSUB -w 'done(105076)'
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis
+#BSUB -o logs/bwa.out.%J.%I.txt
+#BSUB -e logs/bwa.err.%J.%I.txt
+#BSUB -w "done(5302886)"
+
+gatk_dir=~/project/umw_andreas_bergmann/Alicia/ExomeSeq/July2018/results/GATK
+
+cd ${gatk_dir}
+
+mkdir -p logs
+mkdir -p GATK
+module load java/1.8.0_77
+
+i=$(($LSB_JOBINDEX - 1))
+
+GATK="/project/umw_mccb/bin/GenomeAnalysisTK-3.7/GenomeAnalysisTK.jar"
+fasta=/home/hl24w/project/umw_mccb/genome/Drosophila_melanogaster/ENSEMBL/Drosophila_melanogaster.BDGP6.dna.toplevel.fa
+KNOWN_INDEL=~/project/umw_mccb/genome/Drosophila_melanogaster/ENSEMBL/drosophila_melanogaster.vcf
+
+
+ID=(`ls *recal.bam |perl -p -e 's/.recal.bam//g'`)
+
+
+java -Xmx8G -jar $GATK -T HaplotypeCaller \
+    -R $fasta \
+    -I ${ID[$i]}.recal.bam \
+    --emitRefConfidence GVCF \
+    --dbsnp $KNOWN_INDEL \
+    -stand_call_conf 30 \
+    -o  ${ID[$i]}.g.vcf 

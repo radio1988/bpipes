@@ -1,0 +1,27 @@
+#!/bin/bash
+#BSUB -J "filter[1-6]"
+#BSUB -P "snpEff"
+#BSUB -R rusage[mem=8000]
+#BSUB -R "select[chassisno>0] same[chassisno]" # All hosts on the same chassis
+#BSUB -n 1
+#BSUB -q long
+#BSUB -W 12:00
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis
+#BSUB -o logs/bwa.out.%J.%I.txt
+#BSUB -e logs/bwa.err.%J.%I.txt
+
+i=$(($LSB_JOBINDEX - 1))
+gatk=/home/hl24w/project/umw_andreas_bergmann/Alicia/ExomeSeq/July2018/results/GATK
+cd ${gatk}
+
+vcf=(`ls *.filtered*.vcf`)
+dir=(`ls *.filtered*.vcf | perl -p -e 's/.vcf//g' `)
+
+mkdir -p  logs
+mkdir -p  ${dir[$i]}
+
+module load java/1.8.0_77
+
+java -Xmx8g -jar /home/hl24w/project/umw_mccb/bin/snpEff/snpEff.jar \
+     -c /home/hl24w/project/umw_mccb/bin/snpEff/snpEff.config -stats  ${dir[$i]}/${dir[$i]}.snpEff_summary.html \
+          BDGP6.91  ${vcf[$i]}  > ${dir[$i]}/annotated.${vcf[$i]}

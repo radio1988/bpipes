@@ -1,0 +1,46 @@
+#!/bin/bash
+
+#BSUB -J "markdup[1-5]"
+#BSUB -P "markdup"
+#BSUB -R rusage[mem=8000]
+#BSUB -R "select[chassisno>0] same[chassisno]" # All hosts on the same chassis
+#BSUB -n 4
+#BSUB -q  long
+#BSUB -W 72:00
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis
+#BSUB -o logs/markdup.out.%J.%I.txt
+#BSUB -e logs/markdup.err.%J.%I.txt
+
+mkdir -p logs
+module load java/1.8.0_77
+
+i=$(($LSB_JOBINDEX - 1))
+dir=~/project/umw_andreas_bergmann/Alicia/ExomeSeq/July2018/results/bwa.out
+cd $dir
+
+bams=( `ls *[0-9].bam` )
+
+ID=(`ls *[0-9].bam | perl -p -e 's{.bam}{}g' `)
+
+PICARD="/project/umw_mccb/bin/picard-2.9.0/picard.jar"
+TEMP="/project/umw_mccb/tmp"
+
+java -Xmx8G -jar $PICARD AddOrReplaceReadGroups \
+      I=${bams[$i]} \
+      O=${ID[$i]}.sorted.bam \
+      SORT_ORDER=coordinate  \
+      RGID=${ID[$i]} \
+      RGLB=${ID[$i]} \
+      RGPL=illumina \
+      RGPU=${ID[$i]}_1 \
+      RGSM=${ID[$i]}
+
+wait
+
+java -Xmx8G -jar $PICARD MarkDuplicates \
+    INPUT=${ID[$i]}.sorted.bam \
+    OUTPUT=${ID[$i]}.markDup.bam \
+    METRICS_FILE=${ID[$i]}.markDup_metrics.txt \
+    OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 CREATE_INDEX=true TMP_DIR=$TEMP
+    
+    

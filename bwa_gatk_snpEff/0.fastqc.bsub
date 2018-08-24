@@ -1,0 +1,33 @@
+#!/bin/bash
+#BSUB -J "fastqc"
+#BSUB -P "Rui"
+#BSUB -n 12
+#BSUB -R rusage[mem=500]
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -R "span[hosts=1]"
+#BSUB -N
+
+mkdir -p ../fastqc
+mkdir -p ../fastqc/log
+#BSUB -o ../fastqc/log/fastqc.%J.out
+
+hostname
+module purge
+module load fastqc/0.11.5
+
+##fastqc 
+fastqc -t 12 ../fastq/*.fastq.gz --outdir ../fastqc 
+fastqc -t 12 ../fastq/*.fq.gz --outdir ../fastqc 
+echo 'fastqc_finished'
+
+## merge summaries
+module load python3/3.5.0_packages/multiqc/1.4
+cd ../fastqc
+multiqc .
+echo 'multiqc finished'
+
+## organize folder
+rm -rf *zip
+mkdir details
+mv *fastqc.html details/

@@ -1,0 +1,61 @@
+#!/bin/bash
+#BSUB -J "B[1-5]"
+#BSUB -P "ExomeBWA"
+#BSUB -R rusage[mem=8000]
+#BSUB -R "select[chassisno>0] same[chassisno]" # All hosts on the same chassis
+#BSUB -n 4
+#BSUB -q long
+#BSUB -W 72:00
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis
+#BSUB -o logs/bwa.out.%J.%I.txt
+#BSUB -e logs/bwa.err.%J.%I.txt
+#BSUB -w "done(5302880)"
+
+
+mkdir -p logs
+gatk_dir=~/project/umw_andreas_bergmann/Alicia/ExomeSeq/July2018/results/GATK
+mkdir -p ${gatk_dir}
+
+module load java/1.8.0_77
+
+i=$(($LSB_JOBINDEX - 1))
+
+cd ~/project/umw_andreas_bergmann/Alicia/ExomeSeq/July2018/results/bwa.out
+
+GATK="/project/umw_mccb/bin/GenomeAnalysisTK-3.7/GenomeAnalysisTK.jar"
+fasta=/home/hl24w/project/umw_mccb/genome/Drosophila_melanogaster/ENSEMBL/Drosophila_melanogaster.BDGP6.dna.toplevel.fa
+KNOWN_INDEL=~/project/umw_mccb/genome/Drosophila_melanogaster/ENSEMBL/drosophila_melanogaster.vcf 
+bams=(`ls *markDup.bam`)
+ID=(`ls *markDup.bam |perl -p -e 's/.markDup.bam//g'`)
+
+## Analyze patterns of covariation in the sequence dataset
+java -Xmx8G -jar $GATK -T BaseRecalibrator \
+    -R  $fasta \
+    -I  ${bams[$i]}  \
+    -knownSites $KNOWN_INDEL \
+    -o ${gatk_dir}/${ID[$i]}.recal_data.table \
+    -U ALLOW_SEQ_DICT_INCOMPATIBILITY
+
+## Do a second pass to analyze covariation remaining after recalibration
+java -Xmx8G -jar $GATK -T BaseRecalibrator \
+    -R $fasta \
+    -I ${bams[$i]}   \
+    -knownSites $KNOWN_INDEL \
+    -BQSR GATK/${ID[$i]}.recal_data.table \
+    -o ${gatk_dir}/${ID[$i]}.post_recal_data.table \
+    -U ALLOW_SEQ_DICT_INCOMPATIBILITY
+
+##  Generate before/after plots
+java -Xmx8G -jar $GATK -T AnalyzeCovariates \
+    -R $fasta \
+    -before  ${gatk_dir}/${ID[$i]}.recal_data.table \
+    -after   ${gatk_dir}/${ID[$i]}.post_recal_data.table \
+    -plots   ${gatk_dir}/${ID[$i]}.recalibration_plots.pdf
+
+#### Apply the recalibration to your sequence data
+java -Xmx8G -jar $GATK -T PrintReads \
+    -R $fasta \
+    -I ${bams[$i]}  \
+    -BQSR  ${gatk_dir}/${ID[$i]}.recal_data.table \
+    -o   ${gatk_dir}/${ID[$i]}.recal.bam 
+    
