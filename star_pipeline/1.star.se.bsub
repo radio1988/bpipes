@@ -61,8 +61,7 @@ STAR --runThreadN 10 \
 --outReadsUnmapped Fastx
 
 ## post star
-bam_files=`ls ../${bam_dir}/${name}*sort*bam`
-bam_file=${bam_files[$i]}
+bam_file=`ls ../${bam_dir}/${name}*sort*bam`
 echo $i 'bam_file' $bam_file
 mkdir -p ../${bam_dir}/idxstats
 mkdir -p ../${bam_dir}/flagstat
