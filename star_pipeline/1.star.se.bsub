@@ -29,7 +29,7 @@ echo 'R1s:' ${#R1s[@]} ${R1s[@]}
 R1=${R1s[$i]}  # without dir_name
 
 name=${R1s[$i]}  # without dir_name
-name=${name/_R1.fastq.gz/} #need to change
+name=${name/.fastq.gz/} #need to change
 name=${name/..\/fastq\//} #need to change
 
 echo ' '
