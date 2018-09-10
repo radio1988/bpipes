@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 use strict; use warnings;
 
 die ("usage: <perl> <vcf.get_mut_vs_wt.pl> <xx.snpEff.cancer.vcf>\n") unless @ARGV==1;
