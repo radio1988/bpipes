@@ -1,0 +1,21 @@
+#!/bin/bash
+#BSUB -P "Rui"
+#BSUB -J "insize[1-11]" # same as num-bams
+#BSUB -R rusage[mem=1000]
+#BSUB -n 1
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -q short
+#BSUB -W 4:00
+mkdir -p insert_size
+#BSUB -o insert_size/insert_size.%J.%I.out
+##BSUB -N
+
+module load bamtools/2.3.0
+i=$(($LSB_JOBINDEX- 1))
+bams=(`ls *bam`)
+bam=${bams[$i]}
+echo $bam
+
+#samtools stats --threads 4 --insert-size $bam > ./insert_size/${bam}.ins_size.txt
+
+bamtools stats -in $bam -insert > ./insert_size/${bam}.ins_size.txt

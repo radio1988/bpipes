@@ -1,0 +1,16 @@
+#BSUB -P "LiR"
+#BSUB -J "snpEff"
+#BSUB -R rusage[mem=8500]
+#BSUB -n 1
+#BSUB -o snpEff.%J.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+java -Xmx8g -jar /home/hl24w/project/umw_mccb/bin/snpEff/snpEff.jar \
+-v \
+-c /home/hl24w/project/umw_mccb/bin/snpEff/snpEff.config \
+-stats snpEff_summary.html \
+-cancer -cancerSamples sample_desc.txt \
+BDGP6.91 \
+Five-2R.joint.INDEL.filtered.vcf > Five-2R.joint.INDEL.filtered.ann.vcf

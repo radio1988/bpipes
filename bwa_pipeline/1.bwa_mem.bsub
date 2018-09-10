@@ -12,6 +12,8 @@ mkdir -p ../bwa/log
 ##BSUB -N
 
 bwa_idx='/home/rl44w/genomes/human/hg19/hg19.fa'
+module purge
+module list
 
 hostname
 lscpu
@@ -50,6 +52,14 @@ mkdir -p flagstat
 samtools flagstat ${name}.bam > ./flagstat/${name}.flagstat.txt
 
 module purge
-bamCoverage --bam ${name}.bam -o  ${name}.bw \
+bamCoverage --bam ${name}.bam -o  ${name}.cpm.bw \
 --numberOfProcessors 16 \
---outFileFormat bigwig
+--outFileFormat bigwig \
+--normalizeUsing CPM \
+#--maxFragmentLength 1500 \
+
+bamCoverage --bam ${name}.bam -o  ${name}.count.bw \
+--numberOfProcessors 16 \
+--outFileFormat bigwig \
+--normalizeUsing None
+#--maxFragmentLength 1500 \

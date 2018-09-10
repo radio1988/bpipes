@@ -1,0 +1,26 @@
+#BSUB -P "LiR"
+#BSUB -J "snpSift"
+#BSUB -R rusage[mem=4000]
+#BSUB -n 1
+#BSUB -o SnpSift.%J.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+input='Five-2R.joint.INDEL.filtered.ann.vcf'
+
+java -jar ~/bin/snpEff/SnpSift.jar filter "countVariant() = 1 " \
+$input > ${input/vcf/uniq_var.vcf}
+
+
+input=${input/vcf/uniq_var.vcf}
+
+java -jar ~/bin/snpEff/SnpSift.jar filter "ANN[*].EFFECT has 'missense_variant'" \
+$input > ${input/vcf/missense.vcf}
+
+java -jar ~/bin/snpEff/SnpSift.jar filter "ANN[*].IMPACT has 'HIGH'" \
+$input > ${input/vcf/high_impact.vcf}
+
+
+java -jar ~/bin/snpEff/SnpSift.jar filter "ANN[*].IMPACT has 'MODERATE'" \
+$input > ${input/vcf/moderate_impact.vcf}

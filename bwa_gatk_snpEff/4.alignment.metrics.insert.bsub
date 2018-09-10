@@ -1,0 +1,34 @@
+#!/bin/bash
+#BSUB -J "bwa[1-5]"
+#BSUB -P "ExomeBWA"
+#BSUB -R rusage[mem=8000]
+#BSUB -R "select[chassisno>0] same[chassisno]" # All hosts on the same chassis
+#BSUB -n 4
+#BSUB -q long
+#BSUB -W 72:00
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis
+#BSUB -o logs/bwa.out.%J.%I.txt
+#BSUB -e logs/bwa.err.%J.%I.txt
+#BSUB -w "done(5302880)"
+
+module load java/1.8.0_77
+module load samtools/1.4.1
+
+i=$(($LSB_JOBINDEX - 1))
+cd ~/project/umw_andreas_bergmann/Alicia/ExomeSeq/July2018/results/bwa.out
+
+bams=( `ls *[0-9].sorted.bam` )
+
+ID=(`ls *[0-9].bam |perl -p -e 's/.bam//g'`)
+
+PICARD="/project/umw_mccb/bin/picard-2.9.0/picard.jar"
+TEMP="/project/umw_mccb/tmp"
+
+fasta=/home/hl24w/project/umw_mccb/genome/Drosophila_melanogaster/ENSEMBL/Drosophila_melanogaster.BDGP6.dna.toplevel.fa
+
+java -Xmx8G -jar $PICARD CollectAlignmentSummaryMetrics R=$fasta I=${bams[$i]}  O=${ID[$i]}.alignment_metrics.txt
+
+java -Xmx8G -jar $PICARD CollectInsertSizeMetrics INPUT=${bams[$i]}  OUTPUT=${ID[$i]}.insert_metrics.txt  HISTOGRAM_FILE=${ID[$i]}.insert_size_histogram.pdf
+
+#samtools depth -a ${bams[$i]} > ${ID[$i]}.depth_out.txt
+

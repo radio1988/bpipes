@@ -1,0 +1,3 @@
+https://gatkforums.broadinstitute.org/gatk/discussion/11145/germline-short-variant-discovery-snps-indels
+
+https://gatkforums.broadinstitute.org/gatk/discussion/44/base-quality-score-recalibration-bqsr

@@ -1,47 +1,78 @@
 #BSUB -P "Rui"
-#BSUB -J "star[1-12]" # same as num-fastqs
-#BSUB -R rusage[mem=60000] # 30-40G/num-threads * num-fastqs
-#BSUB -n 8
+#BSUB -J "star[1-4]" # same as num-fastqs
+#BSUB -R rusage[mem=3200] # 30-40G/num-threads * num-fastqs
+#BSUB -n 10
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 #BSUB -q short
-#BSUB -W 4:00  # 20M/hr with 8 cpu
-##BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -W 4:00 # 20M/hr with 8 cpu
+mkdir -p ../star
+mkdir -p ../star/log
+#BSUB -o ../star/log/star.%J.%I.out
+#BSUB -e ../star/log/star.%J.%I.err
+##BSUB -N
 
-source config.sh
 
-cd $workingDir
-mkdir -p scripts/log
-mkdir -p scripts/log/star
-#BSUB -o /project/umw_cole_haynes/Brad/RNAseq-GCN2-June2018/scripts/log/star/star.%J.%I.out
-#BSUB -e /project/umw_cole_haynes/Brad/RNAseq-GCN2-June2018/scripts/log/star/star.%J.%I.err
+## CONFIG
+i=$(($LSB_JOBINDEX- 1))
 
+## genome info
+genome_idx='/project/umw_mccb/Rui/genomes/mouse/GRCm38.p6_ensembl/star_idx'
+gtf='/project/umw_mccb/Rui/genomes/mouse/GRCm38.p6_ensembl/Mus_musculus.GRCm38.92.gtf'
+## aligner info
+bam_dir=star
+
+## sample info
+R1s=(`ls ../fastq/*.fastq.gz`)
+echo 'R1s:' ${#R1s[@]} ${R1s[@]}
+
+## input names
+R1=${R1s[$i]}  # without dir_name
+
+name=${R1s[$i]}  # without dir_name
+name=${name/.fastq.gz/} #need to change
+name=${name/..\/fastq\//} #need to change
+
+echo ' '
+echo 'For' $i $R1 $name
+
+## Alignment
 module load java/1.8.0_77
 module load star/2.5.3a
 
-#R1=(`ls *_1.fq.gz`)
-#R2=(`ls *_2.fq.gz`)
-
-#names=(`ls  *_1.fq.gz | perl -p -e s'/.fq.gz//g' `)
-
-
-source='fastq'
-mkdir -p ${ALIGNFOLDER}
-STAR  --runThreadN 8  \
---readFilesCommand  zcat  \
---outFileNamePrefix  ${ALIGNFOLDER}/${sample[${i}]}. \
---genomeDir  $genomeDir  \
---readFilesIn  ${source}/${sample[$i]}.fastq.gz \
---sjdbGTFfile  ${GTFFILE} \
+STAR --runThreadN 10 \
+--genomeDir $genome_idx \
+--sjdbGTFfile $gtf \
+--readFilesCommand zcat \
+--readFilesIn $R1 \
+--outFileNamePrefix ../star/$name. \
 --outFilterType BySJout \
---outFilterMultimapNmax 20  \
---alignSJoverhangMin 8  \
---alignSJDBoverhangMin 1  \
---outFilterMismatchNmax 999  \
---outFilterMismatchNoverReadLmax 0.04  \
---alignIntronMin 20  \
---alignIntronMax 1000000  \
---alignMatesGapMax 1000000  \
---outFilterIntronMotifs RemoveNoncanonical  \
---outSAMstrandField intronMotif \
---outSAMtype BAM Unsorted SortedByCoordinate \
+--outFilterMultimapNmax 20 \
+--alignSJoverhangMin 8 \
+--alignSJDBoverhangMin 3 \
+--outFilterMismatchNmax 999 \
+--outFilterMismatchNoverReadLmax 0.05 \
+--alignIntronMin 20 \
+--alignIntronMax 1000000 \
+--alignMatesGapMax 1000000 \
+--outFilterIntronMotifs RemoveNoncanonicalUnannotated \
+--outSAMstrandField None \
+--outSAMtype BAM SortedByCoordinate \
 --quantMode GeneCounts \
 --outReadsUnmapped Fastx
+
+## post star
+bam_file=`ls ../${bam_dir}/${name}*sort*bam`
+echo $i 'bam_file' $bam_file
+mkdir -p ../${bam_dir}/idxstats
+mkdir -p ../${bam_dir}/flagstat
+
+module load samtools/dev-2016_06_06
+samtools index $bam_file ${bam_file}.bai
+samtools idxstats $bam_file > ../$bam_dir/idxstats/${name}.idxstats.txt
+samtools flagstat $bam_file > ../$bam_dir/flagstat/${name}.flagstat.txt
+
+module purge
+bamCoverage --bam $bam_file -o ${bam_file}.cpm.bw \
+--numberOfProcessors 10 \
+--normalizeUsing CPM  \
+--outFileFormat bigwig
