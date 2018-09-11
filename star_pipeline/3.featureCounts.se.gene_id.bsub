@@ -1,8 +1,8 @@
 #!/bin/bash
 #BSUB -J "fcount"
 #BSUB -P "LiR"
-#BSUB -R rusage[mem=2000]
-#BSUB -n 8
+#BSUB -R rusage[mem=1000]
+#BSUB -n 4
 #BSUB -q short
 #BSUB -W 4:00
 #BSUB -R "span[hosts=1]"
@@ -13,4 +13,9 @@ mkdir -p ../featureCount/log
 
 gtf='/project/umw_mccb/Rui/genomes/Saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.90.gtf'
 
-featureCounts -a $gtf -o ../featureCount/counts.gene_id.txt -g gene_id -M -Q 20 -T 8 ../star/*.bam
+featureCounts -a $gtf \
+-o ../featureCount/counts.gene_id.txt \
+-g gene_id \
+-s 0 \
+-M -Q 20 -T 4 \
+../star/*.bam
