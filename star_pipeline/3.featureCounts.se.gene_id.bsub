@@ -13,4 +13,4 @@ mkdir -p ../featureCount/log
 
 gtf='/project/umw_mccb/Rui/genomes/Saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.90.gtf'
 
-featureCounts -a $gtf -o ../featureCount/counts.gene_id.txt -g gene_id -M -Q 20 -p -T 8 ../star/*bam
+featureCounts -a $gtf -o ../featureCount/counts.gene_id.txt -g gene_id -M -Q 20 -T 8 ../star/*.bam
