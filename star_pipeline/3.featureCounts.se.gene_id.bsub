@@ -1,7 +1,7 @@
 #!/bin/bash
 #BSUB -J "fcount"
 #BSUB -P "LiR"
-#BSUB -R rusage[mem=500]
+#BSUB -R rusage[mem=1000]
 #BSUB -n 4
 #BSUB -q short
 #BSUB -W 4:00
@@ -17,5 +17,5 @@ featureCounts -a $gtf \
 -o ../featureCount/counts.gene_id.txt \
 -g gene_id \
 -s 0 \
--M -Q 20 -p -T 4 \
-../star/*bam
+-M -Q 20 -T 4 \
+../star/*.bam

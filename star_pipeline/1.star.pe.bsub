@@ -76,6 +76,7 @@ samtools flagstat $bam_file > ../$bam_dir/flagstat/${name}.flagstat.txt &&
 
 module purge
 bamCoverage='/home/rl44w/.local/bin/bamCoverage'
-$bamCoverage --bam $bam_file -o ${bam_file}.count.bw \
---normalizeUsing None  \
+$bamCoverage --bam $bam_file -o ${bam_file}.cpm.bw \
+--numberOfProcessors 10 \
+--normalizeUsing CPM  \
 --outFileFormat bigwig

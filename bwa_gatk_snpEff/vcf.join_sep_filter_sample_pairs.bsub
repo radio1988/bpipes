@@ -1,0 +1,57 @@
+#BSUB -P "LiR"
+#BSUB -J "joinvcf[1-4]"
+#BSUB -R rusage[mem=2000]
+#BSUB -n 1
+#BSUB -o join_vcf.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+
+# DESC:
+# Join g.vcf pairs, for snpEff -cancer (somatics vs germline) annotation
+
+i=$(($LSB_JOBINDEX- 1))
+
+GATK="/project/umw_mccb/bin/GenomeAnalysisTK-3.7/GenomeAnalysisTK.jar"
+fasta=/home/hl24w/project/umw_mccb/genome/Drosophila_melanogaster/ENSEMBL/Drosophila_melanogaster.BDGP6.dna.toplevel.fa
+
+wt=FRT42_3.g.vcf
+muts=(A3a1F_1.g.vcf N494F_3.g.vcf Q33F_4.g.vcf S62_10.g.vcf)
+mut=${muts[$i]}
+echo "for ", $wt, $mut
+
+## join
+java -Xmx2G -jar $GATK \
+  -T GenotypeGVCFs \
+  -R $fasta \
+  --variant $wt \
+  --variant $mut \
+  -L 2R \
+  -o ${mut/g.vcf/joint.vcf}
+
+# sep SNP from INDEL
+java -Xmx2G -jar $GATK -T SelectVariants \
+  -R $fasta \
+  -V ${mut/g.vcf/joint.vcf} \
+  -selectType SNP \
+  -o ${mut/g.vcf/joint.SNP.vcf} 
+
+java -Xmx2G -jar $GATK -T SelectVariants \
+  -R $fasta \
+  -V ${mut/g.vcf/joint.vcf} \
+  -selectType INDEL \
+  -o ${mut/g.vcf/joint.INDEL.vcf} 
+
+## Quality filter
+java -Xmx2G -jar $GATK -T VariantFiltration \
+  -R $fasta \
+  -V ${mut/g.vcf/joint.SNP.vcf} \
+  --filterExpression "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0" \
+  --filterName "default_snp_filter" \
+  -o ${mut/g.vcf/joint.SNP.filt.vcf}
+
+java -Xmx2G -jar $GATK -T VariantFiltration \
+  -R $fasta \
+  -V ${mut/g.vcf/joint.INDEL.vcf} \
+  --filterExpression "QD < 2.0 || FS > 200.0 || ReadPosRankSum < -20.0 || SOR > 10.0" \
+  --filterName "default_indel_filter" \
+  -o ${mut/g.vcf/joint.INDEL.filt.vcf}
