@@ -1,0 +1,109 @@
+---
+title: "Annotate_mouse"
+author: "RuiLi"
+date: "8/30/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("org.Mm.eg.db")
+library(org.Mm.eg.db)
+columns(org.Mm.eg.db)
+keytypes(org.Mm.eg.db)
+class(org.Mm.eg.db)
+```
+
+## Read DF
+```{r}
+df1 = read.csv('WT:TRT_vs_UNT.deseq.csv', stringsAsFactors=FALSE)  #adjust
+df2 = read.csv('MUT:TRT_vs_UNT.deseq.csv', stringsAsFactors=FALSE)  #adjust
+df3 = read.csv('TRT:MUT_vs_WT.deseq.csv', stringsAsFactors=FALSE)  #adjust
+df4 = read.csv('UNT:MUT_vs_WT.deseq.csv', stringsAsFactors=FALSE)  #adjust
+
+
+df = merge(df1, df2, by=c('Gene', 
+                          "MUT_TRT1", "MUT_TRT2", "MUT_UNT1", "MUT_UNT2",
+                          "WT_TRT1", "WT_TRT2", "WT_UNT1", "WT_UNT2"))
+colnames(df) <- gsub(".x", " WT:TRT/UNT", colnames(df))
+colnames(df) <- gsub(".y", " MUT:TRT/UNT", colnames(df))
+
+
+df = merge(df, df3, by=c('Gene', 
+                          "MUT_TRT1", "MUT_TRT2", "MUT_UNT1", "MUT_UNT2",
+                          "WT_TRT1", "WT_TRT2", "WT_UNT1", "WT_UNT2"))
+df = merge(df, df4, by=c('Gene', 
+                          "MUT_TRT1", "MUT_TRT2", "MUT_UNT1", "MUT_UNT2",
+                          "WT_TRT1", "WT_TRT2", "WT_UNT1", "WT_UNT2"))
+colnames(df) <- gsub(".x", " TRT:MUT_vs_WT", colnames(df))
+colnames(df) <- gsub(".y", " UNT:MUT_vs_WT", colnames(df))
+
+
+colnames(df)[1] = 'gene_id'
+colnames(df)
+
+
+uniKeys <- as.vector(as.character(df[,'gene_id' ]))
+head(uniKeys)
+```
+
+## Annotate with org.Mm.eg.db (only 50% annotated)
+```{r}
+df$gene_name <- as.character(mapIds(org.Mm.eg.db, 
+              keys=uniKeys, 
+              column="SYMBOL", 
+              keytype="ENSEMBL",
+              multiVals="first"))
+
+
+df$description <- mapIds(org.Mm.eg.db,
+              keys=uniKeys,
+              column="GENENAME",
+              keytype="ENSEMBL",
+              multiVals="first")
+
+
+df$GO <- mapIds(org.Mm.eg.db,
+              keys=uniKeys,
+              column="GO",
+              keytype="ENSEMBL",
+              multiVals="first")
+
+sum(is.na(df$gene_name))
+
+```
+## Annotate with GTF extracted table (extracted by perl)
+```{r}
+annoTable <- read.table("../Mus_musculus.GRCm38.92.gtf.ann.txt", sep = "\t")
+colnames(annoTable) <- c('gene_id', 'gene_name')
+df <- merge(df, annoTable, 
+            by.x=1, by.y=1)
+```
+
+
+## Save result
+```{r}
+library(WriteXLS)
+WriteXLS(x = df, 
+         ExcelFileName = 'merged.deseq.ann.xls', row.names = F, SheetNames = 'sheet1')
+```
+
+<!-- ## Annotate with GTF -->
+<!-- ```{r} -->
+<!-- library('GenomicFeatures') -->
+<!-- txdb <- makeTxDbFromGFF("../Mus_musculus.GRCm38.92.gtf", -->
+<!--                  format="gtf" -->
+<!--                  # format=c("auto", "gff3", "gtf") -->
+<!--                  ) -->
+<!-- saveDb(txdb, file="../Mus_musculus.GRCm38.92.gtf.txdb.sqlite") -->
+<!-- txdb <- loadDb("../Mus_musculus.GRCm38.92.gtf.txdb.sqlite") -->
+<!-- txdb -->
+<!-- columns(txdb) -->
+
+<!-- select(txdb, uniKeys, c("TXNAME"), "GENEID") -->
+
+<!-- gene_name <- select(txdb, uniKeys, c("TXNAME"), "GENEID") -->
+
+<!-- ``` -->
+
