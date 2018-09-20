@@ -1,5 +1,5 @@
 ---
-title: "TPM from Count"
+title: "TPM from Count: R is not accurate"
 author: "RuiLi"
 date: "7/26/2018"
 output: html_document
