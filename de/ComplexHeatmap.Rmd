@@ -1,0 +1,135 @@
+---
+title: "Heatmap for DEG: complex heatmap"
+author: "RuiLi"
+date: "09/14/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("pheatmap")
+```
+
+# Read Data
+```{r}
+require(gdata)  #best
+df = read.xls ("../merged.deseq.ann.rui.xls", sheet = 1, header = TRUE)
+
+row.names(df) <- df[,1]
+df <- df[, -1]
+colnames(df)
+```
+
+## Filter Data
+```{r}
+thr_p <- 0.05
+thr_lfc <- 1
+
+# select expression columns
+df_ <- df[, c(1:8)]
+colnames(df_)
+
+# remove NA from padj
+sum(is.na(df$padj.WT.TRT.UNT))
+df[is.na(df$padj.WT.TRT.UNT), 'padj.WT.TRT.UNT'] <- 1  
+sum(is.na(df$padj.WT.TRT.UNT))
+
+sum(is.na(df$padj.MUT.TRT.UNT))
+df[is.na(df$padj.MUT.TRT.UNT), 'padj.MUT.TRT.UNT'] <- 1  
+sum(is.na(df$padj.MUT.TRT.UNT))
+
+sum(is.na(df$log2FoldChange.WT.TRT.UNT))
+df[is.na(df$log2FoldChange.WT.TRT.UNT), 'log2FoldChange.WT.TRT.UNT'] <- 0
+sum(is.na(df$log2FoldChange.WT.TRT.UNT))
+
+sum(is.na(df$log2FoldChange.MUT.TRT.UNT))
+df[is.na(df$log2FoldChange.MUT.TRT.UNT), 'log2FoldChange.MUT.TRT.UNT'] <- 0 
+sum(is.na(df$log2FoldChange.MUT.TRT.UNT))
+
+# select significant genes
+small_p_1 <- df$padj.WT.TRT.UNT<thr_p
+small_p_2 <- df$padj.MUT.TRT.UNT<thr_p
+
+large_lfc1 <- abs(df$log2FoldChange.WT.TRT.UNT) > thr_lfc
+large_lfc2 <- abs(df$log2FoldChange.MUT.TRT.UNT) > thr_lfc
+
+df_sig1 <- df_[small_p_1 | small_p_2, ]
+df_sig_full1 <- df[small_p_1 | small_p_2, ]
+num_sig1 <- dim(df_sig1)[1]
+paste(num_sig1)
+
+df_sig2 <- df_[(small_p_1 & large_lfc1) | (small_p_2 & large_lfc2), ]
+df_sig_full2 <- df[(small_p_1 & large_lfc1) | (small_p_2 & large_lfc2), ]
+num_sig2 <- dim(df_sig2)[1]
+paste(num_sig2)
+```
+
+
+## Heatmap for DEG of all Comparisons, clustered on all 8 samples from WT and MUT, small_fdr < 0.05 and large_lfc > 1
+```{r, echo=FALSE}
+name <- 'All Genotype: TRT vs UNT'
+df_sig <- df_sig2
+df_sig_full <- df_sig_full2
+num_sig <- num_sig2
+
+logNormed_sig <- log10(df_sig + 1)  # log transformation
+head(logNormed_sig)
+
+drows <- dist(logNormed_sig[, 1:8])
+
+annotation_col <- data.frame(
+                    genotype = factor(rep(c("MUT", "WT"), each=4)),
+                    treatment = factor(rep(c("TRT", "UNT", "TRT", "UNT"), each=2))
+                            )
+
+annotation_row <- data.frame(
+  'WT' = factor(df_sig_full$padj.WT.TRT.UNT<thr_p),
+  'MUT' = factor(df_sig_full$padj.MUT.TRT.UNT<thr_p)
+)
+rownames(annotation_row) = rownames(df_sig_full)
+
+ann_colors = list(
+    'WT' = c('TRUE'='red', 'FALSE'='gray'),
+    "MUT" = c('TRUE'='black', 'FALSE'='gray')
+)
+
+rownames(annotation_col) <- colnames(logNormed_sig)
+
+nrow <- dim(logNormed_sig)[1]
+
+## labels
+labels <- as.character(df_sig_full$gene_name.y)
+markers <- c("Ctgf", "Cyr61", 'Ankrd1', 'Axin2')
+marker_idx <- match(markers,labels)
+nonmarkera_idx <- setdiff(c(1:length(labels)), marker_idx)
+labels[nonmarkera_idx] <- ""
+
+pheatmap(logNormed_sig, 
+         labels_row = labels,  # define labels
+         cluster_rows=T, show_rownames=T,
+         cluster_cols=F, show_colnames=F, 
+         annotation_col = annotation_col,
+         annotation_row = annotation_row, annotation_names_row = F,
+         annotation_colors = ann_colors,
+         clustering_distance_rows = drows,
+         main = paste("Heatmap of", num_sig, " DEG for", name)
+         )
+
+```
+
+```{r test}
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("ComplexHeatmap")
+library(ComplexHeatmap)
+library(circlize)
+
+mat = matrix(rnorm(10000), nr = 1000)
+rownames(mat) = sprintf("%.2f", rowMeans(mat))
+subset = sample(1000, 20)
+labels = rownames(mat)[subset]
+Heatmap(mat, show_row_names = FALSE, show_row_dend = FALSE, show_column_dend = FALSE) + 
+rowAnnotation(link = row_anno_link(at = subset, labels = labels),
+  width = unit(1, "cm") + max_text_width(labels))
+
+```
+
