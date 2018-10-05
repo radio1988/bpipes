@@ -1,0 +1,176 @@
+---
+title: "DESeq2_Simple Comparison, without batch effect"
+author: "RuiLi"
+date: "09/20/2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("DESeq2")
+# biocLite("apeglm")
+library(DESeq2)
+# library('apeglm')
+
+thresh_p <- 0.05
+thresh_FC <- 0.585
+
+volcanoplot <- function (res, lfcthresh=2, sigthresh=thresh_p, 
+                         main=paste("Volcano Plot", name, sep='\n'), 
+                         legendpos="topright", labelsig=FALSE, textcx=1, ...) {
+  with(res, plot(log2FoldChange, -log10(pvalue), pch=20, main=main, ...))
+  with(subset(res, padj<sigthresh ), points(log2FoldChange, -log10(pvalue), pch=20, col="orange", ...))
+  with(subset(res, abs(log2FoldChange)>lfcthresh), points(log2FoldChange, -log10(pvalue), pch=20, col="green", ...))
+  with(subset(res, padj<sigthresh & abs(log2FoldChange)>lfcthresh), points(log2FoldChange, -log10(pvalue), pch=20, col="red", ...))
+  if (labelsig) {
+    require(calibrate)
+    with(subset(res, padj<sigthresh & abs(log2FoldChange)>lfcthresh), textxy(log2FoldChange, -log10(pvalue), labs=Gene, cex=textcx, ...))
+  }
+  legend(legendpos, xjust=1, yjust=0.5, 
+         legend=c(paste("FDR<",sigthresh,sep=""), 
+                  paste("|LogFC|>",lfcthresh,sep=""), 
+                  "both"), pch=20,
+         col=c("orange","green","red"))
+}
+
+maplot <- function (res, thresh=thresh_p, labelsig=FALSE, textcx=1, ...) {
+  with(res, plot(baseMean, log2FoldChange, pch=20, cex=.5, log="x", ...))
+  with(subset(res, padj<thresh_p), points(baseMean, log2FoldChange, col="red", pch=20, cex=1.5))
+  if (labelsig) {
+    require(calibrate)
+    with(subset(res, padj<thresh_p), textxy(baseMean, log2FoldChange, labs=Gene, cex=textcx, col=2))
+  }
+}
+
+```
+
+## Read Data
+```{r}
+df <- read.table('../featureCount/counts.reverse_stranded.gene_id.txt', sep="\t",
+                 header=TRUE, row.names=1)
+
+cts <- df[,6:ncol(df)]
+
+colnames(cts) <- gsub("\\.Aligned.sortedByCoord.out.bam$", "", colnames(cts))
+colnames(cts) <- gsub("...star.", "", colnames(cts))
+colnames(cts) <- gsub("_S._merged_R1_001", "", colnames(cts))
+colnames(cts) <- gsub('\\.', "_", colnames(cts))
+
+cts <- as.matrix(cts)
+dim(cts)
+head(cts)
+```
+
+```{r}
+## Filter Based on Expression
+exp_idx <- rowSums(cts) >= 1  # default 10
+cts <- cts[exp_idx, ]
+dim(cts)
+head(cts)
+```
+
+
+## DESeq Experiment Design
+```{r}
+MUT <- factor(rep(c('WT','double'), each=3))
+coldata <- data.frame(row.names=colnames(cts), MUT)
+coldata
+```
+
+
+## Create dds obj
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~ MUT )  # converted to alph-order
+dds$MUT <- relevel(dds$MUT, ref = "WT")
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+```
+
+
+```{r}
+## Data transformation (for PCA plot etc.)
+vsd <- vst(dds, blind=FALSE)
+
+rld <- rlog(dds, blind=FALSE)
+
+counts <- counts(dds, normalized=0)
+logCounts <- log10(counts +1 )
+
+normed <- counts(dds, normalized=1)
+logNormed <- log10(normed+1)
+hist(logNormed)
+
+```
+
+
+```{r}
+## Commom Plots
+plotDispEsts(dds, main="Dispersion plot")
+
+plotPCA(vsd, intgroup=c("MUT"))
+
+library("RColorBrewer")
+library('pheatmap')
+library("PoiClaClu")
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+poisd <- PoissonDistance(t(counts(dds)))
+samplePoisDistMatrix <- as.matrix( poisd$dd ) 
+rownames(samplePoisDistMatrix) <- paste( colnames(dds), sep="-" ) 
+colnames(samplePoisDistMatrix) <- NULL 
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(samplePoisDistMatrix,
+         clustering_distance_rows=poisd$dd,
+         clustering_distance_cols=poisd$dd,
+         col=colors, 
+         clustering_method='average'
+        )
+```
+
+```{r}
+res1 <- lfcShrink(dds, coef="MUT_double_vs_WT", type='ashr')
+name1 <- 'ET-TOS vs ET'
+summary(res1, alpha=thresh_p)
+table(res1$padj<thresh_p)
+```
+
+## RES1
+```{r}
+res <- res1
+name <- name1
+num_sig <- as.integer(table(res$padj<thresh_p)[2])
+paste(name, num_sig)
+
+## Order by adjusted p-value
+resOrdered <- res[order(res$padj), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(resOrdered), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+## MA plot
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+
+
+## Volcano plot with "significant" genes labeled
+volcanoplot(resdata, lfcthresh=thresh_FC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+

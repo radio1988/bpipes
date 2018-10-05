@@ -1,0 +1,101 @@
+---
+title: "AnnotationDbi"
+author: "RuiLi"
+date: "10/05/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("AnnotationDbi") 
+
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("org.Hs.eg.db")
+library("org.Hs.eg.db")
+```
+
+
+```{r}
+inName_ <- 'KD_vs_NS.deseq.csv'
+outName_ <- 'KD_vs_NS.deseq.anno.xls'
+df = read.csv(inName_, stringsAsFactors=FALSE)  #adjust
+colnames(df)
+dim(df)
+uniKeys <- as.vector(as.character(df[,'Gene' ]))
+head(uniKeys)
+
+keyType_ <- "ENSEMBL"
+
+```
+
+## Annotation
+```{r}
+columns(org.Hs.eg.db)
+
+
+df$symbol <- as.character(mapIds(org.Hs.eg.db, 
+              keys=uniKeys, 
+              column="SYMBOL", 
+              keytype=keyType_,
+              multiVals="first"))
+sum(is.na(df$symbol))
+
+
+df$description <- as.character(mapIds(org.Hs.eg.db, 
+              keys=uniKeys, 
+              column="GENENAME", 
+              keytype=keyType_,
+              multiVals="first"))
+sum(is.na(df$description))
+
+# 
+# ## Notes:
+# - ONTOLOTY: 
+#     - BP: biological_process
+#     - CC: cellular_component
+#     - MF: Molecular Function
+# - GOALL: GO Identifiers (includes less specific terms)
+# - GO: GO Identifiers associated with a gene of interest
+
+# 
+# df$GOALL <- mapIds(org.Hs.eg.db,
+#               keys=uniKeys,
+#               column="GOALL",
+#               keytype=keyType_,
+#               multiVals="first")
+# sum(is.na(df$GOALL))
+# 
+# df$ONTOLOGYALL <- mapIds(org.Hs.eg.db,
+#               keys=uniKeys,
+#               column="ONTOLOGYALL",
+#               keytype=keyType_,
+#               multiVals="first")
+# sum(is.na(df$ONTOLOGYALL))
+# 
+# 
+# df$GO <- mapIds(org.Hs.eg.db,
+#               keys=uniKeys,
+#               column="GO",
+#               keytype=keyType_,
+#               multiVals="first")
+# sum(is.na(df$GO))
+# 
+# df$ONTOLOGY <- mapIds(org.Hs.eg.db,
+#               keys=uniKeys,
+#               column="ONTOLOGY",
+#               keytype=keyType_,
+#               multiVals="first")
+# sum(is.na(df$ONTOLOGY))
+```
+
+
+## Output
+```{r}
+# df <- df[,c(1,39:42, 2:38)]
+colnames(df)
+
+library(WriteXLS)
+WriteXLS(x = df, 
+         ExcelFileName = outName_, row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
