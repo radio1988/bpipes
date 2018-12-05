@@ -41,7 +41,7 @@ box_jitter_plot <- function(expr, cliclass,
               y = my_genes,
               combine = T,
               color = cliclass, palette = "jco",
-              ylab = "Expression (Z-score)", # can adjust
+              ylab = ylab, # can adjust
               xlab = F,
               add = "jitter", add.params = list(size = 0.1, jitter = 0.2)) +
         stat_compare_means(comparisons = list(labels), method = "t.test") +  # Welch's T-test
@@ -63,11 +63,101 @@ violin_box_plot <- function(expr, cliclass,
               y = my_genes,
               combine = T,
               color = cliclass, palette = "jco",
-              ylab = "Expression (Z-score)", # can adjust
+              ylab = ylab, # can adjust
               xlab = F,
               add = "boxplot"
     ) +
         stat_compare_means(comparisons = list(labels), method = "t.test")  # Welch's T-test
+}
+
+
+box_jitter_plot_multiple_groups <- function(expr, cliclass, 
+                                   labels=  c("Positive", "Negative"), 
+                                   my_genes=c("PSTK", "SCLY", "SEPHS2", "SEPSECS", "SLC7A11"),
+                                   ylab="Expression (Z-score)",
+                                   xlab_angle=0, ylab_height=-2.5, 
+                                   ref='.all.'){
+    # box_jitter_plot for multiple_groups (n≥3)
+    # expr: data.frame containing both expression and clinical data
+    # cliclass: colname of clinical data to use for stratification of x-axis
+    # labels: labels to be selected 
+    # xlab_angle: x label rotation angle. Improves visualization, if xlab too long
+    # ylab_height: the height to show gloabal p-value (one-way anova)
+    # steps: 
+    # 1. Levene's test (failed for Do's dataset, skipped)
+    # 2. Pair-wise Welch t.test against ref
+    
+    # print information
+    print(paste('Number of samples for', cliclass))
+    print(table(expr[, cliclass]))
+    print(paste(' Welch t.test was used for p-value calculation, * marks deviation from mean of ref: ', ref))
+    
+    # Levene's test (pre-ANOVA)
+    test <- function(gene, expr, cliclass){
+        leveneTest(expr[,gene] ~ expr[, cliclass], data = expr)
+    }
+    levene_res <- apply(data.frame(my_genes), 1, test, expr=expr, cliclass=cliclass)
+    print(levene_res)
+
+    
+    
+    # Boxplot + jitterplot
+    ggboxplot(expr, x = cliclass,
+              select =labels, order = labels,
+              y = my_genes,
+              combine = T,  xlab = F, ylab = ylab,
+              color = cliclass, palette = "jco",
+              add = "jitter", add.params = list(size = 0.1, jitter = 0.2))+
+        #stat_compare_means(method = "anova", label.y = ylab_height)+        # Add global annova p-value
+        stat_compare_means(label = "p.signif", method = "t.test", ref.group = ref, hide.ns = TRUE)  + # compare with ref
+        rotate_x_text(angle = xlab_angle)  #+
+    #theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) # removed xlabs
+}
+
+violin_box_plot_multiple_groups <- function(expr, cliclass, 
+                                   labels=  c("Positive", "Negative"), 
+                                   my_genes=c("PSTK", "SCLY", "SEPHS2", "SEPSECS", "SLC7A11"),
+                                   ylab="Expression (Z-score)",
+                                   xlab_angle=0, ylab_height=-2.5, ref='.all.'){
+    # box_jitter_plot for multiple_groups (n≥3)
+    # expr: data.frame containing both expression and clinical data
+    # cliclass: colname of clinical data to use for stratification of x-axis
+    # labels: labels to be selected 
+    # xlab_angle: x label rotation angle. Improves visualization, if xlab too long
+    # ylab_height: the height to show gloabal p-value (one-way anova)
+    # steps: 
+    # 1. Levene's test
+    # 2. Anova or Welch t.test
+    
+    # print information
+    print(paste('Number of samples for', cliclass))
+    print(table(expr[, cliclass]))
+    print('anova  was used for p-value calculation, * marks deviation from mean of all')
+    
+    # Levene's test (pre-ANOVA)
+    # test <- function(gene, expr, cliclass){
+    #     leveneTest(expr[,gene] ~ expr[, cliclass], data = expr)
+    # }
+    # levene_res <- apply(data.frame(my_genes), 1, test, expr=expr, cliclass=cliclass)
+    # print(levene_res)
+
+    # Boxplot + jitterplot
+    ggboxplot(expr, x = cliclass,
+              select =labels,
+              order = labels,
+              xlab = F,
+              y = my_genes,
+              combine = T,
+              color = cliclass, palette = "jco",
+              ylab = ylab,
+              add = "jitter", add.params = list(size = 0.1, jitter = 0.2))+
+        #stat_compare_means(method = "anova", label.y = ylab_height)+        # Add global annova p-value
+        stat_compare_means(label = "p.signif", method = "t.test", ref.group = ref, hide.ns = TRUE)  + # compare with ref
+        rotate_x_text(angle = xlab_angle)  +
+        theme(
+            axis.title.x=element_blank(), 
+            axis.text.x=element_blank(), 
+            axis.ticks.x=element_blank()) # removed xlabs
 }
 ```
 
@@ -197,15 +287,58 @@ violin_box_plot(expr,"PR_STATUS_BY_IHC")
 
 ## TUMOR_STAGE
 ```{r, fig.height = 8, fig.width = 15, fig.align = "center"}
-box_jitter_plot_anova(expr, "AJCC_PATHOLOGIC_TUMOR_STAGE", c("I", "IA",  "IB",   
-                                                       "II", "IIA", "IIB", 
-                                                       "III", "IIIA", "IIIB", "IIIC", 
-                                                       "IV", "X"))
+print("passed Levene's test, perform ANOVA")
 
-violin_box_plot_anova(expr, "AJCC_PATHOLOGIC_TUMOR_STAGE", c("I", "IA",  "IB",
-                                                       "II", "IIA", "IIB",
-                                                       "III", "IIIA", "IIIB", "IIIC",
-                                                       "IV", "X"))
+cliclass="AJCC_PATHOLOGIC_TUMOR_STAGE"
+my_genes=c("PSTK", "SCLY", "SEPHS2", "SEPSECS", "SLC7A11")
+labels = c("I", "IA",  "IB",   
+           "II", "IIA", "IIB", 
+           "III", "IIIA", "IIIB", "IIIC", 
+           "IV", "X")
+xlab_angle = 80 
+ylab_height = -3
+ylab = 'Expression (Z-score)'
+ref='I'
+
+print(paste('ref is ', ref))
+
+# print information
+nb_samples <- table(expr[, cliclass])
+print(paste('Number of samples for', cliclass))
+print(nb_samples)
+
+print('Welch t.test was used for p-value calculation')
+print(paste(c("comparison: ", labels)))
+
+res <- compare_means(c(PSTK, SCLY, SEPHS2, SEPSECS, SLC7A11) ~ CANCER_TYPE_DETAILED,
+                     data = expr, method = 't.test')
+sig_comparisons <- data.frame(res[res$p.signif != 'ns',])
+print(sig_comparisons)
+
+# Boxplot + jitterplot
+ggboxplot(expr, x = cliclass,
+          select =labels, order = labels,
+          y = my_genes,
+          combine = T,  xlab = F, ylab = ylab,
+          color = cliclass, 
+          add = "jitter", add.params = list(size = 0.1, jitter = 0.2))+
+    #stat_compare_means(method = "anova", label.y = ylab_height)+        # Add global annova p-value
+    stat_compare_means(label = "p.signif", method = "t.test", ref.group = ref, hide.ns = TRUE)  + # compare with ref
+    rotate_x_text(angle = xlab_angle)  #+
+#theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) # removed xlabs
+
+# Violin plot + boxplot
+ggviolin(expr, x = cliclass,
+          select =labels, order = labels,
+          y = my_genes,
+          combine = T,  xlab = F, ylab = ylab,
+          color = cliclass, 
+          add = "boxplot", add.params = list(size = 0.1, jitter = 0.2))+
+    #stat_compare_means(method = "anova", label.y = ylab_height)+        # Add global annova p-value
+    stat_compare_means(label = "p.signif", method = "t.test", ref.group = ref, hide.ns = TRUE)  + # compare with ref
+    rotate_x_text(angle = xlab_angle)  #+
+#theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) # removed xlabs
+        
 ```
 
 
@@ -213,55 +346,6 @@ violin_box_plot_anova(expr, "AJCC_PATHOLOGIC_TUMOR_STAGE", c("I", "IA",  "IB",
 
 ## Show all diff to '.all.'
 ```{r, fig.height = 12, fig.width = 12, fig.align = "center"}
-box_jitter_plot_multiple_groups <- function(expr, cliclass, 
-                                   labels=  c("Positive", "Negative"), 
-                                   my_genes=c("PSTK", "SCLY", "SEPHS2", "SEPSECS", "SLC7A11"),
-                                   ylab='Expression (log2 intensity)',
-                                   xlab_angle=0, ylab_height=-2.5, ref='.all.'){
-    # box_jitter_plot for multiple_groups (n≥3)
-    # expr: data.frame containing both expression and clinical data
-    # cliclass: colname of clinical data to use for stratification of x-axis
-    # labels: labels to be selected 
-    # xlab_angle: x label rotation angle. Improves visualization, if xlab too long
-    # ylab_height: the height to show gloabal p-value (one-way anova)
-    # steps: 
-    # 1. Levene's test
-    # 2. Anova or Wald t.test
-    
-    # print information
-    print(paste('Number of samples for', cliclass))
-    print(table(expr[, cliclass]))
-    print('anova  was used for p-value calculation, * marks deviation from mean of all')
-    
-    # Levene's test (pre-ANOVA)
-    # test <- function(gene, expr, cliclass){
-    #     leveneTest(expr[,gene] ~ expr[, cliclass], data = expr)
-    # }
-    # levene_res <- apply(data.frame(my_genes), 1, test, expr=expr, cliclass=cliclass)
-    # print(levene_res)
-
-    # Boxplot + jitterplot
-    ggboxplot(expr, x = cliclass,
-              select =labels,
-              order = labels,
-              xlab = F,
-              y = my_genes,
-              combine = T,
-              color = cliclass, palette = "jco",
-              ylab = ylab,
-              add = "jitter", add.params = list(size = 0.1, jitter = 0.2))+
-        #stat_compare_means(method = "anova", label.y = ylab_height)+        # Add global annova p-value
-        stat_compare_means(label = "p.signif", method = "t.test", ref.group = ref, hide.ns = TRUE)  + # compare with ref
-        rotate_x_text(angle = xlab_angle)  +
-        theme(
-            axis.title.x=element_blank(), 
-            axis.text.x=element_blank(), 
-            axis.ticks.x=element_blank()) # removed xlabs
-}
-
-
-
-
 box_jitter_plot_multiple_groups(
     expr, 
     cliclass="CANCER_TYPE_DETAILED", 
@@ -272,6 +356,7 @@ box_jitter_plot_multiple_groups(
     "Breast Mixed Ductal and Lobular Carcinoma"),
     xlab_angle = 80, 
     ylab_height = -3, 
+    ylab = 'Expression (Z-score)',
     ref='Breast Invasive Lobular Carcinoma')
 
 # violin_box_plot_anova(expr, "CANCER_TYPE_DETAILED", 
@@ -283,21 +368,7 @@ box_jitter_plot_multiple_groups(
 #                       ylab_height = -3)
 ```
 ```{r}
-violin_box_plot_anova <- function(expr, cliclass, labels=  c("Positive", "Negative"), xlab_angle=0, ylab_height=-2.5){
-    # Violin + Boxplot
-    ggviolin(expr, x = cliclass,
-              select = labels,
-              order = labels,
-              xlab = F,
-              y = c("PSTK", "SCLY", "SEPHS2", "SEPSECS", "SLC7A11"),
-              combine = T,
-              color = cliclass, palette = "jco",
-              ylab = "Expression (RPKM)",
-              add = "boxplot") +
-        #stat_compare_means(method = "anova", label.y = ylab_height) +  # global annova pvalue
-        stat_compare_means(label = "p.signif", method = "t.test", ref.group = ".all.", hide.ns = TRUE) +
-        rotate_x_text(angle = xlab_angle)
-}
+
 ```
 
 
@@ -316,7 +387,7 @@ violin_box_plot_anova <- function(expr, cliclass, labels=  c("Positive", "Negati
 <!--     # ylab_height: the height to show gloabal p-value (one-way anova) -->
 <!--     # steps:  -->
 <!--     # 1. Levene's test -->
-<!--     # 2. Anova or Wald t.test -->
+<!--     # 2. Anova or Welch t.test -->
 
 <!--     # print information -->
 <!--     print(paste('Number of samples for', cliclass)) -->
@@ -330,7 +401,7 @@ violin_box_plot_anova <- function(expr, cliclass, labels=  c("Positive", "Negati
 <!--     # levene_res <- apply(data.frame(my_genes), 1, test, expr=expr, cliclass=cliclass) -->
 <!--     # print(levene_res) -->
 
-<!--     # pair-wise t.test (Wald) -->
+<!--     # pair-wise t.test (Welch) -->
 <!--     #res <- compare_means(c(PSTK, SCLY, SEPHS2, SEPSECS, SLC7A11) ~ CANCER_TYPE_DETAILED,  -->
 <!--     #                     data = expr, method = 't.test') -->
 <!--     #sig_comparisons <- data.frame(res[res$p.signif != 'ns',][, c('group1', 'group2')]) -->
