@@ -1,0 +1,71 @@
+#!/bin/bash
+#BSUB -P "LiR"
+#BSUB -J 'bwa[1-20]'
+#BSUB -R rusage[mem=2000]  # 32 GB necessary for hg38
+#BSUB -n 16
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ../bwa
+mkdir -p ../bwa/log
+#BSUB -o ../bwa/log/bwa.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+##BSUB -N
+
+bwa_idx='/home/rl44w/mccb/genome/Homo_sapiens/GRCh38/Homo_sapiens.GRCh38.dna.primary_assembly.fa'
+
+module purge
+module list
+
+hostname
+#lscpu
+
+i=$(($LSB_JOBINDEX- 1))
+R1s=(`ls ../fastq/*fastq.gz`)
+#echo 'R1s:' ${#R1s[@]} ${R1s[@]}
+
+R1=${R1s[$i]}  
+name=${R1s[$i]}  
+name=${name/.fastq.gz/} 
+name=${name/..\/fastq\//} 
+echo ' '
+echo 'For' $i $R1 $name
+
+cd ../bwa
+
+## Align
+module load bwa/0.7.15
+bwa mem -t 16 \
+$bwa_idx \
+$R1 \
+1> ${name}.sam
+# -U
+
+
+## Sort
+module load samtools/dev-2016_06_06
+samtools view -Su ${name}.sam |samtools sort -@ 16 -m 30G - $name &&
+samtools index ${name}.bam &&
+rm -f ${name}.sam
+
+## Stats
+mkdir -p idxstats
+samtools idxstats ${name}.bam > ./idxstats/${name}.idxstats.txt
+mkdir -p flagstat
+samtools flagstat ${name}.bam > ./flagstat/${name}.flagstat.txt
+
+
+## BigWigs
+module purge
+mkdir -p bigWigCount  
+bamCoverage --bam ${name}.bam -o  ./bigWigCount/${name}.cpm.bw \
+--numberOfProcessors 16 \
+--outFileFormat bigwig \
+--normalizeUsing CPM \
+#--maxFragmentLength 1500 \
+
+mkdir -p bigWigCpm
+bamCoverage --bam ${name}.bam -o  ./bigWigCpm/${name}.count.bw \
+--numberOfProcessors 16 \
+--outFileFormat bigwig \
+--normalizeUsing None
+#--maxFragmentLength 1500 \

@@ -1,0 +1,64 @@
+#!/bin/bash
+#BSUB -P "LiR"
+#BSUB -J 'post_bwa[1-20]'
+#BSUB -R rusage[mem=4100]
+#BSUB -n 4
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ../bwa
+mkdir -p ../bwa/log
+#BSUB -o ../bwa/log/post_bwa.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+
+module load samtools/dev-2016_06_06
+module load picard/2.17.8
+PICARD=/share/pkg/picard/2.17.8/picard.jar
+
+hostname
+
+i=$(($LSB_JOBINDEX- 1))
+
+cd ../bwa
+
+bams=(`ls *bam`)
+bam=${bams[$i]}  
+name=$bam 
+name=${name/.bam/} 
+
+echo 'bams:' ${#bams[@]}
+echo 'For' $i $bam $name
+
+## REMOVE DUPLICATES
+java -Xmx16g -jar $PICARD MarkDuplicates \
+I=${name}.bam \
+O= ${name}.markDup.bam \
+M=${name}.marked_dup_metrics \
+REMOVE_DUPLICATES=true ASSUME_SORTED=true VALIDATION_STRINGENCY=SILENT
+
+samtools index ${name}.markDup.bam
+
+mkdir -p idxstats
+samtools idxstats ${name}.markDup.bam > ./idxstats/${name}.markDup.idxstats.txt
+mkdir -p flagstat
+samtools flagstat ${name}.markDup.bam > ./flagstat/${name}.markDup.flagstat.txt
+
+## BigWigs
+mkdir -p bigWig_rpkm
+bamCoverage --bam ${name}.markDup.bam -o ./bigWig_rpkm/${name}.bw \
+--binSize 10 \
+--normalizeUsingRPKM \
+--ignoreForNormalization chrX \
+--extendReads
+
+mkdir -p bigWig_
+bamCoverage --bam ${name}.markDup.bam -o ./bigWig_rpkm/${name}.bw \
+--binSize 10 \
+--normalizeUsingRPKM \
+--ignoreForNormalization chrX \
+--extendReads
+
+java -Xmx16g -jar $PICARD CollectInsertSizeMetrics \
+I=${name}.bam  \
+O=${name}.insert_size_matrix.txt \
+H=${name}.insert_size_histogram.pdf \
+M=0.5

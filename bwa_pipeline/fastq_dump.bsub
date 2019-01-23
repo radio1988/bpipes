@@ -1,0 +1,18 @@
+#BSUB -P "LiR"
+#BSUB -J "sra[1-21]"
+#BSUB -R rusage[mem=1000]
+#BSUB -n 1
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -o fastq-dump.%j.%I.log
+#BSUB -W 72:00
+#BSUB -q long
+#BSUB -N
+##BSUB -B
+
+i=$(($LSB_JOBINDEX- 1))
+
+names=(SRR2138409 SRR2138408 SRR2138407 SRR2138406 SRR2138405 SRR2138404 SRR2138403 SRR2138402 SRR2138401 SRR2138399 SRR2138400 SRR2138398 SRR2138397 SRR2138395 SRR2138396 SRR2138393 SRR2138394 SRR2138391 SRR2138392 SRR2138390 SRR2138389)
+
+fastq-dump --gzip ${names[i]}
+
+#while read name; do fastq-dump --gzip ${name}; done < accession_list.txt

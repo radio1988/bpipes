@@ -1,0 +1,12 @@
+source activate py27
+
+sample=x.nodup.sort.bam
+control=y.bam
+name='Experiment'
+
+# call peak and create normalized bedGraph for visualization
+macs2 -t $sample  -c $control -n $name -B --SPMR 
+
+# disable --SPMR if you want to use bdgcmp, bdgpeakcall
+# macs2 -t $sample  -c $control -B
+

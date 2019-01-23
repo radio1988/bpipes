@@ -1,0 +1,22 @@
+#BSUB -P "LiR"
+#BSUB -J "gpu"
+#BSUB -q gpu
+#BSUB -o gpu.%J.%I.log
+#BSUB -R "select[ncc>=3.5]"
+#BSUB -R rusage[mem=8000]
+#BSUB -R rusage[ngpus_excl_p=1]
+#BSUB -n 2
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -W 4:00
+#BSUB -N
+#BSUB -B
+
+
+## Prep modules
+module purge 
+module load tensorflow/tensorflow_gpu-1.12.0
+module list
+
+
+## Your code (must exec singularity img to use tf1.12-gpu)
+singularity exec --nv $TENSORFLOWGPUIMG python3 late.py params.late.py
