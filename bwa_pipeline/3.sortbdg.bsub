@@ -1,0 +1,26 @@
+#BSUB -P "LiR"
+#BSUB -J "sort"
+#BSUB -R rusage[mem=6000]
+#BSUB -n 20
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -o sort.log
+#BSUB -W 72:00
+#BSUB -q long
+#BSUB -N
+
+#for f in *bdg; do  sort -k1,1 -k2,2n $f > ${f/bdg/sort.bdg} ;done
+
+i=0
+for f in *bdg
+do
+let "i++"
+
+
+echo sort -k1,1 -k2,2n $f > ${f/bdg/sort.bdg}
+sort -k1,1 -k2,2n $f > ${f/bdg/sort.bdg} &
+
+if !(($i % 20)); then
+wait
+fi
+
+done
