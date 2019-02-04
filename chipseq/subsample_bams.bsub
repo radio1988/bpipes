@@ -1,0 +1,16 @@
+#BSUB -q long
+#BSUB -n 4
+#BSUB -W 72:00
+#BSUB -N 
+#BSUB -J 'sam'
+#BSUB -R "span[hosts=1]"
+#BSUB -R rusage[mem=4000]
+
+mkidr -p subsampled
+
+for file in *bam
+do 
+samtools view -s 0.5 -b -@ 2 $file > subsampled/${file/bam/1.bam} &
+samtools view -s 0.5 -b -@ 2 $file > subsampled/${file/bam/2.bam} &
+wait
+done
