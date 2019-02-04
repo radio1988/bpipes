@@ -6,7 +6,7 @@
 #BSUB -R "span[hosts=1]"
 #BSUB -R rusage[mem=4000]
 
-mkidr -p subsampled
+mkdir -p subsampled
 
 for file in *bam
 do 
