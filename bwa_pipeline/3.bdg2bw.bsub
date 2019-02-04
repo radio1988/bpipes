@@ -1,0 +1,15 @@
+#BSUB -P "LiR"
+#BSUB -J "bdg2bw"
+#BSUB -R rusage[mem=2000]
+#BSUB -n 20
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -o bdg2bw.log
+#BSUB -W 72:00
+#BSUB -q long
+#BSUB -N
+
+for f in *sort.bdg
+do
+echo singularity exec /home/rl44w/singularity/ubuntu_sandbox bedGraphToBigWig $f hg38.chrom.sizes.terse.txt ${f/sort.bdg/bw}
+singularity exec /home/rl44w/singularity/ubuntu_sandbox bedGraphToBigWig $f hg38.chrom.sizes.terse.txt ${f/sort.bdg/bw} &
+done

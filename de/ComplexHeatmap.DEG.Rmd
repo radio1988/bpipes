@@ -1,0 +1,182 @@
+---
+title: "Heatmap for DEG: complex heatmap"
+author: "RuiLi"
+date: "01/23/2019"
+output: html_document
+fig_width: 3
+fig_height: 6
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8) 
+
+```
+
+# Notes
+- Color indicates log2(x+1) transformed normalized expression
+- only significant DEGs with |LFC|>1 and FDR < 0.01 included
+
+# Read Data
+```{r,  results="hide"}
+outname <- 'Heatmap of DEG'
+fname <- 'deseq.csv'
+
+df <- read.table(fname, header = TRUE, na.strings = 'NA', sep = ',')
+
+# filter and format
+thr_p <- 0.01
+thr_lfc <- 1
+
+df$padj[is.na(df$padj)] <- 1  # remove NA
+sum(is.na(df$hat2vsWT6padj))
+sum(is.na(df$hat2vsWT6log2FoldChange))
+
+small_p <- df$padj < thr_p
+large_fc <- abs(df$log2FoldChange) > thr_lfc
+
+sum(small_p)
+sum(large_fc)
+
+sig <- (small_p & large_fc)
+sum(sig)
+
+df <- df[sig, ]
+colnames(df)
+
+colnames(df)[10:13] = c('4SA-TAZ.1', "4SA-TAZ.2", "Vector.1", "Vector.2")
+```
+
+## Filter Data
+```{r}
+# select expression columns
+df_ <- df[, c(10:13)]
+colnames(df_)
+
+values_sig <- df_
+df_sig <- df
+
+logNormed_sig <- log10(values_sig + 1)  # log transformation
+
+num_sig <- dim(df_sig)[1]
+paste(num_sig, "significant genes")
+```
+
+
+## Heatmap for DEG 
+```{r, echo=FALSE, results="hide"}
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("ComplexHeatmap")
+library(ComplexHeatmap)
+library(circlize)
+
+
+mat <- logNormed_sig
+row.names(mat) <- row.names(df_sig)
+max_exp <- max(logNormed_sig)
+
+labels <- as.character(df_sig$symbol)  # with duplicates, bug?
+
+markers <- c('TRPC6')
+marker_idx <- match(tolower(markers), tolower(labels))
+
+labels[marker_idx]
+
+header = data.frame(type = c('4SA-TAZ', "4SA-TAZ", "Vector", "Vector"))
+
+ha = HeatmapAnnotation(df = header,  
+                       col = list(type = c("4SA-TAZ" =  "red", 
+                                           'Vector' = 'blue'
+                                           )))
+```
+
+
+## Heatmap Sort by LFC (Log2 Fold Change)
+```{r , fig.height = 6, fig.width = 4, fofig.align = "center", echo=FALSE, results="hide"}
+Heatmap(mat, 
+        column_title = outname,
+        row_title = paste(num_sig, 'DEG'),
+        name = 'Exp',
+        
+        cluster_rows = F,
+        cluster_columns = F, 
+        clustering_method_rows = 'centroid', 
+        
+        show_row_names = F,
+        show_column_names = T,
+        
+        show_row_dend = T, 
+        show_column_dend = T,
+        
+        top_annotation = ha, 
+        
+        col = colorRamp2(c(0, max_exp/2, max_exp), c("blue", 'white',  "red")), 
+        fontsize(4)
+        ) + 
+  rowAnnotation(link = row_anno_link(at = marker_idx, labels = markers),
+                width = unit(5, "mm") + 
+                  max_text_width(markers))
+
+```
+
+## Heatmap Hierarchical Clustering by Complete Distance
+```{r, fig.height = 6, fig.width = 4, fofig.align = "center", echo=FALSE, results="hide"}
+Heatmap(mat, 
+        column_title = outname,
+        row_title = paste(num_sig, 'DEG'),
+        name = 'Exp',
+        
+        cluster_rows = T,
+        cluster_columns = F, 
+        clustering_method_rows = 'complete', 
+        
+        show_row_names = F,
+        show_column_names = T,
+        
+        show_row_dend = T, 
+        show_column_dend = T,
+        
+        top_annotation = ha, 
+        
+        col = colorRamp2(c(0, max_exp/2, max_exp), c("blue", 'white',  "red")), 
+        fontsize(4)
+        ) + 
+  rowAnnotation(link = row_anno_link(at = marker_idx, labels = markers),
+                width = unit(5, "mm") + 
+                  max_text_width(markers))
+
+```
+
+
+## Heatmap Hierarchical Clustering by median Distance
+```{r, fig.height = 6, fig.width = 4, fofig.align = "center", echo=FALSE, results="hide"}
+Heatmap(mat, 
+        column_title = outname,
+        row_title = paste(num_sig, 'DEG'),
+        name = 'Exp',
+        
+        cluster_rows = T,
+        cluster_columns = F, 
+        clustering_method_rows = 'median', 
+        
+        show_row_names = F,
+        show_column_names = T,
+        
+        show_row_dend = T, 
+        show_column_dend = T,
+        
+        top_annotation = ha, 
+        
+        col = colorRamp2(c(0, max_exp/2, max_exp), c("blue", 'white',  "red")), 
+        fontsize(4)
+        ) + 
+  rowAnnotation(link = row_anno_link(at = marker_idx, labels = markers),
+                width = unit(5, "mm") + 
+                  max_text_width(markers))
+
+```
+
+
+
+
+
