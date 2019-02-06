@@ -43,20 +43,21 @@ mkdir -p flagstat
 samtools flagstat ${name}.markDup.bam > ./flagstat/${name}.markDup.flagstat.txt
 
 ## BigWigs
-mkdir -p bigWig_rpkm
-bamCoverage --bam ${name}.markDup.bam -o ./bigWig_rpkm/${name}.bw \
+mkdir -p bigWig_RPKM
+bamCoverage --bam ${name}.markDup.bam -o ./bigWig_rpkm/${name}.rpkm.bw \
 --binSize 10 \
 --normalizeUsingRPKM \
---ignoreForNormalization chrX \
 --extendReads
 
-mkdir -p bigWig_
-bamCoverage --bam ${name}.markDup.bam -o ./bigWig_rpkm/${name}.bw \
+mkdir -p bigWig_RPGC
+bamCoverage --bam ${name}.markDup.bam -o ./bigWig_RPGC/${name}.rpgc.bw \
+--effectiveGenomeSize 2913022398
 --binSize 10 \
 --normalizeUsingRPKM \
---ignoreForNormalization chrX \
 --extendReads
 
+
+## Insersion Size
 java -Xmx16g -jar $PICARD CollectInsertSizeMetrics \
 I=${name}.bam  \
 O=${name}.insert_size_matrix.txt \

@@ -1,0 +1,33 @@
+#BSUB -P "LiR"
+#BSUB -J "bdg2bw[1-24]"
+#BSUB -R rusage[mem=16000] 
+#BSUB -n 1
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ../macs/bigWigSignal
+mkdir -p ../macs/bigWigSignal/log
+#BSUB -o ../macs/bigWigSignal/log/bdg2bw.%J.%I.log
+#BSUB -e ../macs/bigWigSignal/log/bdg2bw.%J.%I.err
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+## Parameters
+chrome_size=/project/umw_mccb/genome/hg38.chrome.size
+
+## SORT BDG
+cd ../macs
+BDGs=(`ls *bdg|grep -v 'sort'`)
+i=$(($LSB_JOBINDEX- 1))
+f=${BDGs[$i]}
+
+echo "sort -k1,1 -k2,2n $f > ${f/bdg/sort.bdg}"
+sort -k1,1 -k2,2n $f > ${f/bdg/sort.bdg} && rm -f $f
+
+## BDG to BW
+f=${f/bdg/sort.bdg}
+out="./bigWigSignal/${f/sort.bdg/bw}"
+echo "bedGraphToBigWig $f $chrome_size $out" 
+singularity exec /home/rl44w/singularity/ubuntu_sandbox \
+bedGraphToBigWig $f $chrome_size $out && rm -f $f
+
+echo 'Finished'
