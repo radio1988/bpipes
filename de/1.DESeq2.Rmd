@@ -42,6 +42,8 @@ maplot <- function (res, thresh=thresh_p, labelsig=FALSE, textcx=1, ...) {
 
 ## Read Filter Data
 ```{r readdata}
+#cts <- matrix(sample.int(15, 100*12, TRUE), 100, 12)  # test
+
 df <- read.table('../featureCount/counts.gene_id.txt', sep="\t",
                  header=TRUE, row.names=1)
 

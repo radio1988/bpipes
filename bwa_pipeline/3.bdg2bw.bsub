@@ -1,6 +1,6 @@
 #BSUB -P "LiR"
 #BSUB -J "bdg2bw"
-#BSUB -R rusage[mem=2000]
+#BSUB -R rusage[mem=500]
 #BSUB -n 20
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 #BSUB -o bdg2bw.log
