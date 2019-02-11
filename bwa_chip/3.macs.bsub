@@ -1,0 +1,43 @@
+#BSUB -P "LiR"
+#BSUB -J "macs"
+#BSUB -R rusage[mem=5000]
+#BSUB -n 12
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ../macs
+#BSUB -o ../macs.log
+#BSUB -W 72:00
+#BSUB -q long
+#BSUB -N
+
+source activate py27
+
+cd ../macs
+
+## Broad
+macs2 callpeak -n NoStim_DHS_broad -t ../bwa/NoStim_DHS.markDup.bam -c NoStim_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR --broad 1> NoStim_DHS_broad.log 2>&1 &
+macs2 callpeak -n Dex1h_DHS_broad -t ../bwa/Dex1h_DHS.markDup.bam -c ../bwa/Dex1h_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR --broad 1> Dex1h_DHS_broad.log  2>&1 &
+
+## default
+macs2 callpeak -n NoStim_H3K4me1 -t ../bwa/NoStim_H3K4me1_ChIP.markDup.bam -c NoStim_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR > NoStim_H3K4me1.log 2>&1 &
+
+macs2 callpeak -n NoStim_H3K4me2 -t ../bwa/NoStim_H3K4me2_ChIP.markDup.bam -c NoStim_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR > NoStim_H3K4me2.log  2>&1 &
+
+macs2 callpeak -n NoStim_H3K4me3 -t ../bwa/NoStim_H3K4me3_ChIP.markDup.bam -c NoStim_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR > NoStim_H3K4me3.log  2>&1 &
+
+macs2 callpeak -n NoStim_H3K27Ac -t ../bwa/NoStim_H3K27Ac_ChIP.markDup.bam -c NoStim_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR > NoStim_H3K27Ac.log  2>&1 &
+
+macs2 callpeak -n NoStim_DHS -t ../bwa/NoStim_DHS.markDup.bam -c NoStim_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR --nomodel  --shift -100 --extsize 200 > NoStim_DHS.log  2>&1 &
+
+macs2 callpeak -n Dex1h_H3K4me1 -t ../bwa/Dex1h_H3K4me1_ChIP.markDup.bam -c ../bwa/Dex1h_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR > Dex1h_H3K4me1.log  2>&1 &
+
+macs2 callpeak -n Dex1h_H3K4me2 -t ../bwa/Dex1h_H3K4me2_ChIP.markDup.bam -c ../bwa/Dex1h_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR > Dex1h_H3K4me2.log  2>&1 &
+
+macs2 callpeak -n Dex1h_H3K4me3  -t ../bwa/Dex1h_H3K4me3_ChIP.markDup.bam -c ../bwa/Dex1h_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR > Dex1h_H3K4me3.log  2>&1 &
+
+macs2 callpeak -n Dex1h_H3K27Ac -t ../bwa/Dex1h_H3K27Ac_ChIP.markDup.bam -c ../bwa/Dex1h_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR  > Dex1h_H3K27Ac.log  2>&1 &
+
+macs2 callpeak -n Dex1h_DHS -t ../bwa/Dex1h_DHS.markDup.bam -c ../bwa/Dex1h_input_DNA_MNase_digested.markDup.bam -g hs -B --SPMR --nomodel --shift -100 --extsize 200 > Dex1h_DHS.log  2>&1 &
+
+wait
+
+echo "all done"

@@ -1,30 +1,30 @@
 #!/bin/bash
-#BSUB -P "Rui"
-#BSUB -J "star[1-6]" # same as num-fastqs
-#BSUB -R rusage[mem=2000] # 30-40G/num-threads * num-fastqs
-#BSUB -n 16
+#BSUB -J "star[1-24]" # same as num-fastqs
+#BSUB -R rusage[mem=3200] # 30-40G/num-threads * num-fastqs
+#BSUB -n 12
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
-#BSUB -q long
-#BSUB -W 12:00 # 20M/hr with 8 cpu
+#BSUB -q short
+#BSUB -W 4:00 # 20M/hr with 8 cpu
 mkdir -p ../star
 mkdir -p ../star/log
 #BSUB -o ../star/log/star.%J.%I.out
 #BSUB -e ../star/log/star.%J.%I.err
-##BSUB -N
+#BSUB -N
 
 
 ## CONFIG
 i=$(($LSB_JOBINDEX- 1))
 
 ## genome info
-genome_idx='/home/rl44w/genomes/zebra_fish/ucsc_GRCz11/primary/star_idx'
-gtf='/home/rl44w/genomes/zebra_fish/ucsc_GRCz11/primary/GCF_000002035.6_GRCz11_genomic.ucsc.primary.gff'
+genome_idx='/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx/'
+gtf='/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.gtf'
+
 ## aligner info
 bam_dir=star
 
 ## sample info
 R1s=(`ls ../fastq/*R1.fastq.gz`)
-echo 'R1s:' ${#R1s[@]} ${R1s[@]}
+#echo 'R1s:' ${#R1s[@]} ${R1s[@]}
 
 ## input names
 R1=${R1s[$i]}  # without dir_name
@@ -41,7 +41,7 @@ echo 'For' $i $R1 $R2 $name
 module load java/1.8.0_77
 module load star/2.5.3a
 
-STAR --runThreadN 16 \
+STAR --runThreadN 12 \
 --genomeDir $genome_idx \
 --sjdbGTFfile $gtf \
 --readFilesCommand zcat \
@@ -63,7 +63,7 @@ STAR --runThreadN 16 \
 --outReadsUnmapped Fastx
 
 ## post star
-bam_file=`ls ../${bam_dir}/${name}*bam`
+bam_file="../${bam_dir}/${name}.Aligned.sortedByCoord.out.bam"
 echo '## POST STAR'
 echo $i 'bam_file' $bam_file
 mkdir -p ../${bam_dir}/idxstats
@@ -79,4 +79,5 @@ bamCoverage='/home/rl44w/.local/bin/bamCoverage'
 $bamCoverage --bam $bam_file -o ${bam_file}.cpm.bw \
 --numberOfProcessors 10 \
 --normalizeUsing CPM  \
+--binSize 10 \
 --outFileFormat bigwig
