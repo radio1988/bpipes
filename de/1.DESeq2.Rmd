@@ -1,8 +1,14 @@
 ---
-title: "DEseq2"
+title: "DEseq2:"
 author: "RuiLi"
-date: "10/5/2018"
-output: html_document
+date: "2/11/2018"
+output:
+  html_document:
+    toc: yes  # table of content
+  html_notebook:
+    code_folding: hide
+    toc: yes
+    toc_float: yes
 ---
 
 ```{r setup, include=FALSE}
