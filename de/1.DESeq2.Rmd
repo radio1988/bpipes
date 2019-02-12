@@ -44,6 +44,8 @@ maplot <- function (res, thresh=thresh_p, labelsig=FALSE, textcx=1, ...) {
   }
 }
 
+
+
 ```
 
 ## Read Filter Data
@@ -68,6 +70,24 @@ dim(cts)
 cts <- cts[rowSums(cts) >= 1, ] # default 10
 dim(cts)
 head(cts)
+```
+
+
+## CPM normalization and output csv (seperate from main code)
+```{r}
+cpm_normalization <- function(cts){
+    # cts is a count matrix with genes as rows, samples as columns
+    cpm <- apply(cts,2, function(x) (x/sum(x))*1000000) 
+    return (cpm)
+} 
+
+CPM <- cpm_normalization(cts)
+paste(colSums(CPM))
+
+CPM <- data.frame(Gene = row.names(CPM), CPM)
+
+head(CPM)
+write.csv(CPM, 'cpm.csv', row.names = F)
 ```
 
 ## DESeq Experiment Design
