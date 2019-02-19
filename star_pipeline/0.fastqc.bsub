@@ -2,33 +2,36 @@
 #BSUB -J "fastqc"
 #BSUB -P "Rui"
 #BSUB -n 6
+#BSUB -R "span[hosts=1]"
 #BSUB -R rusage[mem=500]
 #BSUB -W 4:00
 #BSUB -q short
-#BSUB -R "span[hosts=1]"
-##BSUB -J "fqc[1-1]"  # must use single job for this job, because need to merge reports at very end
+mkdir -p log
+#BSUB -o log/fastqc.%J.out
 #BSUB -N
 
-mkdir -p ../fastqc
-mkdir -p ../fastqc/log
-#BSUB -o ../fastqc/log/fastqc.%J.out
+# Params 
+in_dir=../fastq
+out_dir=../fastqc
 
+# Prep
 hostname
 module purge
 module load fastqc/0.11.5
+mkdir -p $out_dir
 
-##fastqc 
-fastqc -t 6 ../fastq/*.fastq.gz --outdir ../fastqc 
-fastqc -t 6 ../fastq/*.fq.gz --outdir ../fastqc 
+# Work
+fastqc -t 6 $in_dir/*.fastq.gz --outdir $out_dir
+fastqc -t 6 $in_dir/*.fq.gz --outdir $out_dir
 echo 'fastqc_finished'
 
-## merge summaries
+# MultiQc
 module load python3/3.5.0_packages/multiqc/1.4
-cd ../fastqc
+cd $out_dir
 multiqc .
 echo 'multiqc finished'
 
-## organize folder
+# Post Qc
 rm -rf *zip
 mkdir details
 mv *fastqc.html details/
