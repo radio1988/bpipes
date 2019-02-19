@@ -1,7 +1,7 @@
 #BSUB -P 'Rui'
 #BSUB -J 'trim[1-6]'
-#BSUB -R rusage[mem=3000]
-#BSUB -n 3
+#BSUB -R rusage[mem=8000]
+#BSUB -n 2
 #BSUB -R span[hosts=1]
 mkdir -p log
 #BSUB -o log/trimmomatic.%J.%I.log
@@ -35,7 +35,7 @@ echo 'Input' $R1 $R2 $name
 echo 'Output trimmed' $out1 $out2
 echo 'Unpaired trash' $trash1 $trash2
 # Trim
-$trimmomatic PE -threads 3 \
+$trimmomatic PE -threads 2 \
 $R1 $R2 \
 $out1 $trash1 \
 $out2 $trash2 \
