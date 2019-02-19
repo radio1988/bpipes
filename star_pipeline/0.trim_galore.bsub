@@ -1,0 +1,24 @@
+#BSUB -J "galore[1-6]"  # n jobs in array, batch size
+#BSUB -R rusage[mem=2000]  # for each cpu
+#BSUB -n 1  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ../trim_galore
+#BSUB -o ../trim_galore/trim_galore.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+i=$(($LSB_JOBINDEX- 1))
+cd ../trim_galore
+module load trim_galore/0.4.2
+module load fastqc/0.11.5
+module load cutadapt/1.9
+
+R1s=(`ls ../fastq/*R1.fastq.gz`)
+R1=${R1s[$i]}  # without dir_name
+R2=${R1/R1/R2}
+name=$R1  # without dir_name
+name=${name/_R1.fastq.gz/} 
+name=${name/..\/fastq\//} 
+
+trim_galore --paired --length 36 --phred33 --fastqc $R1 $R2
