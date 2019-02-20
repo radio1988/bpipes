@@ -1,0 +1,36 @@
+#BSUB -P 'LiR'
+#BSUB -J 'gmap_build'
+#BSUB -n 4
+#BSUB -o gmap_build.log
+#BSUB -R rusage[mem=2000]  # 4G for mouse
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+
+module load samtools/dev-2016_06_06
+
+pwd
+
+#Params
+fa=danRer11.primary.fa
+gtf=GCF_000002035.6_GRCz11_genomic.ucsc.primary.gtf
+
+iit_store=/home/rl44w/umw_mccb/Rui/tools/gmap-2018-05-30/bin/iit_store 
+gmap_build=/project/umw_mccb/Rui/tools/gmap-2018-05-30/bin/gmap_build
+gtf_splicesites=/project/umw_mccb/Rui/tools/gmap-2018-05-30/bin/gtf_splicesites
+
+# index fasta
+samtools faidx $fa
+
+# gmap_build
+$gmap_build -D . -d gsnap_idx $fa
+
+## iit
+$gtf_splicesites $gtf > $gtf.iit
+
+$iit_store -o refseq $gtf.iit
+
+#mv v14.iit /.maps
+
+#rm -f ../ENSEMBLchrExt.v14.no.rRNA-Cleaned-zv9.gtf.iit.txt
