@@ -8,14 +8,20 @@
 #BSUB -N
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 
+# Note:
+# For Nathan's 3UTR anno project
+# need gsnap for sensitivity, use -k 15 (default) for less FP
+# Keep only mRNA, remove small RNAs for cleaness
+# You can update iit without re-creating index to save time
+
 module load samtools/dev-2016_06_06
 
 pwd
 
 #Params
 fa=danRer11.primary.fa
-gtf=GCF_000002035.6_GRCz11_genomic.ucsc.primary.gtf
-label=refseq
+gtf=GCF_000002035.6_GRCz11_genomic.ucsc.primary.gbkey_mRNA.gtf
+label=refseq_mRNA
 
 iit_store=/project/umw_mccb/Rui/tools/gmap-2018-05-30/bin/iit_store 
 gmap_build=/project/umw_mccb/Rui/tools/gmap-2018-05-30/bin/gmap_build
