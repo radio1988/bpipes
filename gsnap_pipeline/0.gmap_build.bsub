@@ -15,8 +15,9 @@ pwd
 #Params
 fa=danRer11.primary.fa
 gtf=GCF_000002035.6_GRCz11_genomic.ucsc.primary.gtf
+label=refseq
 
-iit_store=/home/rl44w/umw_mccb/Rui/tools/gmap-2018-05-30/bin/iit_store 
+iit_store=/project/umw_mccb/Rui/tools/gmap-2018-05-30/bin/iit_store 
 gmap_build=/project/umw_mccb/Rui/tools/gmap-2018-05-30/bin/gmap_build
 gtf_splicesites=/project/umw_mccb/Rui/tools/gmap-2018-05-30/bin/gtf_splicesites
 
@@ -27,10 +28,7 @@ samtools faidx $fa
 $gmap_build -D . -d gsnap_idx $fa
 
 ## iit
-$gtf_splicesites $gtf > $gtf.iit
-
-$iit_store -o refseq $gtf.iit
-
-#mv v14.iit /.maps
-
-#rm -f ../ENSEMBLchrExt.v14.no.rRNA-Cleaned-zv9.gtf.iit.txt
+$gtf_splicesites $gtf > $gtf.iit.txt  # iit.txt
+$iit_store -o $label $gtf.iit.txt  # iit binary
+mv $label.iit gsnap_idx/gsnap_idx.maps
+gzip $gtf.iit.txt
