@@ -11,6 +11,7 @@ mkdir -p ./log
 # Purpose: Remove LQ alignments from GSNAP PE-RNA-seq BAM
 # FUNCTION: 
 # 1. MQ>30 2. Properly Paired 3. sum(M) of CIGAR > 35bp
+# Note: Developed for Nathan's 3UTR project, Filtering RNA-seq
 
 i=$(($LSB_JOBINDEX- 1))
 module load singularity/singularity-current
