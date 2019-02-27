@@ -7,6 +7,12 @@
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 #BSUB -N
 
+# Note: 
+# Designed for SE
+# With the purpose of featureCount in mind (standard RNA-seq analysis)
+# Not performing much better than star after strict filters
+# Most times, poor mapping rate can't be fixed by trimming or aligner choice, it's the data, e.g. contains contamination
+
 hostname
 lscpu
 
