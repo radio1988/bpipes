@@ -1,0 +1,60 @@
+#BSUB -J "gsnap[1-20]" # same as num-fastqs
+#BSUB -R rusage[mem=2000]
+#BSUB -n 12
+#BSUB -q long
+#BSUB -W 72:00  # 20M/hr with 8 cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/gsnap.%J.%I.log
+#BSUB -N
+
+# Note:
+# Goal: For Nathan's 3UTR annotation 
+# need precision, need new splicing site, need guide iit, 
+# save disk space, don't sort to prep for filtering
+# Have to be filtered with samflt
+
+module load samtools/dev-2016_06_06
+
+cd ../trimmomatic30b
+mkdir -p gsnap
+mkdir -p gsnap/unmapped
+
+## Input
+i=$(($LSB_JOBINDEX- 1))
+
+R1s=(`ls fastq/*R1*gz`)
+R1=${R1s[$i]}
+R2=${R1/R1/R2}
+name=(`echo $R1| perl -p -e s'/.fastq.gz//g'| perl -pe s'/fastq\///g' | perl -pe s'/_R1//g'`)
+
+echo $name $R1 $R2
+
+## GSNAP
+gsnap=/project/umw_mccb/Rui/tools/gmap-2018-05-30/bin/gsnap
+$gsnap \
+-D /project/umw_nathan_lawson/Rui/zb_genome/ucsc_GRCz11/primary/ \
+-d gsnap_idx -s refseq_mRNA.iit \
+-m 0.05 -N 1 -n 1 \
+-t 12 -B 5 \
+--gunzip  -A sam \
+--failed-input=./gsnap/unmapped/${name}.unmapped.fq \
+$R1 $R2 | samtools view -Sb -@ 2 -1 - > ./gsnap/$name.bam
+
+#samtools index ./gsnap/$name.bam  # not sorted
+
+## SAM to BAM (skipped)
+#samtools view -ubS ./gsnap/${sample[$i]}.sam | samtools sort -m 16G -@ 2 -l 9 - ./gsnap/${sample[$i]}
+#samtools index gsnap/${sample[$i]}.bam
+#rm -f ./gsnap/${sample[$i]}.sam
+
+## BAM STATS (skipped, not sorted)
+#mkdir gsnap/idxstats
+#samtools idxstats ./gsnap/${sample[$i]}.bam > ./gsnap/idxstats/${sample[$i]}.idxstats.txt
+#mkdir gsnap/flagstat
+#samtools flagstat ./gsnap/${sample[$i]}.bam > ./gsnap/flagstat/${sample[$i]}.flagstat.txt
+
+## GZIP
+gzip -f ./gsnap/unmapped/${name}.unmapped.fq
+gzip -f ./gsnap/unmapped/${name}.unmapped.fq.1
+gzip -f ./gsnap/unmapped/${name}.unmapped.fq.2
