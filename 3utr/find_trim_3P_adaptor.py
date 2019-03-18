@@ -48,9 +48,17 @@ def search_tailing_as(seq):
 # Note:
 print('''
 >> Desc:
-- Keep reads if they have 26bp adaptors in the beginning of R2. Allowing similarity as low as min_similarity (default 61.5)
-- Trim the first 26bp in R2 of the qualified reads
-- In PE mode 
+Read R1 and R2 in PE mode
+
+Filtering
+1. Contains adaptor in the beginning of R2: If adaptor similarity > 61.5% for the beginning 26 bp in R2
+2. R2 ends with 2-39 terminal A's 
+2. R1 starts with leading T's in the beginning
+
+Trimming
+1. removed first 26bp in R2 (always)
+2. removed ending As in R2 (optional by -t)
+3. removed starting Ts in R1 (optinoal by -t)
 ''')
 
 # Parameters
