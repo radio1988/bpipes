@@ -12,6 +12,8 @@ def parse_args(argv):
     parser.add_argument('file2', help='xxx.R2.fq') 
     parser.add_argument('-s', '--min_similarity', help="matched_length/full_length", 
                         default=61.5, type=float)
+    parser.add_argument('-t', '--trim', help="to trim leading ts in R1 and tailing as in R2 or not {0,1}, default 1", 
+                    default=1, type=int)
     
     return parser.parse_args(argv)
 
@@ -126,12 +128,14 @@ with gzip.open(file1, "rt") as f1, gzip.open(file2, "rt") as f2: #rt for text mo
             # trim R2 adaptor
             out_y[1] = out_y[1][26:]
             out_y[3] = out_y[3][26:]
-            # trim R2 tailing As
-            out_y[1] = out_y[1][:len(out_y[1])-len_taila]
-            out_y[3] = out_y[3][:len(out_y[3])-len_taila]
-            # trim R1 leading Ts
-            out_x[1] = out_x[1][len_leading_ts:]
-            out_x[3] = out_x[3][len_leading_ts:]
+
+            if args.trim:
+                # trim R2 tailing As
+                out_y[1] = out_y[1][:len(out_y[1])-len_taila]
+                out_y[3] = out_y[3][:len(out_y[3])-len_taila]
+                # trim R1 leading Ts
+                out_x[1] = out_x[1][len_leading_ts:]
+                out_x[3] = out_x[3][len_leading_ts:]
             
             # next if nothing left
             if (len(out_x[1])<13 or len(out_y[1])<13):
