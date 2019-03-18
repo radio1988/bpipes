@@ -16,6 +16,33 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
+def search_leading_ts(seq):
+    p = re.compile('^T+')
+    if p.search(seq):
+        length=len(p.search(x).group())
+        status="Good"
+        # print(x, len_leading_ts)
+    else:
+        length=0
+        status="Bad"
+
+    return(status, length)
+
+
+def search_tailing_as(seq):
+    p = re.compile('A+$')
+    if p.search(seq):
+        length = len(p.search(seq).group())
+        status = ("Good" if (length >1 and length < 40) else "Bad")
+    else:
+        length = 0
+        status = "Bad"
+
+    return(status, length)
+
+
+
+
 # Note:
 print('''
 >> Desc:
@@ -85,23 +112,10 @@ with gzip.open(file1, "rt") as f1, gzip.open(file2, "rt") as f2: #rt for text mo
             adap_qual = ("Good" if similarity > min_similarity else "Bad")
             
             # check tailing As in R2: 2-39
-            p_taila = re.compile('A+$')
-            if p_taila.search(y):
-                len_taila = len(p_taila.search(y).group())
-                tailing_as = ("Good" if (len_taila >1 and len_taila < 40) else "Bad")
-            else:
-                len_taila = 0
-                tailing_as = "Bad"
+            (tailing_as, len_taila) = search_tailing_as(y)
             
             # check leading with more than one T in R1
-            p_leading_ts = re.compile('^T+')
-            if p_leading_ts.search(x):
-                len_leading_ts=len(p_leading_ts.search(x).group())
-                leading_ts="Good"
-                # print(x, len_leading_ts)
-            else:
-                len_leading_ts=0
-                leading_ts="Bad"
+            (leading_ts, len_leading_ts) = search_leading_ts(x)
 
 
         # Output
@@ -139,15 +153,6 @@ with gzip.open(file1, "rt") as f1, gzip.open(file2, "rt") as f2: #rt for text mo
             write_y.write("\n".join(out_y))
             write_y.write("\n")
             o += 1
-            
-        
-#         if i > 10: 
-#             raise Exception ("too long")
-#             #print (i//4, fuzz.ratio(y.strip(), adaptor), y.strip())
-#         #print("{0}\t{1}\t{2}".format(i, x.strip(), y.strip()))
-
-
-
 
 write_x.close()
 write_y.close()
