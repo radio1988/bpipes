@@ -1,0 +1,45 @@
+#BSUB -J "samflt[3-20]"  # n jobs in array, batch size
+#BSUB -R rusage[mem=4000]  # for each cpu
+#BSUB -n 3  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/samflt.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+##BSUB -N
+
+# Purpose: Remove LQ alignments from GSNAP PE-RNA-seq BAM
+# FUNCTION: 
+# 1. MQ>30 2. Properly Paired 3. sum(M) of CIGAR > 35bp
+# Note: Developed for Nathan's 3UTR project, Filtering RNA-seq
+
+i=$(($LSB_JOBINDEX- 1))
+module load singularity/singularity-current
+samtools='singularity exec /home/rl44w/singularity/hand_sandbox/ samtools'
+samstat='singularity exec /home/rl44w/singularity/hand_sandbox/ samstat'
+
+# Params
+dir="../trimmomatic30e/gsnap/"
+odir="./filtered"
+cd $dir
+mkdir -p $odir
+
+# Prep
+files=(`ls *bam`)
+in=${files[$i]}
+name=`echo $in|perl -lane 's/.bam//g; print'`
+out="$odir/$name.MQ30.PP.M35.s.bam"
+echo "$in $name $out"
+
+# Filter, sort
+$samtools view -hq 30 $in | \
+$samtools view -hf 0x2| \
+perl -lane 'if (/^@/){print;next}; @M=$F[5]=~/(\d+)M/g; foreach(@M){$sum+=$_};print if $sum > 35;$sum=0'| \
+$samtools sort -m 4G -@ 2 -O BAM -o $out
+
+# Stats
+$samtools index $out
+mkdir -p $odir/flagstat && $samtools flagstat $out > $odir/flagstat/$name.flagstat.txt
+mkdir -p $odir/stats && $samtools stats $out > $odir/stats/$name.stats.txt
+mkdir -p $odir/idxstats && $samtools idxstats $out > $odir/idxstats/$name.idxstats.txt
+mkdir -p $odir/samstat && $samstat $out ; mv $out.samstat.html $odir/samstat/

@@ -1,0 +1,68 @@
+#!/bin/bash
+#BSUB -P "LiR"
+#BSUB -J 'bwa[1-20]'
+#BSUB -R rusage[mem=2000]  # 32 GB necessary for hg38
+#BSUB -n 16
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ../bwa
+mkdir -p ../bwa/log
+#BSUB -o ../bwa/log/bwa.%J.%I.log
+#BSUB -e ../bwa/log/bwa.%J.%I.err
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+bwa_idx='/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa'
+
+module purge
+module list
+hostname
+
+i=$(($LSB_JOBINDEX- 1))
+R1s=(`ls ../fastq/*fastq.gz`)
+R1=${R1s[$i]}
+R2=${R1/R1/R2}
+name=${R1s[$i]}
+name=${name/_R1.fastq.gz/}
+name=${name/..\/fastq\//}
+echo ' '
+echo 'For' $i $R1 $R2 $name
+
+cd ../bwa
+
+## Align
+module load bwa/0.7.15
+bwa mem -t 16 \
+$bwa_idx \
+$R1 $R2 \
+1> ${name}.sam 2> ./log/${name}.sam.err
+# -U
+
+## Sort
+module load samtools/dev-2016_06_06
+samtools view -Sb ${name}.sam > ${name}.bam &&
+samtools sort -m 16G ${name}.bam ${name}.sort &&
+mv ${name}.sort.bam ${name}.bam &&
+samtools index ${name}.bam &&
+rm -f ${name}.sam
+
+
+## Stats
+mkdir -p idxstats
+samtools idxstats ${name}.bam > ./idxstats/${name}.idxstats.txt
+mkdir -p flagstat
+samtools flagstat ${name}.bam > ./flagstat/${name}.flagstat.txt
+
+## REMOVE DUPLICATES
+module load picard/2.17.8
+PICARD=/share/pkg/picard/2.17.8/picard.jar
+
+java -Xmx16g -jar $PICARD MarkDuplicates \
+I=${name}.bam \
+O= ${name}.markDup.bam \
+M=${name}.marked_dup_metrics \
+REMOVE_DUPLICATES=true ASSUME_SORTED=true VALIDATION_STRINGENCY=SILENT
+
+samtools index ${name}.markDup.bam
+samtools idxstats ${name}.markDup.bam > ./idxstats/${name}.markDup.idxstats.txt
+samtools flagstat ${name}.markDup.bam > ./flagstat/${name}.markDup.flagstat.txt

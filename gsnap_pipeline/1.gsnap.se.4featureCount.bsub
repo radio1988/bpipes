@@ -1,0 +1,60 @@
+#BSUB -P "Rui"
+#BSUB -J "gsnap[8-12]%4" # same as num-fastqs
+#BSUB -R rusage[mem=4000] # 8G/num-threads * num-parallel jobs = 12G/12*4 = 4
+#BSUB -n 12
+#BSUB -q short
+#BSUB -W 4:00  # 20M/hr with 8 cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -N
+
+# Note: 
+# Designed for SE
+# With the purpose of featureCount in mind (standard RNA-seq analysis)
+# Not performing much better than star after strict filters
+# Most times, poor mapping rate can't be fixed by trimming or aligner choice, it's the data, e.g. contains contamination
+
+hostname
+lscpu
+
+source config.sh
+
+cd $workingDir
+mkdir -p gsnap
+mkdir -p gsnap/log
+mkdir -p gsnap/unmapped
+
+#BSUB -o ../gsnap/log/gsnap.%J.%I.out
+
+## GSNAP
+
+#R1=(`ls *_1.fq.gz`)
+#R2=(`ls *_2.fq.gz`)
+#names=(`ls  *_1.fq.gz | perl -p -e s'/.fq.gz//g' `)
+
+/home/rl44w/umw_mccb/Rui/tools/gmap-2018-05-30/bin/gsnap \
+-D /home/rl44w/umw_mccb/Rui/genomes/mouse/GRCm38.p6_ensembl/gsnap_idx \
+-d GRCm38.p6 \
+-s GRCm38.92 \
+-m 0.05 -N 1 \
+-t 12 -B 5 \
+--gunzip  -A sam \
+--failed-input=./gsnap/unmapped/${sample[$i]}.unmapped.fastq \
+./fastq/${sample[$i]}.fastq.gz > ./gsnap/${sample[$i]}.sam \
+2> ./gsnap/log/${sample[$i]}.sam.log
+
+## SAM to BAM
+module load samtools/dev-2016_06_06
+samtools view -ubS ./gsnap/${sample[$i]}.sam | samtools sort -m 16G -@ 2 -l 9 - ./gsnap/${sample[$i]}
+samtools index gsnap/${sample[$i]}.bam
+rm -f ./gsnap/${sample[$i]}.sam
+
+## BAM STATS
+mkdir gsnap/idxstats
+samtools idxstats ./gsnap/${sample[$i]}.bam > ./gsnap/idxstats/${sample[$i]}.idxstats.txt
+mkdir gsnap/flagstat
+samtools flagstat ./gsnap/${sample[$i]}.bam > ./gsnap/flagstat/${sample[$i]}.flagstat.txt
+
+## GZIP
+gzip ./gsnap/unmapped/${sample[$i]}.unmapped.fastq
+gzip ./gsnap/unmapped/${sample[$i]}.unmapped.fastq.1
+gzip ./gsnap/unmapped/${sample[$i]}.unmapped.fastq.2

@@ -1,21 +1,23 @@
 #!/bin/bash
-#BSUB -J "fcount"
+#BSUB -J "fcount[1-3]"
 #BSUB -P "LiR"
-#BSUB -R rusage[mem=500]
-#BSUB -n 4
+#BSUB -R rusage[mem=1000]
+#BSUB -n 2
 #BSUB -q short
 #BSUB -W 4:00
 #BSUB -R "span[hosts=1]"
 mkdir -p ../featureCount
-mkdir -p ../featureCount/log
-#BSUB -o ../featureCount/log/featureCount_gene_id.%J.%I.out
+#BSUB -o ../featureCount/featureCount_gene_id.%J.s%I.out
 #BSUB -N
 
-gtf='/project/umw_mccb/Rui/genomes/Saccharomyces_cerevisiae/Saccharomyces_cerevisiae.R64-1-1.90.gtf'
+i=$(($LSB_JOBINDEX- 1))
+
+gtf='/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf'
 
 featureCounts -a $gtf \
--o ../featureCount/counts.gene_id.txt \
+-o ../featureCount/counts.gene_id.s$i.txt \
 -g gene_id \
--s 0 \
--M -Q 20 -p -T 4 \
+-s $i \
+-M -Q 20 -p -T 2 \
+-B -d 50 -D 1000 -C \
 ../star/*bam
