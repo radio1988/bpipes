@@ -1,0 +1,89 @@
+---
+title: "ChIPQC"
+author: "RuiLi"
+date: "3/21/2019"
+output:
+  html_document:
+    code_folding: hide
+    toc: yes  # table of content
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("ChIPQC")
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("BiocParallel")
+
+read_sample <- function (idir, fname, anno) {
+    # e.g. read_sample (idir, "test.bam", "hg38")
+    sample <- ChIPQCsample(
+        file.path(idir, fname),
+        annotation = anno)
+    
+    return (sample)
+}
+```
+
+## Note:
+ChIPQC using ChIPQC package
+
+
+
+## Parameters
+```{r cars}
+root <- "/Volumes/T5/mag_temp/ChIPQC/"
+idir <- "/Volumes/T5/mag_temp/bwa_markDup"
+odir <- "/Volumes/T5/mag_temp/ChIPQC/"
+
+anno <- 'hg38'
+```
+
+
+## WorkDir
+```{r}
+setwd(root)
+print("Root:")
+getwd()
+print("Files:")
+list.dirs()
+
+paste("Indir:", idir)
+paste("Outdir:", odir)
+```
+
+
+## Samples
+```{r pressure, echo=FALSE}
+fext <- 'markDup.bam'
+
+bam_files <- list.files(idir)[grep("bam$", list.files(idir))]
+
+# s1 = ChIPQCsample(file.path(idir, bam_files[1]))
+
+s1 = ChIPQCsample(file.path(idir,), 
+                  chromosomes = "chr1", mapQCth = 30, 
+                  annotation = "hg38")
+# s2 = ChIPQCsample(file.path(idir, paste("1218HS_2_S15", fext, sep=".")))
+# s3 = ChIPQCsample(file.path(idir, paste("1218HS_3_S16", fext, sep=".")))
+# s4 = ChIPQCsample(file.path(idir, paste("1218HS_4_S17", fext, sep=".")))
+```
+
+
+## QC of one sample
+```{r}
+s3 <- read_sample(idir, 'test3.bam', anno)
+plotCC(s3)
+
+s5 <- read_sample(idir, 'test5.bam', anno)
+plotCC(s5)
+```
+
+## QC of experiment
+```{r}
+
+samples = read.csv(file.path(idir, "test.csv"))
+exampleExp = ChIPQC(samples,annotaiton="hg38")
+```
+
+
