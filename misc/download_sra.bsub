@@ -1,7 +1,7 @@
 #BSUB -J "download_sra[1-56]%3"  # n jobs in array, batch size
 #BSUB -R rusage[mem=500]  # for each cpu
 #BSUB -n 1  # n cpu
-mkdir log
+mkdir -p log
 #BSUB -o log/sra.%J.%I.log
 #BSUB -e log/sra.%J.%I.err
 #BSUB -W 24:00
