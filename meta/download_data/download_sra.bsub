@@ -1,4 +1,4 @@
-#BSUB -J "download_sra[1-56]%3"  # n jobs in array, batch size
+#BSUB -J "download_sra[1-15]%3"  # n jobs in array, batch size
 #BSUB -R rusage[mem=500]  # for each cpu
 #BSUB -n 1  # n cpu
 mkdir -p log
