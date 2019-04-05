@@ -13,3 +13,7 @@
 - Download with 
   - [ENA (Preferred)](https://www.biostars.org/p/325010/) 
   - Or [SRAtoolkit.fastq-dump](https://github.com/radio1988/bsub/blob/master/misc/download_sra.bsub)
+  
+## Code: 
+1. samples2runs
+2. download
