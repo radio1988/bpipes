@@ -26,4 +26,4 @@ name=${name/_R1.fastq.gz/}
 printf "$name; $R1; $R2\n"
 
 # filter and trim
-python3 ~/bsub/3utr/find_trim_3P_adaptor.py $R1 $R2 -t 1 -s 61.5
+python3 ~/bsub/3utr/find_trim_3P_PE_adaptor.py $R1 $R2 -t 1 -s 61.5

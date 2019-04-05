@@ -27,6 +27,7 @@ read_sample <- function (idir, fname, anno) {
 
 ## Note:
 ChIPQC using ChIPQC package
+Lots of bugs, few citations, abort
 
 
 
