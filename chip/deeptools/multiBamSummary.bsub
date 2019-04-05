@@ -1,0 +1,14 @@
+#BSUB -J "mBamSum"  # n jobs in array, batch size
+#BSUB -R rusage[mem=2000]  # for each cpu
+#BSUB -n 4  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/multiBamSummary.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+multiBamSummary bins -b *bam -o multiBamSummary.npz \
+--smartLabels -p 4 \
+--ignoreDuplicates  --minMappingQuality 30 \
+-e --centerReads --samFlagInclude 2 \

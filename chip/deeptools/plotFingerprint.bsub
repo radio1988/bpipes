@@ -1,0 +1,21 @@
+#BSUB -J "plotF"  # n jobs in array, batch size
+#BSUB -R rusage[mem=2000]  # for each cpu
+#BSUB -n 4  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/plotFingerprint.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+plotFingerprint -b *.bam \
+    --plotFile fingerprint.png \
+    --outRawCounts fingerprint.txt \
+    -n 1000000 \
+    --plotTitle "Fingerprint Plot" \
+    --smartLabels \
+    --outRawCounts coverage.tab \
+    --ignoreDuplicates  --minMappingQuality 30 \
+    -e --centerReads --samFlagInclude 2 \
+    -p 4 \
+    #--region 19

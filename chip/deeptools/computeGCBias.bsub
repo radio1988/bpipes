@@ -1,0 +1,19 @@
+#BSUB -J "GCBias[1-10]"  # n jobs in array, batch size
+#BSUB -R rusage[mem=2000]  # for each cpu
+#BSUB -n 4  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/computeGCBias.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+i=$(($LSB_JOBINDEX- 1))
+bams=(`ls *bam`)
+bam=${bams[$i]}
+
+computeGCBias -b $bam \
+--effectiveGenomeSize 2913022398 \
+-g /home/rl44w/mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.cap.2bit \
+-o $bam.gc.freq.txt \
+--biasPlot $bam.GCBias.png \
+-p 4 \

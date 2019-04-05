@@ -14,13 +14,17 @@ open(OUT, ">$out") or die;
 
 my$count=0;
 my$lines=0;
-while(<IN>){
-    if (/^#/){print OUT}
+while (<IN>){
+    my$line = $_;
+
+    if ($line =~ m/^#/){print OUT}
+
     $lines++;
-    if ($_ =~ m/ANN=[^\|]*-/){
-        print OUT
+
+    if ($line =~ m/ANN=[^\|]*-/){
+        print OUT $line;
         $count++;
     }
 }
 
-print "there are $count mut_vs_wt among $lines of input\n";
+print "there are $count mut_vs_wt among $lines of input $in\n";

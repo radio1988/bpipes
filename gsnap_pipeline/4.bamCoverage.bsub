@@ -1,0 +1,22 @@
+#BSUB -J "bamCovX[2]"  # n jobs in array, batch size
+#BSUB -R rusage[mem=20000]  # for each cpu
+#BSUB -n 2  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./bigWig
+#BSUB -o ./bigWig/bamCov.%J.%I.log
+#BSUB -W 24:00
+#BSUB -q long
+#BSUB -N
+#BSUB -B
+i=$(($LSB_JOBINDEX- 1))
+module purge
+
+# Note: works under workdir
+
+bams=(`ls *bam`)
+in=${bams[$i]}
+bamCoverage --bam $in -o ./bigWig/${in/bam/bw} \
+--outFileFormat bigwig --binSize 1 --normalizeUsing None \
+--numberOfProcessors 2
+
+echo 'done'

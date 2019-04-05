@@ -1,0 +1,11 @@
+#BSUB -J "samstat"  # n jobs in array, batch size
+#BSUB -R rusage[mem=16000]  # for each cpu
+#BSUB -n 2  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/samstat.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+
+module load singularity/singularity-current
+singularity exec /home/rl44w/singularity/hand_sandbox samstat *s.bam

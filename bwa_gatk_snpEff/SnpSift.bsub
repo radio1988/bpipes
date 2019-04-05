@@ -1,6 +1,6 @@
 #BSUB -P "LiR"
 #BSUB -J "snpSift"
-#BSUB -R rusage[mem=4000]
+#BSUB -R rusage[mem=1000]
 #BSUB -n 1
 #BSUB -o SnpSift.%J.log
 #BSUB -W 4:00

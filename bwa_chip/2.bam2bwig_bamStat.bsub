@@ -1,0 +1,51 @@
+#BSUB -J "bwig[1-10]"  # n jobs in array, batch size
+#BSUB -R rusage[mem=5000]  # for each cpu
+#BSUB -n 4  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/bwig.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+# Purpose: create bigwig from bam
+# assume sorted indexed bam
+# FUNCTION: 
+# 1. bamCoverage 2. -e (extend reads) 3. CPM
+# samtools stat
+# samstat
+
+i=$(($LSB_JOBINDEX- 1))
+module load singularity/singularity-current
+samtools='singularity exec /home/rl44w/singularity/hand_sandbox/ samtools'
+samstat='singularity exec /home/rl44w/singularity/hand_sandbox/ samstat'
+
+# Params
+dir="./"
+odir="./bigWig"
+cd $dir
+mkdir -p $odir
+
+# Prep
+files=(`ls *bam`)
+in=${files[$i]}
+name=`echo $in|perl -lane 's/.bam//g; print'`
+echo "$in $name"
+
+# Stats
+mkdir -p ./flagstat && $samtools flagstat $in > ./flagstat/$name.flagstat.txt &
+mkdir -p ./stats && $samtools stats $in > ./stats/$name.stats.txt &
+mkdir -p ./idxstats && $samtools idxstats $in > ./idxstats/$name.idxstats.txt &
+mkdir -p ./samstat && $samstat $in ; mv $in.samstat.html ./samstat/ &
+
+# bamCoverage
+module purge
+
+bamCoverage --bam $in \
+-o  $odir/${name}.cpm.bw \
+--numberOfProcessors 4 \
+--outFileFormat bigwig \
+--normalizeUsing CPM \
+-e 150 \
+#--maxFragmentLength 1500 \
+

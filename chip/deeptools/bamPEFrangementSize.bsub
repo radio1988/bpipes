@@ -1,0 +1,17 @@
+#BSUB -J "bamPEF"  # n jobs in array, batch size
+#BSUB -R rusage[mem=2000]  # for each cpu
+#BSUB -n 4  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/bamPEFragmentSize.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+
+bamPEFragmentSize \
+-hist fragmentSize.png \
+--outRawFragmentLengths fragmentSize.txt \
+-T "Fragment size of PE RNA-seq data" \
+--maxFragmentLength 1000 \
+-b *bam \
+-p 4

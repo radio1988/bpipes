@@ -1,0 +1,31 @@
+#BSUB -J "mergeB"  # n jobs in array, batch size
+#BSUB -R rusage[mem=5000]  # for each cpu
+#BSUB -n 12  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/3.merge.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+#BSUB -B
+
+dir=/home/rl44w/projects/utr/trimmomatic30e/gsnap/filtered/merge_by_sample
+cd $dir
+
+module load singularity/singularity-current
+samtools='singularity exec /home/rl44w/singularity/hand_sandbox/ samtools'
+samstat='singularity exec /home/rl44w/singularity/hand_sandbox/ samstat'
+
+$samtools merge -@ 2 dome.bam ../SRX107387.MQ30.PP.M35.s.bam ../SRX107388.MQ30.PP.M35.s.bam &
+$samtools merge -@ 2 shield.bam ../SRX107389.MQ30.PP.M35.s.bam ../SRX107390.MQ30.PP.M35.s.bam ../SRX107391.MQ30.PP.M35.s.bam &
+$samtools merge -@ 2 bud.bam ../SRX107392.MQ30.PP.M35.s.bam ../SRX107393.MQ30.PP.M35.s.bam &
+$samtools merge -@ 2 28hpf.bam ../SRX107394.MQ30.PP.M35.s.bam ../SRX107395.MQ30.PP.M35.s.bam &
+$samtools merge -@ 2 2dpf.bam ../SRX107396.MQ30.PP.M35.s.bam ../SRX107397.MQ30.PP.M35.s.bam &
+$samtools merge -@ 2 5dpf.bam ../SRX107398.MQ30.PP.M35.s.bam ../SRX107399.MQ30.PP.M35.s.bam &
+wait
+$samtools index dome.bam &
+$samtools index shield.bam &
+$samtools index bud.bam &
+$samtools index 28hpf.bam &
+$samtools index 2dpf.bam &
+$samtools index 5dpf.bam &

@@ -1,0 +1,32 @@
+#BSUB -J "mergeX"  # n jobs in array, batch size
+#BSUB -R rusage[mem=5000]  # for each cpu
+#BSUB -n 4  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/merge.%J.%I.log
+#BSUB -W 24:00
+#BSUB -q long
+#BSUB -N
+#BSUB -B
+
+# tested from workdir
+
+echo SRX.bam
+ls ../SRX*bam
+
+echo ERX.bam
+ls ../ERX*bam
+
+module load singularity/singularity-current
+samtools='singularity exec /home/rl44w/singularity/hand_sandbox/ samtools'
+samstat='singularity exec /home/rl44w/singularity/hand_sandbox/ samstat'
+
+$samtools merge -@ 2 SRX.bam ../SRX*bam &
+$samtools merge -@ 2 ERX.bam ../ERX*bam &
+
+wait
+$samtools index SRX.bam &
+$samtools index ERX.bam &
+wait
+
+echo 'merged'
