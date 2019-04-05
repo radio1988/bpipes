@@ -7,7 +7,7 @@ mkdir -p log
 #BSUB -W 24:00
 #BSUB -q long
 #BSUB -N
+
 i=$(($LSB_JOBINDEX- 1))
 files=(`cat 56samples.sra.txt`)
 fastq-dump --split-3 --gzip ${files[$i]}
-
