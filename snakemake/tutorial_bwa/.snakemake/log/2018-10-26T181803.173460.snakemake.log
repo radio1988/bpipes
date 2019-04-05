@@ -1,0 +1,2 @@
+SyntaxError in line 55 of /Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/Snakefile:
+Unexpected keyword python in rule definition (Snakefile, line 55)

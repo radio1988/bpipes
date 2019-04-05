@@ -1,0 +1,268 @@
+---
+title: "cBioportal Survival curve(Dohoon)"
+output:
+  html_document:
+    toc: yes
+  html_notebook:
+    code_folding: hide
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.height = 6, fig.width = 6)
+library(cgdsr)
+library(survival)
+
+density_scatter_plot <- function(x, y, xname="x", yname="y", max=2, method="pearson"){
+    # https://stackoverflow.com/questions/17093935/r-scatter-plot-symbol-color-represents-number-of-overlapping-points 
+    
+    # FOR CORRELATION
+    x1 <- x
+    x2 <- y
+    res <- cor.test(x1, x2, method = method, use = 'complete.obs')
+    p <- res$p.value
+    correlation <- res$estimate
+    
+    # FOR plotting
+    ## Data in a data.frame
+    x1[x1 > max] <- max
+    x2[x2 > max] <- max
+    df <- data.frame(x1,x2)
+
+    ## Use densCols() output to get density at each point
+    x <- densCols(x1,x2, colramp=colorRampPalette(c("black", "white")))
+    df$dens <- col2rgb(x)[1,] + 1L
+    
+    ## Map densities to colors
+    cols <-  colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", 
+                                "#FCFF00", "#FF9400", "#FF3100"))(256)
+    df$col <- cols[df$dens]
+    
+    ## Plot it, reordering rows so that densest points are plotted on top
+    plot(x2~x1, data=df[order(df$dens),], 
+         pch=20, col=col, cex=2, 
+         main="Scatterplot", 
+         xlab=xname, ylab=yname
+         
+         )
+    legend(x='bottomright', legend=paste('Corr =', round(correlation, 2), 
+                                         "\npvalue =", formatC(p, format = 'e', 1)))
+}
+
+survival_plot <- function(ClinicData, ExpData, GeneNames, main=" "){
+    # ClinicData: Survival Data
+    # ExpData: expression data
+    # GeneNames: Gene of interest, e.g. c("gene1", "gene2"), c("gene1")
+    
+    # Prep
+    rank_cut <- floor(dim(ExpData)[1] * 0.25)
+    
+    if (length(GeneNames) == 1){
+        GeneName <- GeneNames[1]
+        
+        bottom <- rank(ExpData[, GeneName]) < rank_cut
+        bottom <- row.names(ExpData[bottom, ] )
+        
+        top <- rank(-ExpData[, GeneName]) < rank_cut
+        top <- row.names(ExpData[top, ] )
+        
+        ClinicData[, "UpDown"] = NaN
+        ClinicData[top, "UpDown"] = TRUE
+        ClinicData[bottom, "UpDown"] = FALSE # top True, bottom False, Others NA
+    }else if (length(GeneNames >= 2)) {
+        GeneName <- paste(GeneNames, collapse = '.')  # for legend
+        
+        # list of genes
+        top <- apply(-ExpData[, GeneNames], 2, rank) < rank_cut
+        top <- apply(top, 1, prod) # top in all genes in GeneNames
+        top <- row.names(ExpData[top==1, ])
+        
+        bottom <- apply(ExpData[, GeneNames], 2, rank) < rank_cut
+        bottom <- apply(bottom, 1, prod)
+        bottom <- row.names(ExpData[bottom==1, ])
+        
+        ClinicData[, "UpDown"] = NaN
+        ClinicData[top, "UpDown"] = TRUE
+        ClinicData[bottom, "UpDown"] = FALSE # top True, bottom False, Others NA 
+    }else {
+        stop("GeneNames input error")
+    }
+      
+    # Survival  
+    ## test
+    sdf <- survdiff(Surv(OS_MONTHS,VITAL_STATUS1)~UpDown, data=ClinicData, rho=1) ## rho=1, Gehan-Wilcoxon test
+    pvalue <- 1 - pchisq(sdf$chisq, length(sdf$n) - 1)
+    
+    ## plot
+    fit <- survfit(Surv(OS_MONTHS,VITAL_STATUS1)~UpDown, data=ClinicData)
+    plot(fit, mark.time=TRUE, col=c('blue', 'red'), lty = c(1, 2, 0), 
+         xlab="Months Survival", 
+         ylab="Surviving", 
+         main=paste(main, "Overall Survival Kaplan-Meier Estimate", sep = "\n"))
+    legend("topright", col=c('blue', 'red'), lty = c(1,2,0),
+           legend = c(paste(GeneName, "Down"), 
+                      paste(GeneName, "Up"), 
+                      paste('pvalue =', formatC(pvalue, format = 'e', 1))
+                      )
+           )
+    
+    # Disease Free Survival
+    ## test
+    sdf <- survdiff(Surv(DFS_MONTHS,DFS_STATUS1)~UpDown, data=ClinicData, rho=1) ## rho=1, Gehan-Wilcoxon test
+    pvalue <- 1 - pchisq(sdf$chisq, length(sdf$n) - 1)
+    
+    ## plot
+    fit <- survfit(Surv(DFS_MONTHS,DFS_STATUS1)~UpDown, data=ClinicData)
+    plot(fit, mark.time=TRUE, col=c('blue', 'red'), lty = c(1, 2, 0), 
+         xlab="Months Disease Free", 
+         ylab="Disease Free", 
+         main= paste(main, "Disease Free Survival Kaplan-Meier Estimate", sep = "\n"))
+    legend("topright", col=c('blue', 'red'), lty = c(1,2,0),
+           legend = c(paste(GeneName, "Down"), 
+                      paste(GeneName, "Up"), 
+                      paste('pvalue =', formatC(pvalue, format = 'e', 1))
+                      )
+           )
+}
+```
+
+# communication
+- Test Overall Survival for Gene Upregulated Patients
+- Up: with higher level of mRNA of such gene in the patient's canver sample compared to normal samples (Z-score top 25%)
+- Down: (Z-score bottom 25%)
+
+- Survival curves
+
+- Database: CBioportal
+- cancer: Breast Cancer
+- subset: Breast Cancer Breast Invasive Carcinoma (TCGA, Cell 2015), brca_tcga_pub2015_all, 818 samples
+- expression profile: brca_tcga_pub2015_rna_seq_v2_mrna_median_Zscores
+
+# Note
+
+All files could be downloaded from [here](./).
+
+# Load Expression Data
+```{r}
+library(cgdsr)
+mycgds <- CGDS("http://www.cbioportal.org/public-portal/")
+studies <- getCancerStudies(mycgds)
+studies[grepl("breast invasive carcinoma", studies[, 2], ignore.case = TRUE), 1:2]  # test
+study <- "brca_tcga_pub2015"
+
+cases <- getCaseLists(mycgds, study)
+case <- "brca_tcga_pub2015_all"
+
+profiles <- getGeneticProfiles(mycgds, study)
+profile <- c("brca_tcga_pub2015_rna_seq_v2_mrna_median_Zscores")
+
+data <- getProfileData(mycgds, genes = c("SCLY", "SLC7A11", 
+                                         "SEPHS2", "SEPSECS", "PSTK"), 
+                       geneticProfiles = profile,
+                       caseList = case)
+```
+
+## Overview of Expression Data
+```{r}
+par(mfrow=c(3,2))
+hist(data$SCLY, 100 )
+hist(data$SLC7A11, 100, xlim = range(-2,10))
+hist(data$SEPHS2, 100)
+hist(data$SEPSECS, 100)
+hist(data$PSTK, 100)
+
+clinicaldata <- getClinicalData(mycgds, caseList = case)
+```
+
+# Load Survival Data
+```{r}
+library(survival)
+## The OS MONTHS is the overall Survival duration of patient after the first surgery
+## The OS STATUS is the event at OS MONTHS. 
+## The survival plot works only with studies that have non empty OS MONTHS and OS STATUS.
+head(clinicaldata[, c("OS_MONTHS", "VITAL_STATUS")])
+
+ClinicData <- clinicaldata[, c("OS_MONTHS", "VITAL_STATUS")]
+ClinicData <- clinicaldata[, c("DAYS_TO_DEATH","DFS_MONTHS", "DFS_STATUS", "VITAL_STATUS", "OS_MONTHS", "OS_STATUS")]
+ClinicData$VITAL_STATUS1 <- ClinicData$VITAL_STATUS ==  "Dead"  # Dead -> True
+ClinicData$DFS_STATUS1 <- ClinicData$DFS_STATUS ==  "Recurred/Progressed"  # Recurred -> True
+
+paste("There are", sum(ClinicData$VITAL_STATUS1), "patients Dead" )
+paste("There are", sum(ClinicData$DFS_STATUS1), "patients recurred")
+
+stopifnot(all(rownames(data) %in% rownames(ClinicData)))
+stopifnot(all(rownames(ClinicData) %in% rownames(data)))
+```
+
+
+# Filter by expression (Up vs Down)
+- Up: ranked top 25%
+- Down: ranked bottom 25%
+
+## TOX genes
+
+### SCLY Upregulation
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SCLY'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+
+### SLC7A11 Upregulation
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SLC7A11'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+### SLC7A11 and SCLY Upregulation 
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SCLY', 'SLC7A11'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+
+## DETOX genes
+### SEPHS2 Upregulation
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SEPHS2'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+### SEPSECS Upregulation
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SEPSECS'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+### PSTK Upregulation
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('PSTK'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+
+### SEPSECS.and.SEPHS2
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SEPSECS', 'SEPHS2'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+### SEPSECS.and.PSTK
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SEPSECS', 'PSTK'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+### SEPHS2.and.PSTK
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SEPHS2', 'PSTK'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+### SEPHS2.and.SEPSECS.and.PSTK
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SEPHS2','SEPSECS', 'PSTK'), main = "Breast Invasive Carcinoma (TCGA)")
+```
+
+## Others
+### SLC7A11.and.SEPHS2 Survival
+```{r}
+survival_plot(ClinicData = ClinicData, ExpData = data, GeneNames = c('SLC7A11', 'SEPHS2'), main = "Breast Invasive Carcinoma (TCGA)")
+
+
+```
+
+### SLC7A11 and SEPHS2 Correlation
+```{r}
+density_scatter_plot(x = data$SLC7A11, y = data$SEPHS2,  max=2, 
+                     xname = "SLC7A11", yname = "SEPHS2", 
+                     method = 'pearson')
+```
+
+
+
+
+

@@ -1,0 +1,128 @@
+---
+title: "ChIPpeakAnno: Human"
+author: "RuiLi"
+date: "02/20/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("ChIPpeakAnno")
+library("AnnotationDbi") 
+library("org.Hs.eg.db")
+library('reactome.db')
+library("KEGG.db")
+library(WriteXLS)
+```
+
+# Read
+```{r}
+# df <- read.csv("../1.deseq_csv/type_RSL3_vs_DMSO.deseq.csv")
+df <- readxl::read_xlsx( '../2.annotated_merged/archive/RSL3_vs_DMSO.deseq2.CPM_TPM_FPKM.xlsx', na = '-')
+df <- data.frame(df)  #important
+
+df$Gene <-  gsub("\\..+$", "", df$Gene)  # remove extra part
+
+
+colnames(df)
+dim(df)
+```
+
+
+# Filter
+```{r}
+small_fdr <- df$padj<0.05
+small_fdr[is.na(small_fdr)] <- FALSE
+paste('FDR < 0.05', sum(small_fdr))
+
+large_lfc <- abs(df$log2FoldChange) > 0.585
+large_lfc[is.na(large_lfc)] <- FALSE
+paste('|log2FoldChange| > 0.585', sum(large_lfc))
+
+both <- small_fdr & large_lfc
+paste('both:', sum(both))
+sum(is.na(both))
+```
+
+
+## Out sig excel
+```{r}
+df_sig <- df[both, ]
+WriteXLS(x = df_sig, 
+         ExcelFileName = 'significant.FDR0.05.FC1.5.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+
+```
+
+## ChIPpeakAnno::getEnrichedGO
+```{r}
+keys <- df[both, "Gene"]
+
+enriched.GO.both.condense <- getEnrichedGO(
+    keys, 
+    orgAnn="org.Hs.eg.db", 
+    feature_id_type = "ensembl_gene_id", 
+    maxP=0.1,
+    minGOterm=10,
+    multiAdjMethod= "BH", 
+    condense = T  # all genes in one line
+)
+
+```
+
+<!-- # Reactome -->
+<!-- ```{r} -->
+<!-- enriched.PATH.both <- getEnrichedPATH( -->
+<!--     keys,  -->
+<!--     orgAnn="org.Hs.eg.db",  -->
+<!--     pathAnn = "reactome.db", -->
+<!--     feature_id_type = "ensembl_gene_id",  -->
+<!--     maxP=0.05, -->
+<!--     minPATHterm=10, -->
+<!--     multiAdjMethod= "BH" -->
+<!-- ) -->
+
+<!-- head(enriched.PATH.both) -->
+
+
+<!-- enriched.PATH.both.condense <- condenseMatrixByColnames(as.matrix(enriched.PATH.both), "path.id") -->
+<!-- ``` -->
+
+
+# KEGG
+```{r}
+kegg <- getEnrichedPATH(
+    keys, 
+    orgAnn="org.Hs.eg.db", 
+    pathAnn = "KEGG.db",
+    feature_id_type = "ensembl_gene_id", 
+    maxP=0.1,
+    minPATHterm=10,
+    multiAdjMethod= "BH"
+)
+
+kegg <- condenseMatrixByColnames(as.matrix(kegg), "path.id")
+
+head(kegg)
+
+```
+
+## Output
+```{r}
+library(WriteXLS)
+WriteXLS(x = enriched.GO.both.condense$bp,
+        ExcelFileName = 'biological_process.FDR0.05.FC1.5.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+
+WriteXLS(x = enriched.GO.both.condense$cc,
+        ExcelFileName = 'cellular_component.FDR0.05.FC1.5.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+
+WriteXLS(x = enriched.GO.both.condense$mf,
+        ExcelFileName = 'mulecular_function.FDR0.05.FC1.5.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+
+# WriteXLS(x = enriched.PATH.both.condense,
+#         ExcelFileName = 'reactome.db.FDR0.05.FC1.5.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+
+WriteXLS(x = kegg,
+        ExcelFileName = 'KEGG.db.FDR0.05.FC1.5.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+
+```
+

@@ -1,0 +1,28 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	plot_quals
+	1
+
+[Fri Oct 26 17:51:58 2018]
+rule plot_quals:
+    input: calls/all.vcf
+    output: plots/quals.svg
+    jobid: 0
+
+[Fri Oct 26 17:51:58 2018]
+Error in rule plot_quals:
+    jobid: 0
+    output: plots/quals.svg
+
+RuleException:
+CalledProcessError in line 49 of /Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/Snakefile:
+Command ' set -euo pipefail;  /Users/rui/anaconda3/envs/py35/bin/python /Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/.snakemake/scripts/tmp7cnuwdpm.plot-quals.py ' returned non-zero exit status 2
+  File "/Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/Snakefile", line 49, in __rule_plot_quals
+  File "/Users/rui/anaconda3/envs/py35/lib/python3.5/concurrent/futures/thread.py", line 55, in run
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: /Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/.snakemake/log/2018-10-26T175158.429806.snakemake.log

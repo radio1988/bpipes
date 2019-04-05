@@ -1,0 +1,755 @@
+---
+title: "DEseq2: Edurado, Tris"
+author: "RuiLi"
+date: "2/11/2018"
+output:
+  html_document:
+    toc: yes  # table of content
+    toc_float: yes
+  html_notebook:
+    code_folding: hide
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(DESeq2)
+thresh_p <- 0.05
+thresh_LFC <- 1
+
+volcanoplot <- function (res, lfcthresh=2, sigthresh=thresh_p, 
+                         main=paste("Volcano Plot", name, sep='\n'), 
+                         legendpos="topright", labelsig=FALSE, textcx=1, ...) {
+  with(res, plot(log2FoldChange, -log10(pvalue), pch=20, main=main, ...))
+  with(subset(res, padj<sigthresh ), points(log2FoldChange, -log10(pvalue), pch=20, col="orange", ...))
+  with(subset(res, abs(log2FoldChange)>lfcthresh), points(log2FoldChange, -log10(pvalue), pch=20, col="green", ...))
+  with(subset(res, padj<sigthresh & abs(log2FoldChange)>lfcthresh), points(log2FoldChange, -log10(pvalue), pch=20, col="red", ...))
+  if (labelsig) {
+    require(calibrate)
+    with(subset(res, padj<sigthresh & abs(log2FoldChange)>lfcthresh), textxy(log2FoldChange, -log10(pvalue), labs=Gene, cex=textcx, ...))
+  }
+  legend(legendpos, xjust=1, yjust=0.5, 
+         legend=c(paste("FDR<",sigthresh,sep=""), 
+                  paste("|LogFC|>",lfcthresh,sep=""), 
+                  "both"), pch=20,
+         col=c("orange","green","red"))
+}
+
+maplot <- function (res, thresh=thresh_p, labelsig=FALSE, textcx=1, ...) {
+  with(res, plot(baseMean, log2FoldChange, pch=20, cex=.5, log="x", ...))
+  with(subset(res, padj<thresh_p), points(baseMean, log2FoldChange, col="red", pch=20, cex=1.5))
+  if (labelsig) {
+    require(calibrate)
+    with(subset(res, padj<thresh_p), textxy(baseMean, log2FoldChange, labs=Gene, cex=textcx, col=2))
+  }
+}
+
+```
+
+## Parameters
+```{r}
+paste(c("thresh_fdr", thresh_p, "thresh_|Log2FC|", thresh_LFC))
+```
+
+## Read Filter Data
+```{r readdata}
+#cts <- matrix(sample.int(15, 100*12, TRUE), 100, 12)  # test
+
+df <- read.table('../../featureCount/counts.gene_id.txt', sep="\t",
+                 header=TRUE, row.names=1)
+
+cts <- df[,6:ncol(df)]
+
+colnames(cts) <- gsub("\\.Aligned.sortedByCoord.out.bam$", "", colnames(cts))
+colnames(cts) <- gsub("...star.", "", colnames(cts))
+cts <- cts[, c(11, 17:24, 1:10, 12:16)]
+colnames(cts)
+
+colnames(cts) <- paste(rep(c('WT','Tris13','Tris18','Tris21',
+                             'WT_F','Tris13_F','Tris18_F','Tris21_F'), each=3),
+                       rep(c('a','b','c'), 8), sep="_")
+
+
+## raw matrix
+cts <- as.matrix(cts)
+dim(cts)
+
+## Filter Based on Expression
+cts <- cts[rowSums(cts) >= 1, ] # default 10
+dim(cts)
+head(cts)
+```
+
+
+## CPM normalization and output csv (seperate from main code)
+```{r}
+cpm_normalization <- function(cts){
+    # cts is a count matrix with genes as rows, samples as columns
+    cpm <- apply(cts,2, function(x) (x/sum(x))*1000000) 
+    return (cpm)
+} 
+
+CPM <- cpm_normalization(cts)
+paste(colSums(CPM))
+
+CPM <- data.frame(Gene = row.names(CPM), CPM)
+
+head(CPM)
+write.csv(CPM, 'cpm.csv', row.names = F)
+```
+
+## DESeq Experiment Design
+```{r design}
+type <- factor(rep(c('WT','Tris13','Tris18','Tris21', 
+                     'WT_F','Tris13_F','Tris18_F','Tris21_F'), each=3))
+coldata <- data.frame(row.names=colnames(cts), type)
+coldata
+
+head(cts)
+```
+
+## Create dds obj
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~ type )  # converted to alph-order
+dds$type <- relevel(dds$type, ref = "WT")
+
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+```
+
+## QC
+
+### Data transformation (for PCA plot etc.)
+```{r}
+vsd <- vst(dds, blind=FALSE)
+
+#rld <- rlog(dds, blind=FALSE)
+
+counts <- counts(dds, normalized=0)
+logCounts <- log10(counts +1 )
+
+normed <- counts(dds, normalized=1)
+logNormed <- log10(normed+1)
+```
+
+### QC Plots
+```{r}
+hist(logNormed)
+plotDispEsts(dds, main="Dispersion plot")
+plotPCA(vsd, intgroup=c("type"))
+```
+
+### Heatmap
+```{r echo=F, message=F, fig.height = 6, fig.width = 8}
+library("RColorBrewer")
+library('pheatmap')
+library("PoiClaClu")
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+poisd <- PoissonDistance(t(counts(dds)))
+samplePoisDistMatrix <- as.matrix( poisd$dd ) 
+rownames(samplePoisDistMatrix) <- paste( colnames(dds), sep="-" ) 
+colnames(samplePoisDistMatrix) <- NULL 
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(samplePoisDistMatrix,
+         clustering_distance_rows=poisd$dd,
+         clustering_distance_cols=poisd$dd,
+         col=colors, 
+         clustering_method='average'
+        )
+
+```
+
+<!-- ## Get Res with Contrast -->
+<!-- ```{r} -->
+<!-- res <- lfcShrink(dds, contrast = c(0, 1/2, 1/2, -1/2), type='ashr' ) -->
+<!-- name <- 'KD_vs_NS' -->
+<!-- ``` -->
+
+## Get Res with Coef1: Tris13_vs_WT
+```{r}
+res <- lfcShrink(dds, coef =  "type_Tris13_vs_WT", type='ashr' )
+name <- '1.Tris13_vs_WT'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+
+## Get Res with Coef2: Tris18_vs_WT
+```{r}
+res <- lfcShrink(dds, coef =  "type_Tris18_vs_WT", type='ashr' )
+name <- '2.Tris18_vs_WT'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+## Get Res with Coef3: Tris21_vs_WT
+```{r}
+res <- lfcShrink(dds, coef =  "type_Tris21_vs_WT", type='ashr' )
+name <- '3.Tris21_vs_WT'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+## Create dds obj2
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~ type )  # converted to alph-order
+dds$type <- relevel(dds$type, ref = "WT_F")
+
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+```
+
+## Get Res with Coef4: Tris13_F_vs_WT_F
+```{r}
+res <- lfcShrink(dds, coef =  "type_Tris13_F_vs_WT_F", type='ashr' )
+name <- '4.Tris13_F_vs_WT_F'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+## Get Res with Coef5: Tris18_F_vs_WT_F
+```{r}
+res <- lfcShrink(dds, coef =  "type_Tris18_F_vs_WT_F", type='ashr' )
+name <- '5.Tris18_F_vs_WT_F'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+
+
+
+## Get Res with Coef6: Tris21_F_vs_WT_F
+```{r}
+res <- lfcShrink(dds, coef =  "type_Tris21_F_vs_WT_F", type='ashr' )
+name <- '6.Tris21_F_vs_WT_F'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+
+
+
+## Get Res with Coef7: type_WT_F_vs_WT
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~ type )  # converted to alph-order
+dds$type <- relevel(dds$type, ref = "WT")
+
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+
+res <- lfcShrink(dds, coef =  "type_WT_F_vs_WT", type='ashr' )
+name <- '7.type_WT_F_vs_WT'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+
+## Get Res with Coef8: Tris13_F_vs_Tris13
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~ type )  # converted to alph-order
+dds$type <- relevel(dds$type, ref = "Tris13")
+
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+
+res <- lfcShrink(dds, coef =  "type_Tris13_F_vs_Tris13", type='ashr' )
+name <- '8.Tris13_F_vs_Tris13'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+
+
+
+## Get Res with Coef9: Tris18_F_vs_Tris18
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~ type )  # converted to alph-order
+dds$type <- relevel(dds$type, ref = "Tris18")
+
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+
+res <- lfcShrink(dds, coef =  "type_Tris18_F_vs_Tris18", type='ashr' )
+name <- '9.Tris18_F_vs_Tris18'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+
+
+
+
+
+
+
+
+
+
+## Get Res with Coef10: Tris21_F_vs_Tris21
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~ type )  # converted to alph-order
+dds$type <- relevel(dds$type, ref = "Tris21")
+
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+
+res <- lfcShrink(dds, coef =  "type_Tris21_F_vs_Tris21", type='ashr' )
+name <- '10.Tris21_F_vs_Tris21'
+```
+
+### Summary
+```{r}
+name
+summary(res, alpha=thresh_p)
+table(res$padj<thresh_p)
+```
+
+### Output
+```{r}
+## Order by LFC (up to down)
+res <- res[order(res$log2FoldChange, decreasing = T), ]
+## Merge with normalized count data
+resdata <- merge(as.data.frame(res), as.data.frame(counts(dds, normalized=TRUE)), 
+                 by="row.names", sort=FALSE)
+names(resdata)[1] <- "Gene"
+head(resdata)
+## Write results
+write.csv(resdata, row.names = FALSE, 
+          file=paste(name, 'deseq.csv', sep = '.'))
+```
+
+### Hist of P-values/FDR
+```{r}
+## Examine plot of p-values
+hist(res$pvalue, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+     xlab = 'pvalues', ylab = 'Frequency')
+
+hist(res$padj, breaks=50, col="grey", 
+     main = paste('Histogram of p-values (adjusted)', name, sep = "\n"), 
+     xlab = 'padj', ylab = 'Frequency')
+```
+
+
+### MA plot
+```{r}
+maplot(resdata, main=paste("MAplot", name, sep="\n"))
+```
+
+### Volcano plot with "significant" genes labeled
+```{r}
+volcanoplot(resdata, lfcthresh=thresh_LFC, sigthresh=thresh_p, textcx=.8, xlim=c(-2.3, 2))
+```
+

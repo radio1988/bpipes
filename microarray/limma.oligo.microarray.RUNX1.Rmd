@@ -1,0 +1,265 @@
+---
+title: "RUNX1_Compensation"
+author: "RuiLi"
+date: "8/7/2018"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(oligo)
+library(genefilter)
+library(limma)
+# library(pd.hugene.2.0.st)
+library(pd.hugene.2.1.st)
+library(hugene20sttranscriptcluster.db)
+library(hexbin)
+library(qvalue)
+library(WriteXLS)
+
+
+# write limma DE result
+write_efit_contrast_to_csv <- function(efit.contrast, outname){
+    write.table(file=outname,
+                cbind(row.names(efit.contrast$p.value),
+                      fitTrtMean$coefficients,
+                      efit.contrast$coefficients,
+                      efit.contrast$p.value, 
+                      efit.contrast$q.value),
+                row.names=F,
+                col.names=c("GeneID",
+                            paste('mean',colnames(fitTrtMean$coefficients)),
+                            paste('log2FC', colnames(efit.contrast$p.value)),
+                            paste("pvalue",colnames(efit.contrast$coefficients)),
+                            paste("FDR",colnames(efit.contrast$coefficients))
+                            ),
+                sep=",", quote = F)
+    return('done')
+}
+```
+
+## Intro
+RNA Compensation can be found in this paper: 
+Genetic compensation is triggered by mutant mRNA degradation
+
+Dr. Casilla wants to see RUNX1 mutation/correction's effect on RUNX2/RUN3 and similar genes (DE)
+
+
+## Installation
+source("http://bioconductor.org/biocLite.R")
+biocLite("affy")
+biocLite("oligo")
+biocLite("limma")
+biocLite("pd.hugene.2.1.st")
+biocLite("hugene20sttranscriptcluster.db")
+biocLite('qvalue')
+
+
+## Analysis
+- Basic pipeline: http://homer.ucsd.edu/homer/basicTutorial/affymetrix.html
+- DE analysis: http://manuals.bioinformatics.ucr.edu/home/R_BioCondManual
+- Example: https://support.bioconductor.org/p/77907/
+
+
+### Alternative way of reading data
+```{r}
+library(affy)
+require(affy)
+rawData <- ReadAffy(celfile.path="GSE45270_RAW/")
+Names <- c(
+    paste(rep("Tabular", 7), seq(7), sep = "_"), 
+    paste(rep("Serrated", 6), seq(6), sep = "_")
+    )
+
+data.frame(sampleNames(rawData), Names)
+sampleNames(rawData) <- Names
+
+# Normalization
+normData<-affy::rma(rawData);
+show(normData)
+write.exprs(normData, file="dataRMA.txt");
+
+
+boxplot(rawData, col = seq(13), main = 'raw')
+boxplot(normData, col = seq(13), main = 'normalized')
+
+normData_exp <- exprs(normData)
+colnames(normData_exp)[1] = "Probe"
+plot(hexplom(log2(normData_exp)))
+```
+
+### Read data
+```{r read_data}
+#directory for the data
+mydir <- './GSE54295_RAW/'
+
+#setting seed for reproducibility
+set.seed(1)
+
+#listing the files from directory using special CEL file read function
+celList <- list.files(path = "./GSE54295_RAW/", pattern = ".CEL.gz$",full.names=TRUE)
+#reading data from cellist and setting annotation package to approiate one for this microarray
+rawData <- read.celfiles(celList, pkgname='pd.hugene.2.0.st')
+```
+
+
+
+
+### Add MetaData
+```{r add_meta_data}
+sampleNames(rawData)
+sampleNames(rawData) <- c("Mut1", "Mut2", "Mut3", 
+                          "E1", "E2", "E3",
+                          "F1", "F2", "F3")
+
+genotype <- factor(rep(c("Mut", "E", "F"),each=3))
+```
+
+### Boxplot of raw data
+```{r rawDataQC}
+rawData_exp <- exprs(rawData)
+
+par(mar=c(10,4.5,2,1))
+boxplot(rawData_exp, las=3)
+
+plot(hexplom(log2(rawData_exp)))
+```
+
+
+### Normalization
+```{r rma}
+#normalizing the data using RMA algorithm
+normData <- rma(rawData)
+normData_exp <- exprs(normData)
+show(normData)
+
+write.csv( data.frame(normData_exp), file = "RMA_Norm.csv", quote = F)
+
+par(mar=c(10,4.5,2,1))
+boxplot(normData,las=3)
+
+plot(hexplom(log2(normData_exp)))
+```
+
+
+### Limma DE analysis
+```{r limma}
+design <- model.matrix(~0 + genotype)
+design
+
+# For batch-effect
+# library(statmod)
+# corfit <- duplicateCorrelation(normData, design=design, block = blocks, ndups = 3)
+
+# Mean
+fitTrtMean <- lmFit(normData, design)  # focus: coefficients, sigma
+
+colnames(design)
+contrast <- makeContrasts(
+  (genotypeE - genotypeMut),  
+  (genotypeF - genotypeMut),
+  levels = design)
+
+colnames(contrast)
+
+# Compute the estimated contrasts
+fit.contrast=contrasts.fit(fitTrtMean,contrast)
+
+# Compute the moderated contrast t-test
+efit.contrast=eBayes(fit.contrast)
+
+# TopTable FDR
+genes <- row.names(efit.contrast$p.value)
+topTable(efit.contrast,coef=1,adjust.method="fdr",p.value=0.05, number = 10, genelist=genes)
+topTable(efit.contrast,coef=2,adjust.method="fdr",p.value=0.05, number = 10, genelist=genes)
+
+# Full FDR
+efit.contrast$q.value=apply(efit.contrast$p.value,2, function(x) p.adjust(x, 'fdr'))
+
+# Plot the p-values/q.values
+par(mfrow=c(2,2))
+for (i in 1:ncol(efit.contrast$p.value)) {
+  hist(efit.contrast$p.value[,i],
+       main=colnames(efit.contrast$p.value)[i])
+}
+for (i in 1:ncol(efit.contrast$q.value)) {
+  hist(efit.contrast$q.value[,i],
+       main=colnames(efit.contrast$q.value)[i])
+}
+
+colnames(efit.contrast$q.value)[1]
+summary(efit.contrast$q.value[,1]< 0.05)
+colnames(efit.contrast$q.value)[2]
+summary(efit.contrast$q.value[,2]< 0.05)
+
+
+# Write limma results
+write_efit_contrast_to_csv(efit.contrast, 'stats.csv')
+```
+
+
+### Annotation with hugene20sttranscriptcluster.db
+- RUNX1 not annotated, abort
+```{r annotation}
+# # Strategy is to create data frame objects and merge them together - put expression info into a data frame
+# my_frame <- data.frame(exprs(normData))
+# 
+# Annot <- data.frame(ACCNUM=sapply(contents(hugene20sttranscriptclusterACCNUM), paste, collapse=", "),
+#                     SYMBOL=sapply(contents(hugene20sttranscriptclusterSYMBOL), paste, cocorfitllapse=", "),
+#                     DESC=sapply(contents(hugene20sttranscriptclusterGENENAME), paste, collapse=", "))
+# 
+# #retreaving feature data
+# featureData(normData) <- getNetAffx(normData, "transcript")
+# 
+# #addomg phenotypic data
+# phn = normData@phenoData
+# 
+# phn@data[1:3,2]="D"
+# phn@data[4:6,2]="E"
+# phn@data[7:9,2]="F"
+# 
+# colnames(phn@data)[2]="genotype"
+# 
+# # Merge data frames together (like a database table join) also removing NAs
+# all <- merge(Annot, my_frame, by="row.names", all=T)
+# 
+# merge <- subset(all, SYMBOL!="NA")
+# 
+# # Write out to a file:
+# write.table(merge,file="rmaNorm.ann.txt",sep="\t")
+# write.table(all,file="rmaNorm.all.txt",sep="\t")
+```
+
+
+### Annotation2 with GEO info
+- NO RUNX1 annotated either, abort
+
+
+### Annotation with latest Array Anno from Official Site
+- Works well
+- Downloaded from: http://www.affymetrix.com 
+```{r}
+# zz=gzfile('HuGene-2_0-st-v1-na36-hg19-transcript-csv/HuGene-2_0-st-v1.na36.hg19.transcript.csv.gz','rt')   
+# tab_affy_anno=read.csv(zz,comment.char = '#', header = T)
+tab_affy_anno=read.csv('HuGene-2_0-st-v1-na36-hg19-transcript-csv/HuGene-2_0-st-v1.na36.hg19.transcript.csv',
+                       comment.char = '#', header = T)
+
+```
+
+### Merge results
+```{r}
+tab_exp <- read.csv("RMA_Norm.csv")
+tab_stats <- read.csv('stats.csv')
+
+# merged <-  Reduce(function(dtf1, dtf2) merge(dtf1, dtf2, by = 1, all.x = TRUE),
+#         list(tab_1, tab_2, tab_exp))
+
+merged <- merge(tab_stats, tab_exp, by = 1)
+merged <- merge(merged, tab_affy_anno[, c(1,3,4,5,6,7,8,9,12,13,14,15,16)], by = 1)
+colnames(merged)
+
+WriteXLS(x = merged, 
+         ExcelFileName = 'limma_res.xlsx', row.names = TRUE)
+
+```
+

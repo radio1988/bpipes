@@ -1,0 +1,23 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	plot_quals
+	1
+
+[Fri Oct 26 18:18:21 2018]
+rule plot_quals:
+    input: calls/all.vcf
+    output: plots/quals.svg
+    jobid: 0
+
+Waiting at most 5 seconds for missing files.
+MissingOutputException in line 50 of /Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/Snakefile:
+Missing files after 5 seconds:
+plots/quals.svg
+This might be due to filesystem latency. If that is the case, consider to increase the wait time with --latency-wait.
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: /Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/.snakemake/log/2018-10-26T181821.405126.snakemake.log

@@ -1,0 +1,77 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	2	bwa_map
+	2	samtools_index
+	2	samtools_sort
+	6
+
+[Fri Oct 26 16:51:40 2018]
+rule bwa_map:
+    input: data/genome.fa, data/samples/B.fastq
+    output: mapped_reads/B.bam
+    jobid: 5
+    wildcards: sample=B
+
+[Fri Oct 26 16:51:40 2018]
+Finished job 5.
+1 of 6 steps (17%) done
+
+[Fri Oct 26 16:51:40 2018]
+rule bwa_map:
+    input: data/genome.fa, data/samples/A.fastq
+    output: mapped_reads/A.bam
+    jobid: 4
+    wildcards: sample=A
+
+[Fri Oct 26 16:51:40 2018]
+Finished job 4.
+2 of 6 steps (33%) done
+
+[Fri Oct 26 16:51:40 2018]
+rule samtools_sort:
+    input: mapped_reads/A.bam
+    output: sorted_reads/A.bam
+    jobid: 2
+    wildcards: sample=A
+
+[Fri Oct 26 16:51:40 2018]
+Finished job 2.
+3 of 6 steps (50%) done
+
+[Fri Oct 26 16:51:40 2018]
+rule samtools_index:
+    input: sorted_reads/A.bam
+    output: sorted_reads/A.bam.bai
+    jobid: 0
+    wildcards: sample=A
+
+[Fri Oct 26 16:51:40 2018]
+Finished job 0.
+4 of 6 steps (67%) done
+
+[Fri Oct 26 16:51:40 2018]
+rule samtools_sort:
+    input: mapped_reads/B.bam
+    output: sorted_reads/B.bam
+    jobid: 3
+    wildcards: sample=B
+
+[Fri Oct 26 16:51:40 2018]
+Finished job 3.
+5 of 6 steps (83%) done
+
+[Fri Oct 26 16:51:40 2018]
+rule samtools_index:
+    input: sorted_reads/B.bam
+    output: sorted_reads/B.bam.bai
+    jobid: 1
+    wildcards: sample=B
+
+[Fri Oct 26 16:51:40 2018]
+Finished job 1.
+6 of 6 steps (100%) done
+Complete log: /Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/.snakemake/log/2018-10-26T165140.137250.snakemake.log

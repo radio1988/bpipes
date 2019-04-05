@@ -1,0 +1,45 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##samtoolsVersion=1.9+htslib-1.9
+##samtoolsCommand=samtools mpileup -g -f data/genome.fa sorted_reads/A.bam sorted_reads/B.bam
+##reference=file://data/genome.fa
+##contig=<ID=I,length=230218>
+##contig=<ID=II,length=813184>
+##contig=<ID=III,length=316620>
+##contig=<ID=IV,length=1531933>
+##contig=<ID=IX,length=439888>
+##contig=<ID=Mito,length=85779>
+##contig=<ID=V,length=576874>
+##contig=<ID=VI,length=270161>
+##contig=<ID=VII,length=1090940>
+##contig=<ID=VIII,length=562643>
+##contig=<ID=X,length=745751>
+##contig=<ID=XI,length=666816>
+##contig=<ID=XII,length=1078177>
+##contig=<ID=XIII,length=924431>
+##contig=<ID=XIV,length=784333>
+##contig=<ID=XV,length=1091291>
+##contig=<ID=XVI,length=948066>
+##ALT=<ID=*,Description="Represents allele(s) other than observed.">
+##INFO=<ID=INDEL,Number=0,Type=Flag,Description="Indicates that the variant is an INDEL.">
+##INFO=<ID=IDV,Number=1,Type=Integer,Description="Maximum number of reads supporting an indel">
+##INFO=<ID=IMF,Number=1,Type=Float,Description="Maximum fraction of reads supporting an indel">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Raw read depth">
+##INFO=<ID=VDB,Number=1,Type=Float,Description="Variant Distance Bias for filtering splice-site artefacts in RNA-seq data (bigger is better)",Version="3">
+##INFO=<ID=RPB,Number=1,Type=Float,Description="Mann-Whitney U test of Read Position Bias (bigger is better)">
+##INFO=<ID=MQB,Number=1,Type=Float,Description="Mann-Whitney U test of Mapping Quality Bias (bigger is better)">
+##INFO=<ID=BQB,Number=1,Type=Float,Description="Mann-Whitney U test of Base Quality Bias (bigger is better)">
+##INFO=<ID=MQSB,Number=1,Type=Float,Description="Mann-Whitney U test of Mapping Quality vs Strand Bias (bigger is better)">
+##INFO=<ID=SGB,Number=1,Type=Float,Description="Segregation based metric.">
+##INFO=<ID=MQ0F,Number=1,Type=Float,Description="Fraction of MQ0 reads (smaller is better)">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="List of Phred-scaled genotype likelihoods">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##INFO=<ID=ICB,Number=1,Type=Float,Description="Inbreeding Coefficient Binomial test (bigger is better)">
+##INFO=<ID=HOB,Number=1,Type=Float,Description="Bias in the number of HOMs number (smaller is better)">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes for each ALT allele, in the same order as listed">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##INFO=<ID=DP4,Number=4,Type=Integer,Description="Number of high-quality ref-forward , ref-reverse, alt-forward and alt-reverse bases">
+##INFO=<ID=MQ,Number=1,Type=Integer,Description="Average mapping quality">
+##bcftools_callVersion=1.9+htslib-1.9
+##bcftools_callCommand=call -mv -; Date=Fri Oct 26 18:01:06 2018
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sorted_reads/A.bam	sorted_reads/B.bam
