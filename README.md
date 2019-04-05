@@ -1,3 +1,3 @@
-# bsub
+# bpipes
 
-* bsub scripts for bioinformatic pipelines
+* scripts/notes for bioinformatic pipelines
