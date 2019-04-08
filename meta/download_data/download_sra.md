@@ -11,8 +11,12 @@
 - get sample sra_ids from sra website (click)
 - get run_ids with bioconductor package [SRAdb](https://www.biostars.org/p/53627/)
 - Download with 
-  - [ENA (Preferred)](https://www.biostars.org/p/325010/) 
+  - [ENA](https://www.biostars.org/p/325010/) 
+    - my code does not deal with mixed SE and PE now
   - Or [SRAtoolkit.fastq-dump](https://github.com/radio1988/bsub/blob/master/misc/download_sra.bsub)
+    - my code works
+    - if connection okay, this method is okay
+    - read stdout for validation of complete download
   
 ## Code: 
 1. samples2runs
