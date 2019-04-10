@@ -11,10 +11,13 @@ output:
     toc_float: yes
 ---
 # Updates
-- ylim for VolcanoPlot: (0,30)
+- ylim option for VolcanoPlot: (0,30)
 - add TPM normalization (with scater)
 - add normalization options in process_deseq_res
 - add annotation in pipeline, just provide an annotation table with V1 as gene_id
+- add sample rename, merge
+- sort columns based on colnames
+
 
 # Communication
 - For Namgyu in Dohoon lab
@@ -29,6 +32,7 @@ library(DESeq2)
 library(ggplot2)
 library("scater")
 library(WriteXLS)
+require(plyr)
 
 
 thresh_p <- 0.05
@@ -43,7 +47,7 @@ volcanoplot <- function (res,
     with(res, 
          plot(log2FoldChange, -log10(padj), 
               pch=20, main=main, 
-              ylim=c(0,30),
+              # ylim=c(0,30),
               ...))
     with(subset(res, padj<sigthresh ), 
          points(log2FoldChange, -log10(padj), pch=20, col="orange", ...))
@@ -121,17 +125,76 @@ process_deseq_res <- function(res, name='name', anno="df_anno", normalized="df_t
 
 # Read Data
 ```{r readdata}
-df <- read.table('../GSE75168_MCF10A_MCF7_MDA-MB-231_HTSeq_Counts.txt.gz', 
+df <- read.table('../featureCount/counts.gene_id.s0.txt.gz', 
                  sep="\t", header=TRUE, 
                  row.names = 1) # row.name in cts(matrix)
 head(df)
 dim(df)
 ```
 
+# Clean Up Data
+- GEO runs to samples
+- rename samples with biological names
+```{r}
+# clean names
+colnames(df) <- gsub("\\.Aligned.sortedByCoord.out.bam$", "", colnames(df))
+colnames(df) <- gsub("...star.", "", colnames(df))
+colnames(df) <- gsub("_S\\d{,2}_L00\\d?_R1_001.fastq.gz", "", colnames(df))
+colnames(df)
+
+# Sum Runs into Samples
+# ../../sra_download/sample_list/samples2runs.txt
+df$SRS454704 <- df$SRR934631 + df$SRR934632 + df$SRR934633
+df$SRS454714 <- df$SRR934634 + df$SRR934635
+df$SRS454721 <- df$SRR934636 + df$SRR934637
+df$SRS454723 <- df$SRR934638 + df$SRR934639
+df$SRS454725 <- df$SRR934640 + df$SRR934641
+df$SRS454730 <- df$SRR934642 + df$SRR934643
+df$SRS454731 <- df$SRR934644 + df$SRR934645
+df <- df[, grepl("SRS", colnames(df))]
+colnames(df)
+dim(df)
+```
+
+```{r}
+# change SRS ID to Biological Names
+srs2name <- read.csv("../../sra_download/sra_result.csv", stringsAsFactors=F)
+srs2name <- srs2name[, c("Sample.Accession", "X")]
+colnames(srs2name) <- c("sample", "name")
+
+head(srs2name)
+
+colnames(df) <- mapvalues(colnames(df), 
+                          from = srs2name$sample, 
+                          to = srs2name$name)
+colnames(df) <- gsub("^ ", "", colnames(df))
+colnames(df)
+```
+
+## Read design
+```{r}
+name2type <- readxl::read_xlsx( '../../../GSE datasets.xlsx', 
+                                sheet = 2, na='-') 
+name2type <- data.frame(name2type)
+type <- mapvalues(colnames(df), 
+                  from = name2type$name, 
+                  to = name2type$diseases)
+data.frame(colnames(df), type)
+```
+
+## Rename and sort by Colnames
+```{r}
+colnames(df) <- paste(type, colnames(df), sep = "_")
+order_ <- order(colnames(df), decreasing = T)
+df <- df[, order_]
+type <- type[order_]
+colnames(df)
+type
+```
+
 ## Read length and annotation
 ```{r}
-# anno <- read.table("~/github/bpipes/rnaseq/de/annotations/gencode.v29.primary_assembly.anno.txt.gz", header=T)
-anno <- read.table("~/github/bpipes/rnaseq/de/annotations/gencode.hu.v21/gencode.v21.primary_assembly.anno.txt.gz", header=T)
+anno <- read.table("~/github/bpipes/rnaseq/de/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz", header=T)
 head(anno)
 dim(anno)
 ```
@@ -142,15 +205,14 @@ dim(anno)
 # anno$Gene <- gsub("\\..*$", "", anno$Gene)
 df <- merge(anno, df, by.x=1, by.y=0)
 dim(df)
+colnames(df)
 ```
 
 ## get cts.matrix for DESeq2
 ```{r}
 cts <- df[,9:ncol(df)]
-# colnames(cts) <- gsub("\\.Aligned.sortedByCoord.out.bam$", "", colnames(cts))
-# colnames(cts) <- gsub("...star.", "", colnames(cts))
-# colnames(cts) <- gsub("_S\\d{,2}_L00\\d?_R1_001.fastq.gz", "", colnames(cts))
-# colnames(cts)
+
+
 
 # colname_formatted <- c("KO_D0_3", "WT_D0_3", "KO_D2_3", "WT_D2_3", "KO_D8_3", "WT_D8_3",
 #                    "KO_D0_1", "KO_D0_2", "KO_D2_1", "KO_D2_2", "KO_D8_1", "KO_D8_2", 
@@ -162,6 +224,7 @@ cts <- df[,9:ncol(df)]
 ## raw matrix
 cts <- as.matrix(cts)
 row.names(cts) <- df$Gene
+dim(cts)
 ```
 
 ## Filter Based on Expression
@@ -189,16 +252,21 @@ WriteXLS(x = tpm_out,
 
 ## subset of data
 ```{r}
-cts_ <- cts[, c(1,2,3,7,8,9)]
+cts_ <- cts
+# cts_ <- cts[, c(1,2,3,7,8,9)]
 ```
 
 
-
-```{r design}
-type <- factor(rep(c("MCF10A","MDA_MB231"), each=3))
-batch <- factor(rep(rep(c('R1','R2','R3'), each=1), 2))
+## Design
+```{r}
+type <- factor(type)
+# type <- factor(rep(c("MCF10A","MDA_MB231"), each=3))
+# batch <- factor(rep(rep(c('R1'), each=1), 56))
 # group <- factor(paste(genotype, time, sep = "_"))
-coldata <- data.frame(row.names=colnames(cts_), type, batch)
+coldata <- data.frame(row.names=colnames(cts_), 
+                      type
+                      # batch
+                      )
 coldata
 ```
 
@@ -207,8 +275,8 @@ coldata
 dds <- DESeqDataSetFromMatrix(countData = cts_, 
                               colData = coldata, 
                               design = ~ type )  # converted to alph-order
-dds$type <- relevel(dds$type, ref = "MCF10A")
-dds$batch <- relevel(dds$batch, ref = "R1")
+dds$type <- relevel(dds$type, ref = "Normal")
+# dds$batch <- relevel(dds$batch, ref = "R1")
 
 dds
 dds <-DESeq(dds)
@@ -245,10 +313,12 @@ plotDispEsts(dds, main="Dispersion plot")
 ## PCA plots
 - look at batch effect 
 ```{r}
-pcaData <- plotPCA(vsd, intgroup=c("type", 'batch'), returnData=TRUE)
+pcaData <- plotPCA(vsd, intgroup=c("type"
+                                   # 'batch'
+                                   ), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 
-ggplot(pcaData, aes(PC1, PC2, color=batch, shape=type)) +
+ggplot(pcaData, aes(PC1, PC2, color=type, shape=type)) +
   geom_point(size=3) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
@@ -280,10 +350,9 @@ pheatmap(samplePoisDistMatrix,
 
 ## type_MDA_MB231_vs_MCF10A
 ```{r}
-res <- lfcShrink(dds, coef = "type_MDA_MB231_vs_MCF10A", type = 'ashr')
-name <- "MDA_MB231_vs_MCF10A"
+res <- lfcShrink(dds, coef = "type_Cancer_vs_Normal", type = 'ashr')
+name <- "Cancer_vs_Normal"
 process_deseq_res(res = res, name = name, anno=anno, normalized=tpm)
-
 ```
 
 
