@@ -1,0 +1,17 @@
+#BSUB -R rusage[mem=1000]
+#BSUB -n 2
+#BSUB -q short
+#BSUB -W 4:00
+#BSUB -R "span[hosts=1]"
+#BSUB -N
+
+printf "generate txt file containing length from gtf file\n"
+
+gtf='gencode.v21.chr_patch_hapl_scaff.annotation.gtf'
+
+featureCounts -a $gtf \
+-o featureCount.Length.txt \
+-g gene_id \
+-M -Q 20 -p -T 2 \
+-B -d 50 -D 1000 -C \
+test.bam
