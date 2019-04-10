@@ -29,6 +29,7 @@ Type 'q()' to quit R.
 5 ENSG00000000460.14 C1orf112 protein_coding
 6 ENSG00000000938.10      FGR protein_coding
 > df2 <- read.table("featureCount.Length.txt", header=T)
+> df2 <- df2[, 1:6]
 > head(df2)
              Geneid                                                    Chr
 1 ENSG00000223972.5           chr1;chr1;chr1;chr1;chr1;chr1;chr1;chr1;chr1
@@ -51,13 +52,13 @@ Type 'q()' to quit R.
 4                                     30039;30667;30667;31109;31097
 5                                                             30503
 6                                     35174;35481;35481;36081;36073
-                 Strand Length test.bam
-1     +;+;+;+;+;+;+;+;+   1735        3
-2 -;-;-;-;-;-;-;-;-;-;-   1351       25
-3                     -     68        0
-4             +;+;+;+;+   1021        0
-5                     +    138        0
-6             -;-;-;-;-   1219        0
+                 Strand Length
+1     +;+;+;+;+;+;+;+;+   1735
+2 -;-;-;-;-;-;-;-;-;-;-   1351
+3                     -     68
+4             +;+;+;+;+   1021
+5                     +    138
+6             -;-;-;-;-   1219
 > 
 > # clean df2
 > df_location <- df2
@@ -67,13 +68,13 @@ Type 'q()' to quit R.
 > df_location$Start <- gsub("\\;.+$", "", df_location$Start)  # remove duplicated parts
 > df_location$End <- gsub("^.+\\;", "", df_location$End)  # remove duplicated parts
 > head(df_location)
-               Gene  Chr Start   End Strand Length test.bam
-1 ENSG00000223972.5 chr1 11869 13670      +   1735        3
-2 ENSG00000227232.5 chr1 14404 29570      -   1351       25
-3 ENSG00000278267.1 chr1 17369 17436      -     68        0
-4 ENSG00000243485.3 chr1 29554 31097      +   1021        0
-5 ENSG00000274890.1 chr1 30366 30503      +    138        0
-6 ENSG00000237613.2 chr1 34554 36073      -   1219        0
+               Gene  Chr Start   End Strand Length
+1 ENSG00000223972.5 chr1 11869 13670      +   1735
+2 ENSG00000227232.5 chr1 14404 29570      -   1351
+3 ENSG00000278267.1 chr1 17369 17436      -     68
+4 ENSG00000243485.3 chr1 29554 31097      +   1021
+5 ENSG00000274890.1 chr1 30366 30503      +    138
+6 ENSG00000237613.2 chr1 34554 36073      -   1219
 > 
 > # merge
 > df_out <- merge(df1, df_location, by=1)
@@ -107,13 +108,13 @@ Type 'q()' to quit R.
 4                                     30039;30667;30667;31109;31097
 5                                                             30503
 6                                     35174;35481;35481;36081;36073
-                 Strand Length test.bam
-1     +;+;+;+;+;+;+;+;+   1735        3
-2 -;-;-;-;-;-;-;-;-;-;-   1351       25
-3                     -     68        0
-4             +;+;+;+;+   1021        0
-5                     +    138        0
-6             -;-;-;-;-   1219        0
+                 Strand Length
+1     +;+;+;+;+;+;+;+;+   1735
+2 -;-;-;-;-;-;-;-;-;-;-   1351
+3                     -     68
+4             +;+;+;+;+   1021
+5                     +    138
+6             -;-;-;-;-   1219
 > head(df_out)
                 Gene     Name           Type   Chr     Start       End Strand
 1 ENSG00000000003.12   TSPAN6 protein_coding  chrX 100627109 100639991      -
@@ -122,21 +123,21 @@ Type 'q()' to quit R.
 4 ENSG00000000457.11    SCYL3 protein_coding  chr1 169849631 169894267      -
 5 ENSG00000000460.14 C1orf112 protein_coding  chr1 169662007 169853085      +
 6 ENSG00000000938.10      FGR protein_coding  chr1  27612064  27635277      -
-  Length test.bam
-1   4535        0
-2   1610        0
-3   1207        0
-4   6883        0
-5   5967        0
-6   3474        0
+  Length
+1   4535
+2   1610
+3   1207
+4   6883
+5   5967
+6   3474
 > dim(df1)
 [1] 64299     3
 > dim(df2)
-[1] 64299     7
+[1] 64299     6
 > dim(df_out)
-[1] 64299     9
-> write.table(df_out, "gencode.v21.primary_assembly.anno.txt", row.names=F, quote=F)
+[1] 64299     8
+> write.table(df_out, "gencode.v21.primary_assembly.anno.txt", row.names=F, quote=F, sep="\t")
 > 
 > proc.time()
    user  system elapsed 
-  8.139   0.132   8.277 
+  8.462   0.138   8.594 

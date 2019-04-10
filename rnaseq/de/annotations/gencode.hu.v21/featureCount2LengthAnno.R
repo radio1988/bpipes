@@ -1,6 +1,7 @@
 df1 <- read.table("gencode.v21.chr_patch_hapl_scaff.annotation.txt.gz", header=T)
 head(df1)
 df2 <- read.table("featureCount.Length.txt", header=T)
+df2 <- df2[, 1:6]
 head(df2)
 
 # clean df2
@@ -20,4 +21,4 @@ head(df_out)
 dim(df1)
 dim(df2)
 dim(df_out)
-write.table(df_out, "gencode.v21.primary_assembly.anno.txt", row.names=F, quote=F)
+write.table(df_out, "gencode.v21.primary_assembly.anno.txt", row.names=F, quote=F, sep="\t")
