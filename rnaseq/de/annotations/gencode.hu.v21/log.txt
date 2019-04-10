@@ -1,0 +1,4 @@
+perl ~/github/bpipes/misc/gff_gtf/gtf2anno_tab.pl gencode.v21.chr_patch_hapl_scaff.annotation.gtf
+gtf_2_anno_tab.gene_level.pl <xxx.gtf>
+Out: anno.txt
+good for GENECODE HUMAN ANNOTATION
