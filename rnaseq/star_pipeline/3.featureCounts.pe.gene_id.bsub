@@ -1,5 +1,5 @@
 #!/bin/bash
-#BSUB -J "fcount[1-3]"
+#BSUB -J "fcount[1-3]"  # three jobs for three different strand parameter, for for 3 files
 #BSUB -P "LiR"
 #BSUB -R rusage[mem=1000]
 #BSUB -n 2
@@ -18,6 +18,17 @@ featureCounts -a $gtf \
 -o ../featureCount/counts.gene_id.s$i.txt \
 -g gene_id \
 -s $i \
--M -Q 20 -p -T 2 \
+-Q 20 \
+-p \
+-T 2 \
 -B -d 50 -D 1000 -C \
 ../star/*bam
+
+# -C: exclude chimeric (most times, for cancer maybe not include this)
+# -d 50, -D 1000: including PE reads with fragment length in between, which is better than default 50-600
+# -T: num threads
+# -s: strand info, very important; use $i to perform all three possibilities, pick the correct one after counting
+# -Q: min MAPQ, if MAPQ from star, we need to be careful, because star ignores PE information, we might need to add addional step to rescue PE info. (https://github.com/alexdobin/STAR/issues/615)
+# -M: count multiple-mapping reads, based on NH, not useful for RNA-seq, may create misleading summary, by counting multi-mapping reads several times
+# -p: count Fragments rather than reads for Paired-end reads
+# -B: Only count read pairs that have both ends aligned.
