@@ -24,11 +24,11 @@ featureCounts -a $gtf \
 -B -d 50 -D 1000 -C \
 ../star/*bam
 
+# -p: count Fragments rather than reads for Paired-end reads (remove this for SE data)
 # -C: exclude chimeric (most times, for cancer maybe not include this)
 # -d 50, -D 1000: including PE reads with fragment length in between, which is better than default 50-600
 # -T: num threads
 # -s: strand info, very important; use $i to perform all three possibilities, pick the correct one after counting
 # -Q: min MAPQ, if MAPQ from star, we need to be careful, because star ignores PE information, we might need to add addional step to rescue PE info. (https://github.com/alexdobin/STAR/issues/615)
 # -M: count multiple-mapping reads, based on NH, not useful for RNA-seq, may create misleading summary, by counting multi-mapping reads several times
-# -p: count Fragments rather than reads for Paired-end reads
 # -B: Only count read pairs that have both ends aligned.
