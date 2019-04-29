@@ -19,9 +19,11 @@ featureCounts -a $gtf \
 -g gene_id \
 -s $i \
 -Q 20 \
--p \
 -T 2 \
--B -d 50 -D 1000 -C \
+-p -B \
+-d 50 -D 1000 \
+-C \
+--fracOverlap 0 -–minOverlap 1 \
 ../star/*bam
 
 # -p: count Fragments rather than reads for Paired-end reads (remove this for SE data)
@@ -32,3 +34,5 @@ featureCounts -a $gtf \
 # -Q: min MAPQ, if MAPQ from star, we need to be careful, because star ignores PE information, we might need to add addional step to rescue PE info. (https://github.com/alexdobin/STAR/issues/615)
 # -M: count multiple-mapping reads, based on NH, not useful for RNA-seq, may create misleading summary, by counting multi-mapping reads several times
 # -B: Only count read pairs that have both ends aligned.
+# --fracOverlap 0.2: 20% of read length 
+# -–minOverlap 2: 2bp
