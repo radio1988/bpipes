@@ -2,95 +2,105 @@ SAMPLES=["A", "B", "C"]
 GENOME="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary"
 THREADS=4
 
+# load modules
+# shell.prefix("module load fastqc/0.11.5")
+
+shell.prefix("module load fastqc/0.11.5")
+shell.prefix("module load python3/3.5.0_packages/multiqc/1.4")
+
 # requirements
 # inputs in ./fastq/xxx.{fastq,fq}.gz
 # named as {sample}.{R1,R2}.{fastq,fq}.gz
 
 # rule all:
-# 	input:
-# 		# just for check exist, and aggregate, feed {sample}
-# 		fastqc=expand("fastqc/{sample}_fastqc.html", sample=SAMPLES),
-# 		report="calls/all.vcf"
-# 	output:
-# 		"dag.all.svg"
-# 	run:
-# 		# creating DAG works (specify report or last_step as target)
-# 		shell("snakemake --dag all | dot -Tsvg > {output}") 
-# 		# create report failed, because log not finished, have to do this later manually
-# 		# shell("snakemake report --report report.html")
+#     input:
+#         # just for check exist, and aggregate, feed {sample}
+#         fastqc=expand("fastqc/{sample}_fastqc.html", sample=SAMPLES),
+#         report="calls/all.vcf"
+#     output:
+#         "dag.all.svg"
+#     run:
+#         # creating DAG works (specify report or last_step as target)
+#         shell("snakemake --dag all | dot -Tsvg > {output}") 
+#         # create report failed, because log not finished, have to do this later manually
+#         # shell("snakemake report --report report.html")
 
 rule fastqc:
-	# don't need input/output, so no check on them
-	# without output will not create output folder
-	output:
-		"fastqc/multiqc_report.html"
-	threads:
-		THREADS
-	run:
-		# {output} don't have to be in command
-		shell("fastqc -t {threads} fastq/*q.gz -o fastqc")
-		shell("multiqc fastqc -o fastqc")
-		#shell("rm -f fastqc/*zip")
+    # don't need input/output, so no check on them
+    # without output will not create output folder
+    output:
+        "fastqc/multiqc_report.html"
+    threads:
+        THREADS
+    shell:
+        # {output} don't have to be in command
+        # have to load module in one block
+        """
+        module load fastqc/0.11.5
+        module load python3/3.5.0_packages/multiqc/1.4
+        fastqc -t {threads} fastq/*q.gz -o fastqc
+        multiqc fastqc -o fastqc
+        """
 
 
 rule star_map:
-	input:
-		fa=GENOME,
-		fq="fastq/{sample}.fastq.gz"
-	threads:
-		THREADS
-	output:
-		"mapped_reads/{sample}.bam"
-	shell:
-		"""STAR --runThreadN {threads} \
-		--genomeDir {genome} \
-		--sjdbGTFfile $gtf \
-		--readFilesCommand zcat \
-		--readFilesIn $R1 $R2 \
-		--outFileNamePrefix ../star/$name. \
-		--outFilterType BySJout \
-		--outFilterMultimapNmax 20 \
-		--alignSJoverhangMin 8 \
-		--alignSJDBoverhangMin 3 \
-		--outFilterMismatchNmax 999 \
-		--outFilterMismatchNoverReadLmax 0.05 \
-		--alignIntronMin 20 \
-		--alignIntronMax 1000000 \
-		--alignMatesGapMax 1000000 \
-		--outFilterIntronMotifs RemoveNoncanonicalUnannotated \
-		--outSAMstrandField None \
-		--outSAMtype BAM SortedByCoordinate \
-		--quantMode GeneCounts \
-		--outReadsUnmapped Fastx
-		"""
+    input:
+        fa=GENOME,
+        fq="fastq/{sample}.fastq.gz"
+    threads:
+        THREADS
+    output:
+        "mapped_reads/{sample}.bam"
+    shell:
+        """STAR --runThreadN {threads} \
+        --genomeDir {genome} \
+        --sjdbGTFfile $gtf \
+        --readFilesCommand zcat \
+        --readFilesIn $R1 $R2 \
+        --outFileNamePrefix ../star/$name. \
+        --outFilterType BySJout \
+        --outFilterMultimapNmax 20 \
+        --alignSJoverhangMin 8 \
+        --alignSJDBoverhangMin 3 \
+        --outFilterMismatchNmax 999 \
+        --outFilterMismatchNoverReadLmax 0.05 \
+        --alignIntronMin 20 \
+        --alignIntronMax 1000000 \
+        --alignMatesGapMax 1000000 \
+        --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
+        --outSAMstrandField None \
+        --outSAMtype BAM SortedByCoordinate \
+        --quantMode GeneCounts \
+        --outReadsUnmapped Fastx
+        """
 
 rule samtools_sort:
-	input:
-		"mapped_reads/{sample}.bam"
-	output:
-		"sorted_reads/{sample}.bam"
-	run:
-		# -T for temp files prefix
-		shell("samtools sort -@ 2 -T sorted_reads/{wildcards.sample} {input} -o {output}")
-		shell("echo {wildcards.sample}")
+    input:
+        "mapped_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam"
+    run:
+        # -T for temp files prefix
+        shell("samtools sort -@ 2 -T sorted_reads/{wildcards.sample} {input} -o {output}")
+        shell("echo {wildcards.sample}")
 
 rule samtools_index:
-	input:
-		"sorted_reads/{sample}.bam"
-	output:
-		"sorted_reads/{sample}.bam.bai"
-	shell:
-		"""samtools index {input}"""
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam.bai"
+    shell:
+        """samtools index {input}"""
 
 rule bcftools_call:
-	input:
-		fa="data/genome.fa",
-		bam=expand("sorted_reads/{sample}.bam", sample=SAMPLES),
-		# input don't have to be used, just for draw nice DAG
-		bai=expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES),
-	output:
-		"calls/all.vcf"
-	shell:
-		"""samtools mpileup -g -f {input.fa} {input.bam}| \
-		bcftools call -mv - > {output}"""
+    input:
+        fa="data/genome.fa",
+        bam=expand("sorted_reads/{sample}.bam", sample=SAMPLES),
+        # input don't have to be used, just for draw nice DAG
+        bai=expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES),
+    output:
+        "calls/all.vcf"
+    shell:
+        """samtools mpileup -g -f {input.fa} {input.bam}| \
+        bcftools call -mv - > {output}"""
 
