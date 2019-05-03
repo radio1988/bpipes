@@ -3,10 +3,9 @@ GENOME="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary"
 THREADS=4
 
 # load modules
-# shell.prefix("module load fastqc/0.11.5")
-
-shell.prefix("module load fastqc/0.11.5")
-shell.prefix("module load python3/3.5.0_packages/multiqc/1.4")
+shell.prefix("""module load fastqc/0.11.5
+            module load python3/3.5.0_packages/multiqc/1.4
+            """)
 
 # requirements
 # inputs in ./fastq/xxx.{fastq,fq}.gz
@@ -36,8 +35,8 @@ rule fastqc:
         # {output} don't have to be in command
         # have to load module in one block
         """
-        module load fastqc/0.11.5
-        module load python3/3.5.0_packages/multiqc/1.4
+#        module load fastqc/0.11.5
+#        module load python3/3.5.0_packages/multiqc/1.4
         fastqc -t {threads} fastq/*q.gz -o fastqc
         multiqc fastqc -o fastqc
         """
