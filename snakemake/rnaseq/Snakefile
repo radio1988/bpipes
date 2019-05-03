@@ -1,15 +1,27 @@
-SAMPLES=["A", "B", "C"]
-GENOME="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary"
-THREADS=4
+SAMPLES=["S1", "S2"]
+GENOME="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa"
+INDEX="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx"
+GTF="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf"
+THREADS=12
 
 # load modules (have to use """, to keep in one block)
-shell.prefix("""module load fastqc/0.11.5
+shell.prefix("""
+            # fastqc
+            module load fastqc/0.11.5
             module load python3/3.5.0_packages/multiqc/1.4
+            # star
+            module load java/1.8.0_77
+            module load star/2.5.3a
+            #module load samtools/dev-2016_06_06
+            alias samtools='singularity exec ~/singularity/hand_sandbox/ samtools'
             """)
 
-# requirements
+# Requirements
 # inputs in ./fastq/xxx.{fastq,fq}.gz
 # named as {sample}.{R1,R2}.{fastq,fq}.gz
+
+# SnakeMake Coding Notes:
+# input don't have to be used, just for draw nice DAG
 
 # rule all:
 #     input:
@@ -41,22 +53,23 @@ rule fastqc:
         multiqc fastqc/details -o fastqc
         """
 
-
 rule star_map:
     input:
-        fa=GENOME,
-        fq="fastq/{sample}.fastq.gz"
+        index=INDEX,
+        gtf=GTF,
+        reads="fastq/{sample}.fastq.gz"
     threads:
         THREADS
     output:
         "mapped_reads/{sample}.bam"
     shell:
+        # align; rename
         """STAR --runThreadN {threads} \
-        --genomeDir {genome} \
-        --sjdbGTFfile $gtf \
+        --genomeDir {input.index} \
+        --sjdbGTFfile {input.gtf} \
         --readFilesCommand zcat \
-        --readFilesIn $R1 $R2 \
-        --outFileNamePrefix ../star/$name. \
+        --readFilesIn {input.reads} \
+        --outFileNamePrefix mapped_reads/{wildcards.sample}. \
         --outFilterType BySJout \
         --outFilterMultimapNmax 20 \
         --alignSJoverhangMin 8 \
@@ -68,20 +81,25 @@ rule star_map:
         --alignMatesGapMax 1000000 \
         --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
         --outSAMstrandField None \
-        --outSAMtype BAM SortedByCoordinate \
+        --outSAMtype BAM Unsorted \
         --quantMode GeneCounts \
-        --outReadsUnmapped Fastx
+        --outReadsUnmapped Fastx \
+        && mv mapped_reads/{wildcards.sample}*.out.bam mapped_reads/{wildcards.sample}.bam
         """
+
 
 rule samtools_sort:
     input:
         "mapped_reads/{sample}.bam"
     output:
         "sorted_reads/{sample}.bam"
+    threads:
+        THREADS
     run:
         # -T for temp files prefix
-        shell("samtools sort -@ 2 -T sorted_reads/{wildcards.sample} {input} -o {output}")
-        shell("echo {wildcards.sample}")
+        #shell("samtools sort -@ 2 -T sorted_reads/{wildcards.sample} {input} -o {output}")
+        #shell("echo {wildcards.sample}")
+        shell("samtools sort -@ {threads} -m 1G {input} -o sorted_reads/{wildcards.sample}.bam")
 
 rule samtools_index:
     input:
@@ -89,17 +107,26 @@ rule samtools_index:
     output:
         "sorted_reads/{sample}.bam.bai"
     shell:
-        """samtools index {input}"""
+        "samtools index {input}"
 
-rule bcftools_call:
+rule bam_qc:
     input:
-        fa="data/genome.fa",
-        bam=expand("sorted_reads/{sample}.bam", sample=SAMPLES),
-        # input don't have to be used, just for draw nice DAG
-        bai=expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES),
+        "sorted_reads/{sample}.bam"
     output:
-        "calls/all.vcf"
+        "bam_qc/samstat/{sample}.bam.samstat.html"
     shell:
-        """samtools mpileup -g -f {input.fa} {input.bam}| \
-        bcftools call -mv - > {output}"""
+        """
+        mkdir -p bam_qc 
+        mkdir -p bam_qc/idxstats
+        mkdir -p bam_qc/flagstats
+        mkdir -p bam_qc/stats
+        mkdir -p bam_qc/samstat
+        samtools idxstats {input} > bam_qc/idxstats/{wildcards.sample}.idxstats.txt
+        samtools flagstat {input} > bam_qc/flagstat/{wildcards.sample}.flagsat.txt
+        samtools stats {input} > bam_qc/stats/{wildcards.sample}.stats.txt
+        singularity exec ~/singularity/hand_sandbox samstat {input} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat
+        touch bam_qc/{wildcards.sample}.txt
+        """
+        
+
 
