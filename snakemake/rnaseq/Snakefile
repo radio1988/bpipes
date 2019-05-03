@@ -2,7 +2,7 @@ SAMPLES=["A", "B", "C"]
 GENOME="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary"
 THREADS=4
 
-# load modules
+# load modules (have to use """, to keep in one block)
 shell.prefix("""module load fastqc/0.11.5
             module load python3/3.5.0_packages/multiqc/1.4
             """)
@@ -35,10 +35,10 @@ rule fastqc:
         # {output} don't have to be in command
         # have to load module in one block
         """
-#        module load fastqc/0.11.5
-#        module load python3/3.5.0_packages/multiqc/1.4
-        fastqc -t {threads} fastq/*q.gz -o fastqc
-        multiqc fastqc -o fastqc
+        mkdir -p fastqc
+        mkdir -p fastqc/details
+        fastqc -t {threads} fastq/*q.gz -o fastqc/details
+        multiqc fastqc/details -o fastqc
         """
 
 
