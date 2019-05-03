@@ -52,6 +52,8 @@ rule fastqc:
         "fastqc/multiqc_report.html"
     threads:
         THREADS
+    log:
+        "log/fastqc/fastqc.log"
     shell:
         # {output} don't have to be in command
         # have to load module in one block
@@ -67,10 +69,12 @@ rule star_map:
         index=INDEX,
         gtf=GTF,
         reads="fastq/{sample}.fastq.gz"
-    threads:
-        THREADS
     output:
         "mapped_reads/{sample}.bam"
+    threads:
+        THREADS
+    log:
+        "log/star_map/{sample}.log"
     shell:
         # align; rename
         """STAR --runThreadN {threads} \
@@ -104,6 +108,8 @@ rule samtools_sort:
         "sorted_reads/{sample}.bam"
     threads:
         THREADS
+    log:
+        "log/sorted_reads/{sample}.sort.log"
     run:
         # -T for temp files prefix
         #shell("samtools sort -@ 2 -T sorted_reads/{wildcards.sample} {input} -o {output}")
@@ -115,6 +121,8 @@ rule samtools_index:
         "sorted_reads/{sample}.bam"
     output:
         "sorted_reads/{sample}.bam.bai"
+    log:
+        "log/sorted_reads/{sample}.index.log"
     shell:
         "$samtools index {input}"
 
@@ -124,6 +132,8 @@ rule bam_qc:
         bai="sorted_reads/{sample}.bam.bai"
     output:
         "bam_qc/samstat/{sample}.bam.samstat.html"
+    log:
+        "log/bam_qc/{sample}.log"
     shell:
         """
         mkdir -p bam_qc 
@@ -136,3 +146,27 @@ rule bam_qc:
         $samtools stats {input.bam} > bam_qc/stats/{wildcards.sample}.stats.txt
         $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat
         """
+
+rule feature_count:
+    input:
+        bams=expand("sorted_reads/{sample}.bam", sample=SAMPLES),
+        gtf=GTF
+    output:
+        "feature_count/counts.gene_id.txt"
+    log:
+        "log/feature_count/feature_count.log"
+    shell:
+        """
+        featureCounts -a {input.gtf} \
+        -o {output} \
+        -g gene_id \
+        -s 1 \
+        -Q 20 \
+        -T 2 \
+        -p -B \
+        -d 50 -D 1000 \
+        -C \
+        --fracOverlap 0 -–minOverlap 1 \
+        {input.bams}
+        """
+
