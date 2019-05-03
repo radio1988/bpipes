@@ -1,8 +1,12 @@
-SAMPLES=["S1", "S2"]
-GENOME="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa"
-INDEX="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx"
-GTF="/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf"
-THREADS=12
+configfile: "config.yaml"
+
+
+SAMPLES=config["SAMPLES"]
+GENOME=config["GENOME"]
+INDEX=config["INDEX"]
+GTF=config["GTF"]
+
+THREADS=config["THREADS"]
 
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
@@ -42,6 +46,8 @@ rule all:
 rule fastqc:
     # don't need input/output, so no check on them
     # without output will not create output folder
+    input:
+        expand("fastq/{sample}.fastq.gz", sample=SAMPLES)
     output:
         "fastqc/multiqc_report.html"
     threads:
