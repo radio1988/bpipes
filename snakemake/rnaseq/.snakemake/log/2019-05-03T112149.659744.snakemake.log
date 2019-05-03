@@ -1,0 +1,16 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	fastqc
+	1
+
+[Fri May  3 11:21:49 2019]
+rule fastqc:
+    jobid: 0
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: /Users/rui/Google Drive/github/bpipes/snakemake/rnaseq/.snakemake/log/2019-05-03T112149.659744.snakemake.log

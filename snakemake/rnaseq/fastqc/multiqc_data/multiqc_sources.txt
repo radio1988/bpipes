@@ -1,0 +1,3 @@
+Module	Section	Sample Name	Source
+FastQC	all_sections	S1	/Users/rui/Google Drive/github/bpipes/snakemake/rnaseq/fastqc/S1_fastqc.zip
+FastQC	all_sections	S2	/Users/rui/Google Drive/github/bpipes/snakemake/rnaseq/fastqc/S2_fastqc.zip

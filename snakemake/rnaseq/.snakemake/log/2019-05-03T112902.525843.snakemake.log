@@ -1,0 +1,20 @@
+Building DAG of jobs...
+Relative file path './fastqc/' starts with './'. This is redundant and strongly discouraged. It can also lead to inconsistent results of the file-matching approach used by Snakemake. You can simply omit the './' for relative file paths.
+Using shell: /bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	fastqc
+	1
+
+[Fri May  3 11:29:02 2019]
+rule fastqc:
+    output: ./fastqc/
+    jobid: 0
+    threads: 4
+
+[Fri May  3 11:29:12 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+Complete log: /Users/rui/Google Drive/github/bpipes/snakemake/rnaseq/.snakemake/log/2019-05-03T112902.525843.snakemake.log
