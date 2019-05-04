@@ -1,0 +1,6 @@
+- [x] config
+- [] log
+- [] R1/R2
+- [] LSF smart
+- [] params
+- feature_count: auto 3 params
