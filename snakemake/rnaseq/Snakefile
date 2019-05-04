@@ -149,24 +149,34 @@ rule bam_qc:
 
 rule feature_count:
     input:
-        bams=expand("sorted_reads/{sample}.bam", sample=SAMPLES),
+        bams=expand("mapped_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
         gtf=GTF
     output:
-        "feature_count/counts.gene_id.txt"
+        s0="feature_count/counts.gene_id.s0.txt",
+        s1="feature_count/counts.gene_id.s1.txt",
+        s2="feature_count/counts.gene_id.s2.txt"
+    threads:
+        4
+    params:
+        common="-g gene_id -Q 20 --minOverlap 2 --fracOverlap 0.2",
+        strand="-s 0",
+        pair_end="-p -B -d 50 -D 1000 -C"
     log:
         "log/feature_count/feature_count.log"
     shell:
         """
-        featureCounts -a {input.gtf} \
-        -o {output} \
-        -g gene_id \
-        -s 1 \
-        -Q 20 \
-        -T 2 \
-        -p -B \
-        -d 50 -D 1000 \
-        -C \
-        --fracOverlap 0 -–minOverlap 1 \
-        {input.bams}
+        featureCounts -a {input.gtf} -o {output.s0} -T {threads} {params.common} {params.pair_end} -s 0 {input.bams}
+        featureCounts -a {input.gtf} -o {output.s1} -T {threads} {params.common} {params.pair_end} -s 1 {input.bams}
+        featureCounts -a {input.gtf} -o {output.s2} -T {threads} {params.common} {params.pair_end} -s 2 {input.bams}
         """
+        # -p: count Fragments rather than reads for Paired-end reads (remove this for SE data)
+        # -C: exclude chimeric (most times, for cancer maybe not include this)
+        # -d 50, -D 1000: including PE reads with fragment length in between, which is better than default 50-600
+        # -T: num threads
+        # -s: strand info, very important; use $i to perform all three possibilities, pick the correct one after counting
+        # -Q: min MAPQ, if MAPQ from star, we need to be careful, because star ignores PE information, we might need to add addional step to rescue PE info. (https://github.com/alexdobin/STAR/issues/615)
+        # -M: count multiple-mapping reads, based on NH, not useful for RNA-seq, may create misleading summary, by counting multi-mapping reads several times
+        # -B: Only count read pairs that have both ends aligned.
+        # --fracOverlap 0.2: 20% of read length
+        # -–minOverlap 2: 2bp
 
