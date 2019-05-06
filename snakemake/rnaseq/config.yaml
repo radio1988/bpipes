@@ -2,6 +2,7 @@
 SAMPLES:
     - S1
     - S2
+    - B
 
 GENOME:
     /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
@@ -10,7 +11,4 @@ INDEX:
 GTF:
     /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
 
-# Running Params
-THREADS:
-    12
-
+STRAND: [0, 1, 2]  # can run [0, 1, 2] to get all possible results, can also select one

@@ -1,6 +1,7 @@
 - [x] config
-- [] log
+- [x] feature_count: auto 3 params
+- [x] feed wildcards (sample/strand) by rule all, input; and config, using expand, but not expand in rule feature_count, output
+- [x] log
 - [] R1/R2
-- [] LSF smart
-- [] params
-- feature_count: auto 3 params
+- [x] LSF smart
+- [x] params
