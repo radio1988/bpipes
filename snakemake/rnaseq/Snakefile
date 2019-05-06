@@ -5,6 +5,7 @@ SAMPLES=config["SAMPLES"]
 GENOME=config["GENOME"]
 INDEX=config["INDEX"]
 GTF=config["GTF"]
+STRAND = [0, 1, 2]
 
 THREADS=config["THREADS"]
 
@@ -31,17 +32,13 @@ shell.prefix("""
 
 rule all:
     input:
-        # just for check exist, and aggregate, feed {sample}
-        #fastqc=expand("fastqc/{sample}_fastqc.html", sample=SAMPLES),
-        fastqc="fastqc/multiqc_report.html",
-        bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES) # assign {samples}
-    output:
-        "dag.all.svg"
-    run:
-        # creating DAG works (specify report or last_step as target)
-        shell("snakemake --dag all | dot -Tsvg > {output}") 
-        # create report failed, because log not finished, have to do this later manually
-        # shell("snakemake report --report report.html")
+        # 1. everything listed here will be produced by the pipeline
+        # 2. feed {sample}
+        fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
+        bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
+        feature_count=expand("feature_count/counts.gene_id.s{strand}.txt", strand=STRAND), # feed {strand}
+        dag="dag.all.svg", # create DAG
+
 
 rule fastqc:
     # don't need input/output, so no check on them
@@ -55,7 +52,7 @@ rule fastqc:
     log:
         "log/fastqc/fastqc.log"
     shell:
-        # {output} don't have to be in command
+        # {input/output} don't have to be in command
         # have to load module in one block
         """
         mkdir -p fastqc
@@ -63,6 +60,7 @@ rule fastqc:
         fastqc -t {threads} fastq/*q.gz -o fastqc/details
         multiqc fastqc/details -o fastqc
         """
+
 
 rule star_map:
     input:
@@ -116,6 +114,7 @@ rule samtools_sort:
         #shell("echo {wildcards.sample}")
         shell("$samtools sort -@ {threads} -m 1G {input} -o sorted_reads/{wildcards.sample}.bam")
 
+
 rule samtools_index:
     input:
         "sorted_reads/{sample}.bam"
@@ -125,6 +124,7 @@ rule samtools_index:
         "log/sorted_reads/{sample}.index.log"
     shell:
         "$samtools index {input}"
+
 
 rule bam_qc:
     input:
@@ -147,27 +147,27 @@ rule bam_qc:
         $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat
         """
 
+
 rule feature_count:
     input:
         bams=expand("mapped_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
         gtf=GTF
     output:
-        s0="feature_count/counts.gene_id.s0.txt",
-        s1="feature_count/counts.gene_id.s1.txt",
-        s2="feature_count/counts.gene_id.s2.txt"
+        "feature_count/counts.gene_id.s{strand}.txt"
     threads:
         4
     params:
         common="-g gene_id -Q 20 --minOverlap 2 --fracOverlap 0.2",
-        strand="-s 0",
         pair_end="-p -B -d 50 -D 1000 -C"
     log:
         "log/feature_count/feature_count.log"
     shell:
         """
-        featureCounts -a {input.gtf} -o {output.s0} -T {threads} {params.common} {params.pair_end} -s 0 {input.bams}
-        featureCounts -a {input.gtf} -o {output.s1} -T {threads} {params.common} {params.pair_end} -s 1 {input.bams}
-        featureCounts -a {input.gtf} -o {output.s2} -T {threads} {params.common} {params.pair_end} -s 2 {input.bams}
+        featureCounts -a {input.gtf} -o {output} \
+        -T {threads} \
+        {params.common} {params.pair_end} \
+        -s {wildcards.strand} \
+        {input.bams}
         """
         # -p: count Fragments rather than reads for Paired-end reads (remove this for SE data)
         # -C: exclude chimeric (most times, for cancer maybe not include this)
@@ -179,4 +179,11 @@ rule feature_count:
         # -B: Only count read pairs that have both ends aligned.
         # --fracOverlap 0.2: 20% of read length
         # -–minOverlap 2: 2bp
+
+
+rule create_dag:
+    output:
+        "dag.all.svg"
+    shell:
+        "snakemake --dag all | dot -Tsvg > {output}"
 
