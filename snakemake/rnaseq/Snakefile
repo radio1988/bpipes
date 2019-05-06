@@ -41,7 +41,7 @@ rule all:
 
 rule fastqc:
     # don't need input, if you agree on not checking them
-    # without output will not create output folder
+    # without output, output will not be created
     output:
         "fastqc/multiqc_report.html"
     params:

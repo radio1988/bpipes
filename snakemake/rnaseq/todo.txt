@@ -5,3 +5,4 @@
 - [] R1/R2
 - [x] LSF smart
 - [x] params
+- [] Robust LSF MEM request for STAR: incase not enough CPU were given, 36GB RAM not reached as a result
