@@ -1,0 +1,1 @@
+echo data/data1.txt [1, 2] c.> out/data1.c.txt

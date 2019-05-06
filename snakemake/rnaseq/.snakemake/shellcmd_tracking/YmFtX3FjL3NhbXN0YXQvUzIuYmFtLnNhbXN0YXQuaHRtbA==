@@ -1,0 +1,11 @@
+
+        mkdir -p bam_qc 
+        mkdir -p bam_qc/idxstats
+        mkdir -p bam_qc/flagstat
+        mkdir -p bam_qc/stats
+        mkdir -p bam_qc/samstat
+        $samtools idxstats sorted_reads/S2.bam > bam_qc/idxstats/S2.idxstats.txt
+        $samtools flagstat sorted_reads/S2.bam > bam_qc/flagstat/S2.flagsat.txt
+        $samtools stats sorted_reads/S2.bam > bam_qc/stats/S2.stats.txt
+        $samstat sorted_reads/S2.bam && mv sorted_reads/S2*.samstat.html bam_qc/samstat
+        

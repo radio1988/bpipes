@@ -1,0 +1,1 @@
+echo data/data2.txt 3 > out/data2.3txt

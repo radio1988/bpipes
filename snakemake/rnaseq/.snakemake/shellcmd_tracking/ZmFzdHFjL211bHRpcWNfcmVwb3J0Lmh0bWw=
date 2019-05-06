@@ -1,0 +1,6 @@
+
+        mkdir -p fastqc
+        mkdir -p fastqc/details
+        fastqc -t 12 fastq/*q.gz -o fastqc/details
+        multiqc fastqc/details -o fastqc
+        

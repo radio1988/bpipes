@@ -1,0 +1,3 @@
+
+        featureCounts -a /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf -o feature_count/counts.gene_id.s1.txt         -T 1         -g gene_id -Q 20 --minOverlap 2 --fracOverlap 0.2 -p -B -d 50 -D 1000 -C         -s 1         mapped_reads/S1.bam mapped_reads/S2.bam
+        

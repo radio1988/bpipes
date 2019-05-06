@@ -1,0 +1,18 @@
+SAMPLES=["data1", "data2"]
+
+rule all:
+	input:
+		# Shows how to feed wildcards (sample and strand)
+		# don't need output here at all
+		expand("out/{sample}.{strand}txt", 
+			sample=SAMPLES,
+			strand=[1,2])
+
+
+rule test_params:
+	input:
+		"data/{sample}.txt"
+	output:
+		"out/{sample}.{strand}txt"
+	shell:
+		"echo data/{wildcards.sample}.txt {wildcards.strand} > {output}"

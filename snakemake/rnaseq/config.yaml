@@ -1,0 +1,16 @@
+# Analysis Params
+SAMPLES:
+    - S1
+    - S2
+
+GENOME:
+    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
+INDEX:
+    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx
+GTF:
+    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+
+# Running Params
+THREADS:
+    12
+

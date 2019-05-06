@@ -1,6 +1,6 @@
 #!/bin/bash
-#BSUB -J "star[1-24]" # same as num-fastqs
-#BSUB -R rusage[mem=3200] # 30-40G/num-threads * num-fastqs
+#BSUB -J "star[1-64]" # same as num-fastqs
+#BSUB -R rusage[mem=3000] # 30-40G/num-threads * num-fastqs
 #BSUB -n 12
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 #BSUB -q short
@@ -9,26 +9,24 @@ mkdir -p ../star
 mkdir -p ../star/log
 #BSUB -o ../star/log/star.%J.%I.out
 #BSUB -e ../star/log/star.%J.%I.err
-#BSUB -N
-
 
 ## CONFIG
 i=$(($LSB_JOBINDEX- 1))
 
 ## genome info
 genome_idx='/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx/'
-gtf='/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.gtf'
+gtf='/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf'
 
 ## aligner info
 bam_dir=star
 
 ## sample info
-R1s=(`ls ../fastq/*R1.fastq.gz`)
+R1s=(`ls ../fastq/*_R1.fastq.gz`)
 #echo 'R1s:' ${#R1s[@]} ${R1s[@]}
 
 ## input names
 R1=${R1s[$i]}  # without dir_name
-R2=${R1/R1/R2}
+R2=${R1/_R1.f/_R2.f}
 
 name=${R1s[$i]}  # without dir_name
 name=${name/_R1.fastq.gz/} #need to change
@@ -40,6 +38,8 @@ echo 'For' $i $R1 $R2 $name
 ## Alignment
 module load java/1.8.0_77
 module load star/2.5.3a
+samtools='singularity exec ~/singularity/hand_sandbox/ samtools'
+samstat='singularity exec ~/singularity/hand_sandbox samstat'
 
 STAR --runThreadN 12 \
 --genomeDir $genome_idx \
@@ -68,16 +68,20 @@ echo '## POST STAR'
 echo $i 'bam_file' $bam_file
 mkdir -p ../${bam_dir}/idxstats
 mkdir -p ../${bam_dir}/flagstat
+mkdir -p ../${bam_dir}/stats
 
-module load samtools/dev-2016_06_06
-samtools index $bam_file ${bam_file}.bai &&
-samtools idxstats $bam_file > ../$bam_dir/idxstats/${name}.idxstats.txt &&
-samtools flagstat $bam_file > ../$bam_dir/flagstat/${name}.flagstat.txt &&
+$samtools index $bam_file ${bam_file}.bai &&
+$samtools idxstats $bam_file > ../$bam_dir/idxstats/${name}.idxstats.txt &
+$samtools flagstat $bam_file > ../$bam_dir/flagstat/${name}.flagstat.txt &
+$samtools stats $bam_file > ../$bam_dir/stats/${name}.stats.txt &
+wait
+echo "Stats of bam done"
 
 module purge
 bamCoverage='/home/rl44w/.local/bin/bamCoverage'
 $bamCoverage --bam $bam_file -o ${bam_file}.cpm.bw \
 --numberOfProcessors 10 \
 --normalizeUsing CPM  \
---binSize 10 \
+--binSize 1 \
 --outFileFormat bigwig
+echo "bigWig created"
