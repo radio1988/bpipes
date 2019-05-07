@@ -1,0 +1,3 @@
+PAIR_END: True  # True/False
+
+SAMPLE_INFO: "samples.csv" # the csv file that contains sample info
