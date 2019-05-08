@@ -65,7 +65,8 @@ rule star_map:
     input:
         index=INDEX,
         gtf=GTF,
-        reads="fastq/{sample}.R1.fastq.gz fastq/{sample}.R2.fastq.gz"
+        r1="fastq/{sample}.R1.fastq.gz",
+        r2="fastq/{sample}.R2.fastq.gz",
     output:
         "mapped_reads/{sample}.bam"
     params:
@@ -80,7 +81,7 @@ rule star_map:
         --genomeDir {input.index} \
         --sjdbGTFfile {input.gtf} \
         --readFilesCommand zcat \
-        --readFilesIn {input.reads} \
+        --readFilesIn {input.r1} {input.r2} \
         --outFileNamePrefix mapped_reads/{wildcards.sample}. \
         --outFilterType BySJout \
         --outFilterMultimapNmax 20 \
