@@ -68,7 +68,7 @@ rule star_map:
         r1="fastq/{sample}.R1.fastq.gz",
         r2="fastq/{sample}.R2.fastq.gz",
     output:
-        "mapped_reads/{sample}.bam"
+        temp("mapped_reads/{sample}.bam")
     params:
         mem="3000"  # todo auto adjust based on {threads}
     threads:
