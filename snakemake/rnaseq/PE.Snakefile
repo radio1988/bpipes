@@ -195,6 +195,10 @@ rule feature_count:
         # -B: Only count read pairs that have both ends aligned.
         # --fracOverlap 0.2: 20% of read length
         # -–minOverlap 2: 2bp
+        # Notes:
+        # liberal overlap settings (--minOverlap 1 --fracOverlap 0) will give you more counted reads
+        # samtools sorted bams are smaller, and faster to be counted, compared to unsorted bams/star sorted bams
+        # star sorted bams are slow to count => use samtools sorted reads, delete star bam (set as temp)
 
 
 rule create_dag:
