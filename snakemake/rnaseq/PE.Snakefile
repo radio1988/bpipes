@@ -100,6 +100,8 @@ rule star_map:
         &> {log}
 
         mv mapped_reads/{wildcards.sample}*.out.bam mapped_reads/{wildcards.sample}.bam
+        
+        gzip -f mapped_reads/{wildcards.sample}.Unmapped.out.mate*
         """
 
 
