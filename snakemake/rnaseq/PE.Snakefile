@@ -36,7 +36,7 @@ rule all:
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
         feature_count=expand("feature_count/counts.gene_id.s{strand}.txt", strand=STRAND), # feed {strand}
-        dag="dag.all.svg", # create DAG
+        dag="Workflow_DAG.all.svg", # create DAG
 
 
 rule fastqc:
@@ -205,9 +205,9 @@ rule create_dag:
     threads:
         1
     output:
-        "dag.all.svg"
+        "Workflow_DAG.all.svg"
     log:
-        "create_dag/dag.all.svg.log"
+        "create_dag/Workflow_DAG.all.svg"
     shell:
         "snakemake --dag all | dot -Tsvg > {output} 2> {log}"
 
