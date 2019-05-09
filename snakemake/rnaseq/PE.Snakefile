@@ -36,7 +36,7 @@ rule all:
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
         feature_count=expand("feature_count/counts.gene_id.s{strand}.txt", strand=STRAND), # feed {strand}
-        dag="dag.all.svg", # create DAG
+        dag="Workflow_DAG.all.svg", # create DAG
 
 
 rule fastqc:
@@ -68,7 +68,7 @@ rule star_map:
         r1="fastq/{sample}.R1.fastq.gz",
         r2="fastq/{sample}.R2.fastq.gz",
     output:
-        "mapped_reads/{sample}.bam"
+        temp("mapped_reads/{sample}.bam")
     params:
         mem="3000"  # todo auto adjust based on {threads}
     threads:
@@ -165,13 +165,13 @@ rule bam_qc:
 
 rule feature_count:
     input:
-        bams=expand("mapped_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
+        bams=expand("sorted_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
         gtf=GTF
     output:
         "feature_count/counts.gene_id.s{strand}.txt"
     params:
         mem="4000",
-        common="-g gene_id -Q 20 --minOverlap 2 --fracOverlap 0.2",
+        common="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0",
         pair_end="-p -B -d 50 -D 1000 -C"
     threads:
         4
@@ -205,9 +205,9 @@ rule create_dag:
     threads:
         1
     output:
-        "dag.all.svg"
+        "Workflow_DAG.all.svg"
     log:
-        "create_dag/dag.all.svg.log"
+        "create_dag/Workflow_DAG.all.svg"
     shell:
         "snakemake --dag all | dot -Tsvg > {output} 2> {log}"
 
