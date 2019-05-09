@@ -215,7 +215,7 @@ rule create_dag:
     output:
         "Workflow_DAG.all.svg"
     log:
-        "create_dag/Workflow_DAG.all.svg"
+        "log/create_dag/Workflow_DAG.all.svg.log"
     shell:
         "snakemake --dag all | dot -Tsvg > {output} 2> {log}"
 
