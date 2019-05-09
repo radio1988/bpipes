@@ -102,6 +102,8 @@ rule star_map:
         mv mapped_reads/{wildcards.sample}*.out.bam mapped_reads/{wildcards.sample}.bam
         
         gzip -f mapped_reads/{wildcards.sample}.Unmapped.out.mate*
+        
+        rm -rf mapped_reads/*_STARgenome mapped_reads/*_STARtmp
         """
 
 
