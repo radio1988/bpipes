@@ -165,13 +165,13 @@ rule bam_qc:
 
 rule feature_count:
     input:
-        bams=expand("mapped_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
+        bams=expand("sorted_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
         gtf=GTF
     output:
         "feature_count/counts.gene_id.s{strand}.txt"
     params:
         mem="4000",
-        common="-g gene_id -Q 20 --minOverlap 2 --fracOverlap 0.2",
+        common="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0",
         pair_end="-p -B -d 50 -D 1000 -C"
     threads:
         4
