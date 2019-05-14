@@ -1,1 +1,0 @@
-perl /home/rl44w/github/bpipes/misc/gff_gtf/get_anno_tab/gtf2anno_tab.pl gencode.vM21.annotation.gtf
