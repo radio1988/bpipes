@@ -1,13 +1,11 @@
 ---
 title: "DEseq2"
 author: "RuiLi"
-date: "05/09/2018"
+date: "05/16/2018"
 output:
   html_document:
     toc: yes
-  html_notebook:
     code_folding: hide
-    toc: yes
     toc_float: yes
 ---
 
@@ -23,6 +21,8 @@ output:
 - export results in original order, not ordered by LFC nor FDR (more robust)
 - export significant results, too (FDR and |LFC|, not including edges)
 - better VolcanoPlot by setting Max Y to 50 (>50 set to 50)
+- better html output, skip nb, use html
+- both OneBigModel and SeperatedModels
 
 ```{r setup, include=FALSE}
 library(DESeq2)
@@ -33,7 +33,7 @@ require(plyr)
 library(gdata)
 
 thresh_p <- 0.05
-thresh_LFC <- 0.332
+thresh_LFC <- 1
 
 volcanoplot <- function (res, 
                          lfcthresh=2, sigthresh=thresh_p, 
@@ -133,7 +133,7 @@ paste("Log2FC cut-off:", thresh_LFC)
 
 # Read Data
 ```{r readdata}
-df <- read.table('../snakemake/feature_count2b/counts.gene_id.s0.txt', 
+df <- read.table('../feature_count/counts.gene_id.s0.txt', 
                  sep="\t", header=TRUE, 
                  row.names = 1) # row.name in cts(matrix)
 colnames(df)
@@ -178,7 +178,7 @@ dim(df)
 # Read Anno
 ```{r}
 anno <- read.table(
-    "~/github/bpipes/rnaseq/de/annotations/gencode.mm10.vM21/gencode.vM21.annotation.txt.gz", 
+    "~/github/bpipes/rnaseq/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz", 
     header=T)
 anno$Gene <- gsub("\\.*", "", anno$Gene)  # for annotation purpose
 
@@ -204,12 +204,14 @@ WriteXLS(x = tpm_out,
 # DESeq Experiment Design (One Big Model)
 - for QC and comparison with seperated model only
 ```{r design}
-genotype <- factor(c(rep("CP1",4), 
-                     rep("DMSO", 2)))
+genotype <- factor(c(
+    rep("CR",6), 
+    rep("KD", 6)
+    ))
 genotype
 
-time <- factor(c(rep(c("2D", "4D"), each=2), 
-               rep(c("2D", "4D"), each=1)))
+time <- factor(c(rep(c("D7", "D14"), each=3), 
+               rep(c("D7", "D14"), each=3)))
 time
 
 type <- factor(paste(genotype, time, sep = "_"))
@@ -226,9 +228,9 @@ dds <- DESeqDataSetFromMatrix(countData = cts,
                               colData = coldata, 
                               design = ~ type
                               )  # converted to alph-order
-dds$type <- relevel(dds$type, 
-                    ref = "DMSO_2D"
-                    )
+# dds$type <- relevel(dds$type, 
+#                     ref = "DMSO_2D"
+#                     )
 # dds$mouse <- relevel(dds$mouse, 
 #                      ref = "Mouse1"
 #                      )
@@ -268,10 +270,10 @@ hist(logNormed, main='log10(x+1) normalized expression')
 ## PCA plots
 - look at batch effect 
 ```{r}
-pcaData <- plotPCA(vsd, intgroup=c("type"), returnData=TRUE)
+pcaData <- plotPCA(vsd, intgroup=c("genotype", "time"), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 
-ggplot(pcaData, aes(PC1, PC2, color=type, shape=type)) +
+ggplot(pcaData, aes(PC1, PC2, color=genotype, shape=time)) +
   geom_point(size=3) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
@@ -287,7 +289,7 @@ library("PoiClaClu")
 colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
 poisd <- PoissonDistance(t(counts(dds)))
 samplePoisDistMatrix <- as.matrix( poisd$dd ) 
-rownames(samplePoisDistMatrix) <- paste( colnames(dds), sep="-" ) 
+rownames(samplePoisDistMatrix) <- paste( coldata$type, sep="-" ) 
 colnames(samplePoisDistMatrix) <- NULL 
 colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
 pheatmap(samplePoisDistMatrix,
@@ -301,38 +303,57 @@ pheatmap(samplePoisDistMatrix,
 
 # Results from different contrasts
 
-## D2_CP1_vs_DMSO (Seperated Models)
+## One Big Model (D7_KD_vs_CR_v1)
 ```{r}
-# idx <- grep('D0',colnames(cts))
-idx <- c(1, 2, 5, 6)
+resultsNames(dds)
+res <- lfcShrink(dds, contrast = c('type', 'KD_D7', 'CR_D7'), type = 'ashr')
+name <- "D7_KD_vs_CR_v1"
+process_deseq_res(res = res, name = name, anno = tpm_out)
+```
+
+## One Big Model (D14_KD_vs_CR_v1)
+```{r}
+resultsNames(dds)
+res <- lfcShrink(dds, contrast = c('type', 'KD_D14', 'CR_D14'), type = 'ashr')
+name <- "D14_KD_vs_CR_v1"
+process_deseq_res(res = res, name = name, anno = tpm_out)
+```
+
+
+
+## D7_KD_vs_CR (Seperated Models)
+```{r}
+idx <- grep('D7', coldata$type)
+# idx <- c(1, 2, 5, 6)
 head(cts[, idx])
 coldata[idx,]
 dds <- DESeqDataSetFromMatrix(countData = cts[, idx], 
                               colData = coldata[idx,], 
-                              design = ~ genotype )  # converted to alph-order
+                              design = ~ type )  # converted to alph-order
 dds <-DESeq(dds)
 dds
 resultsNames(dds)
 
-res <- lfcShrink(dds, contrast = c('genotype', 'CP1', 'DMSO'), type = 'ashr')
-name <- "D2_CP1_vs_DMSO"
+res <- lfcShrink(dds, contrast = c('type', 'KD_D7', 'CR_D7'), type = 'ashr')
+name <- "D7_KD_vs_CR"
 process_deseq_res(res = res, name = name, anno = tpm_out[c(1:3, 3+idx)])
 ```
 
-## D4_CP1_vs_DMSO (Seperated Models)
+
+## D14_KD_vs_CR (Seperated Models)
 ```{r}
-# idx <- grep('D0',colnames(cts))
-idx <- c(3, 4, 5, 6)
+idx <- grep('D14', coldata$type)
+# idx <- c(1, 2, 5, 6)
 head(cts[, idx])
 coldata[idx,]
 dds <- DESeqDataSetFromMatrix(countData = cts[, idx], 
                               colData = coldata[idx,], 
-                              design = ~ genotype )  # converted to alph-order
+                              design = ~ type )  # converted to alph-order
 dds <-DESeq(dds)
 dds
 resultsNames(dds)
 
-res <- lfcShrink(dds, contrast = c('genotype', 'CP1', 'DMSO'), type = 'ashr')
-name <- "D4_CP1_vs_DMSO"
+res <- lfcShrink(dds, contrast = c('type', 'KD_D14', 'CR_D14'), type = 'ashr')
+name <- "D14_KD_vs_CR"
 process_deseq_res(res = res, name = name, anno = tpm_out[c(1:3, 3+idx)])
 ```
