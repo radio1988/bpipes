@@ -1,0 +1,118 @@
+---
+title: "Venn:"
+author: "RuiLi"
+date: "05/20/2019"
+output:
+  html_document:
+    toc: yes  # table of content
+    code_folding: hide
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+library(VennDiagram)
+library(gdata)
+library(WriteXLS)
+```
+
+## Read Data
+```{r readdata}
+name1 <- "Rictor"
+df1 <- read.xls( '../Rictor.D0_KO_vs_WT.FDR0.01.LFC0.322.sig.xls', na='-')  # na term important
+df1 <- data.frame(df1)  #important
+
+colnames(df1)
+dim(df1)
+
+head(df1)
+list1 <- df1$X
+area1 <- length(list1)
+```
+
+```{r}
+name2 <- "Acly"
+df2 <- readxl::read_xlsx( '../Acly.D0_KO_vs_WT.deseq2.sig.FDR.0.05.LFC.0.322.xlsx', na='-')  # na term important
+df2 <- data.frame(df2)  #important
+
+colnames(df2)
+dim(df2)
+
+list2<- factor(df2$Gene)
+area2 <- length(list2)
+```
+
+## Overlap
+```{r}
+overlap <- intersect(list1, list2)
+overlap_area <- length(overlap)
+```
+
+## Venn plot
+```{r}
+pdf("venn.pdf")
+## A more complicated diagram Demonstrating external area labels
+venn.plot <- draw.pairwise.venn(area1           = area1,
+                                area2           = area2,
+                                cross.area      = overlap_area,
+                                category        = c(name1, name2),
+                                fill            = c("blue", "red"),
+                                lty             = c("solid", 'solid'),
+                                scaled = F,
+                                alpha = 0.5,
+                                cex             = 2,  # size of label
+                                cat.cex         = 2,  # size of category names
+                                cat.pos         = c(0, 0),
+                                cat.dist        = 0.03,
+                                # cat.just        = list(c(0, 0), c(0.5, 0)),
+                                # ext.pos         = 0,
+                                # ext.dist        = -0.05,
+                                # ext.length      = 0.85,
+                                # ext.line.lwd    = 2,
+                                # ext.line.lty    = "dashed"
+                               )
+dev.off()
+```
+# Save Gene List
+## df1 specific
+```{r}
+df1_specific <- data.frame(X=setdiff(list1, list2))
+df1_specific <- merge(df1, df1_specific, by.x = 1, by.y = 1)
+
+WriteXLS(x = df1_specific, 
+         ExcelFileName = paste(name1, "specific", 'xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+## df2 specific
+```{r}
+df2_specific <- data.frame(X=setdiff(list2, list1))
+df2_specific <- merge(df2, df2_specific, by.x = 1, by.y = 1)
+
+WriteXLS(x = df2_specific, 
+         ExcelFileName = paste(name2, "specific", 'xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+
+## Overlap in df1
+```{r}
+df_overlap1 <- data.frame(X=intersect(list2, list1))
+df_overlap1 <- merge(df1, df_overlap1, by.x = 1, by.y = 1)
+
+WriteXLS(x = df_overlap1, 
+         ExcelFileName = paste("overlap", name1, 'xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+
+
+## Overlap in df2
+```{r}
+df_overlap2 <- data.frame(X=intersect(list2, list1))
+df_overlap2 <- merge(df2, df_overlap2, by.x = 1, by.y = 1)
+
+WriteXLS(x = df_overlap2, 
+         ExcelFileName = paste("overlap", name2, 'xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
