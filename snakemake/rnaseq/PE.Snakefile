@@ -184,6 +184,9 @@ rule bamCoverage:
         --numberOfProcessors 4 \
         --outFileFormat bigwig \
         --normalizeUsing CPM \
+        --minMappingQuality 20 \
+        --minFragmentLength 50 \
+        --maxFragmentLength 1000 \
         --binSize 10 \
         # -e 150 \
         """
