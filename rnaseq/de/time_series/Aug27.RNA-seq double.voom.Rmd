@@ -1,0 +1,715 @@
+---
+title: "Yeast gene expression profiling crz1hog1.FK506 vs crz1hog1.ET, and crz1hog1.ET vs crz1.ET"
+csl: nature.csl
+output:
+  html_document:
+    toc: yes
+  html_notebook:
+    code_folding: show
+    toc: yes
+    toc_float: yes
+bibliography: citation.bibtex
+---
+
+```{r setup, include=FALSE}
+Sys.setenv(JAVA_HOME='/Library/Java/JavaVirtualMachines/jdk1.8.0_144.jdk/Contents/Home/jre/') # for 64-bit version
+## This line is important for rJava to be loaded
+dyn.load('/Library/Java/JavaVirtualMachines/jdk1.8.0_144.jdk/Contents/Home/jre/lib/server/libjvm.dylib')
+library(rJava)
+
+knitr::opts_chunk$set(warning = FALSE)
+library(limma)
+library(edgeR)
+library(DESeq2)
+library(xlsx)
+library(gdata)
+library(ggplot2)
+library(pheatmap)
+library(reshape2)
+library(nlme)
+library(ecodist)
+library(sva)
+source("DBF.test.R")
+```
+
+# TODO list
+
+1. Alignment of crz1hog1.ET and crz1hog1.FK506 RNA-seq data to S. cerevisae (Scer3) and generate fpkm table to all genes, 
+including gene names along with ORF IDs in the file.
+
+2. For new experiment samples (crz1hog1.FK506 vs crz1hog1.ET), Calculate fold change values of each time point to the 
+corresonding 0 min sample, and determine whihc changes are significantly different from 0
+
+3. Determine whether the fold change at each time point relative to time 0 is significantly different between crz1hog1.ET 
+samples and crz1hog1.FK506 experiments, for all genes (This is to test interaction between time and strains)
+
+4. Extract sets of genes that we are interested in and calcuate average expression at each time point, generate heatmaps
+  
+    *     SBF/MBF targets (134)
+    *     SBF & MBF (35)
+    *     MBF only (62)
+    *     SBF only (37)
+    *     Hcm1 targets (97)
+    *     Clb2 cluster (38)
+    *     Mcm cluster (38)
+    *     Ace2/Swi5 targets (157)
+    *     Ace2 & Swi5 (30)
+    *     Ace2 only (44)
+    *     Swi5 only(83)
+    *     Hog1/Msn targets (270)
+
+
+5. Determine whether the fold change at each time point relative to time 0 is significantly different between crz1hog1.ET 
+samples and previous crz1.ET experiments, for all genes (This is to test interaction between time and strains)
+CAUTION: Because the two sets of samples were processed in totally different batches, btach effects might confound with biological 
+effects.
+
+# Experimental design
+
+In experiments of crz1hog1.FK506, CaCl2 is added to a culture and samples are taken at 3 time points -- 10, 30, 60 minutes, 
+with time 0 as baseline
+
+experiments | sample name | description
+-----|--------|------
+pre_1 and pre_4 | crz1.ET | Previous control samples
+A and C | crz1hog1.ET | New control samples
+B and D | crz1hog1.FK506 | New samples treated with FK506 inhibitor
+
+
+# Design file
+
+file | sample | time | group | batch
+-----|--------|------|-------|------
+1-0 | 1 | 0 | crz1.ET | 3
+1-10 | 1 | 10 | crz1.ET | 3
+1-30 | 1 | 30 | crz1.ET | 3
+1-60 | 1 | 60 | crz1.ET | 3
+4-0 | 4 | 0 | crz1.ET | 4
+4-10 | 4 | 10 | crz1.ET | 4
+4-30 | 4 | 30 | crz1.ET | 4
+4-60 | 4 | 60 | crz1.ET | 4
+A-0 | A | 0 | crz1hog1.ET | 1
+A-10 | A | 10 | crz1hog1.ET | 1
+A-30 | A | 30 | ccrz1hog1.ET | 1
+A-60 | A | 60 | crz1hog1.ET | 1
+B-0 | B | 0 | crz1hog1.FK506 | 1
+B-10 | B | 10 | crz1hog1.FK506 | 1
+B-30 | B | 30 | crz1hog1.FK506 | 1
+B-60 | B | 60 | crz1hog1.FK506 | 1
+C-0 | C | 0 | crz1hog1.ET | 2
+C-10 | C | 10 | crz1hog1.ET | 2
+C-30 | C | 30 | ccrz1hog1.ET | 2
+C-60 | C | 60 | crz1hog1.ET | 2
+D-0 | D | 0 | crz1hog1.FK506 | 2
+D-10 | D | 10 | crz1hog1.FK506 | 2
+D-30 | D | 30 | crz1hog1.FK506 | 2
+D-60 | D | 60 | crz1hog1.FK506 | 2
+
+# Note
+
+All files could be downloaded from [here](./).
+
+
+## 1. Alignment of crz1hog1.ET and crz1hog1.FK506 RNA-seq data to S. cerevisae (Scer3) and generate fpkm table to all genes, including gene names along with ORF IDs in the file. This alignment was done using tophat2 and RSEM to get the count table and FPKM, respectively. 
+
+
+##  2. For new experiment samples (crz1hog1.FK506 vs crz1hog1.ET), Calculate fold change values of each time point to the corresonding 0 min sample, and determine whihc changes are significantly different from 0, using a double voom method
+
+Here we call `voom` and `duplicateCorrelation` twice each to treat _sample_ as a random effect. 
+This can be done in limma using the `duplicateCorrelation` function. 
+`voom` is used to prepare the inputs for `lmFit`.
+Function `DESeq2::DESeqDataSetFromHTSeqCount` is used to import count matrix from [HTseq-count](http://www-huber.embl.de/HTSeq/doc/count.html) results.
+
+```{r}
+
+#### read crz1hog1.ET and crz1hog1.FK506 count table created by Haibo 
+
+countTable <- read.delim("crz1hog1.ET+crz1hog1.FK506.count.table.txt", as.is =T, row.name=1)
+
+#### read metadata
+
+sampleTable <- read.delim("AUG27.metadata.txt", as.is=T)
+sampleTable$lev <- paste(sampleTable$Group, sampleTable$Time, sep ="_")
+sampleTable$lev <- as.factor(sampleTable$lev)
+sampleTable$Batch <- as.factor(sampleTable$Batch)
+head(sampleTable)
+```
+
+We have *countTable* and *sampleTable* now. We will call `voom` and `duplicateCorrelation` twice.
+
+> Can you explain to me what the different columns are in the tables?
+
+_A_: In the table `gene.diff.double.voom.csv`, we compared samples to corresponding time 0 for each time point. For each comparison, there are 7 columns. The column names will be, for example, 
+for crz1.ET sample time 10 point, crz1hog1.ET_10.FoldChange, crz1hog1.ET_10.logFC, 
+crz1hog1.ET_10.AveExpr, crz1hog1.ET_10.t, crz1hog1.ET_10.P.Value, crz1hog1.ET_10.adj.P.Val, 
+crz1hog1.ET_10.B. *crz1hog1.ET_10* is the prefix, which indicates the sample and time. 
+And the suffix meaning is showning following table
+
+suffix | description
+-------|------------
+FoldChange | fold change vs. time 0
+logFC | log2 fold change vs. time 0
+AveExpr | average log2-expression for the gene over all samples in comparison
+t | moderated t-statistic
+P.Value | raw p-value
+adj.P.Val | adjusted p-value
+B | log-odds that the gene is differentially expressed
+
+
+```{r}
+## make model matrix and contrast matrix
+#### amke sure the rows of the metadata and the colnums of the couttable match
+## all(sampleTable$SampleID == colnames(countTable))
+
+design <- model.matrix(~0 + lev + Batch, data=sampleTable)
+colnames(design) <- gsub("^lev", "", colnames(design))
+
+#### filtering genes with too low expression (Jianhong didn't filtering the counttable, I also skip it)
+## keep <- rowSums(cpm(countTable)>1) >= 2
+## countTable <- countTable[keep, ]  ## 6164 genes kept
+
+y <- DGEList(countTable)
+y <- calcNormFactors(y)
+v <- voom(y, design)
+corfit <- duplicateCorrelation(v, design, block=sampleTable$Sample)
+#corfit$consensus
+v <- voom(y, design, block=sampleTable$Sample, correlation=corfit$consensus)
+corfit2 <- duplicateCorrelation(v, design, block=sampleTable$Sample)
+#corfit2$consensus
+fit <- lmFit(v, design, block=sampleTable$Sample, correlation=corfit2$consensus)
+## make contrasts
+contrasts <- colnames(design)[-(ncol(design))]
+keep <- grepl("\\_0$", contrasts)
+
+A <- contrasts[!keep]
+B <- contrasts[keep]
+
+
+B <- rep(B, each=3)
+contrasts <- paste(A, B, sep="-")
+names(contrasts) <- A
+contrasts
+
+
+cm <- makeContrasts(contrasts=contrasts, levels=design)
+fit2 <- contrasts.fit(fit, cm)
+fit2 <- eBayes(fit2)
+
+results <- sapply(contrasts, topTable, 
+                  fit=fit2, number=nrow(fit2), sort.by="none", 
+                  simplify=FALSE)
+
+results2 <- mapply(function(.ele, .n){
+    cbind(FoldChange=2^.ele$logFC, .ele)
+    }, results, names(results), SIMPLIFY=FALSE)
+
+rown <- sapply(results2, rownames)
+#dim(rown)
+rown <- apply(rown, 1, unique)
+
+#length(rown) ## all rowname are identical.
+results2 <- do.call(cbind, results2)
+#dim(results2)
+
+# Yeast gene symbols and gene ID
+
+geneSymbol <- read.delim("Yeast.gene.symbols.txt", header =TRUE, as.is =TRUE)
+
+results2$GeneID <- rownames(results2)
+
+results2 <- merge(geneSymbol, results2, by.x= "Gene.stable.ID", by.y = "GeneID", all.y=TRUE)
+
+write.csv(results2, "crz1hog1.Fk506 and crz1hog1.ET within-condition.differential.expression.genes.double.voom.csv")
+```
+
+## 3. Determine whether the fold change at each time point relative to time 0 is significantly different between crz1hog1.ET samples and crz1hog1.FK506 experiments, for all genes (This is to test interaction between time and strains).Here we will get one table named as `crz1hog1 condition-by-time interaction.genes.double.voom.ET.vs.FK506.csv`.
+
+
+> Can you explain to me what the different columns are in the tables?
+
+_A_: This test of interaction between condition and time. For example, in table `crz1hog1 condition-by-time interaction.genes.double.voom.ET.vs.FK506.csv`, we compared crz1hog1.ET with crz1hog1.FK506 for corresponding 
+time points which is normalized by time 0. The expression is, for example time 10,
+(crz1.ET_10 - crz1.ET_0) - (crz1.FK506_10 - crz1.FK506_0). The meaning of suffix is same as above.
+
+
+```{r, echo = TRUE, include=FALSE}
+
+contrasts2 <- matrix(contrasts, nrow=3, ncol=2 )
+cn <- combn(2,2, simplify = FALSE)
+
+## interaction contrasts
+contrasts3 <- lapply(cn, function(.ele){
+    paste0("(", contrasts2[, .ele[1]], ")-(", contrasts2[, .ele[2]], ")")
+})
+
+names(contrasts3) <- "ET.vs.FK506"
+contrasts3
+
+null <- mapply(function(contr, name){
+    cm2 <- makeContrasts(contrasts=contr, levels=design)
+    fit3 <- contrasts.fit(fit, cm2)
+    fit3 <- eBayes(fit3)
+    results3 <- sapply(contr, topTable, 
+                      fit=fit3, number=nrow(fit3), sort.by="none", 
+                      simplify=FALSE)
+    results4 <- mapply(function(.ele, .n){
+        cbind(FoldChange=2^.ele$logFC, .ele)
+        }, results3, names(results3), SIMPLIFY=FALSE)
+    
+    rown <- sapply(results4, rownames)
+    dim(rown)
+    rown <- apply(rown, 1, unique)
+    length(rown) ## all rowname are identical.
+    results4 <- do.call(cbind, results4)
+    
+    results4$GeneID <- rownames(results4)
+
+    results4 <- merge(geneSymbol, results4, by.x= "Gene.stable.ID", by.y = "GeneID", all.y=TRUE)
+    
+    #dim(results4)
+    
+    write.csv(results4, paste0("crz1hog1 condition-by-time interaction.genes.double.voom.", name, ".csv"))
+}, contrasts3, names(contrasts3))
+
+```
+
+
+## 4. Extract sets of genes that we are interested in and calcuate average expression at each time point, generate heatmaps
+### extract log2 fold change
+```{r}
+## load data
+
+f <- "JB_target_lists.xlsx"
+sheets <- getSheets(loadWorkbook(f))
+## can not use xlsx::read.xlsx, because error genereated for empty cells
+geneset <- lapply(names(sheets)[-1],read.xls, xls = f, stringsAsFactors=FALSE)
+names(geneset) <- names(sheets)[-1]
+
+## get logFC for each time point and condition relative to time 0
+fc <- lapply(results, function(.ele) .ele$logFC)
+fc <- do.call(cbind, fc)
+rownames(fc) <- rownames(results[[1]])
+
+foldchange <- lapply(geneset, function(.ele) {
+    
+    ## if filtering the count table this will cause an error
+    this.fc <- fc[.ele[, "YORF"], ]
+    rownames(this.fc) <- ifelse(is.na(.ele[, "NAME"]), 
+                                .ele[, "YORF"], 
+                                .ele[, "NAME"])
+    this.fc
+    })
+```
+
+### log2 fold change curve
+
+For p value calculation, please refer [@doi:10.1093/bioinformatics/btr528].
+
+> Can you give me data files corresponding the gene lists so that I can use to re-generate the plots labeled “change curves” for different gene sets? What exactly are the values that are plotted here? Are these data from the table gene.diff.double.voom.csv?
+
+_A_: The data for plot are saved in the folder `crz1hog1.ET.and.crzhog1.FK506.changeCurve`. The points are mean value of expression
+of the gene cluster. The error bar is the the 95% confidence interval. Gene expressions are from the
+table `gene.diff.double.voom.csv`.
+
+```{r, fig.width=8, fig.height=6}
+
+changeCurve <- "crz1hog1.ET.and.crzhog1.FK506.changeCurve"
+dir.create(changeCurve)
+null <- mapply(function(log2fc, genesetName){
+    ## calculate p value
+    rn <- nrow(log2fc)
+    cn <- ncol(log2fc)/2
+    lfc <- list(
+        "ET"=log2fc[, 1:cn], 
+        "FK506"=log2fc[, cn+(1:cn)]
+    )
+    cn <- combn(2, 2, simplify = FALSE)
+    pval <- sapply(cn, function(.ele){
+        data <- do.call(rbind, lfc[.ele])
+        dataname <- names(lfc)[.ele]
+        group.labels <- rep(dataname, each=rn)
+        # define Mahalanobis distance matrix by ecodist::distance:
+        dmat <- as.matrix(distance(data,"mahalanobis"))
+        out <- t(DBF.test(dmat,group.labels,nrow(data)))
+        rownames(out) <- paste(dataname, collapse=".vs.")
+        out
+    }, simplify = FALSE)
+    pval <- do.call(rbind, pval)
+    cat(c("geneset:", genesetName, "\r\n"))
+    print(pval)
+    
+    fc.colmean <- colMeans(log2fc)
+    fc.sd <- apply(log2fc, 2, sd)
+    fc.se <- fc.sd/sqrt(nrow(log2fc))
+    fc.mf <- do.call(rbind, strsplit(names(fc.colmean), "[._]"))
+    fc.mf <- data.frame(sample=fc.mf[, 2], 
+                        time=as.numeric(fc.mf[, 3]),
+                        value=fc.colmean,
+                        sd=fc.sd,
+                        ci95=fc.se*2)
+    time0 <- data.frame(sample=levels(fc.mf$sample), time=0, value=0, sd=0, ci95=0)
+    fc.mf <- rbind(fc.mf, time0)
+    fc.mf <- fc.mf[with(fc.mf, order(sample, time)), ]
+    null <- write.csv(fc.mf, file.path(changeCurve, paste0(make.names(genesetName), ".csv")))
+    
+    p <- ggplot(fc.mf, aes(x=time, y=value, group=sample)) +
+        geom_line(aes(linetype=sample, color=sample)) +
+        geom_point(aes(color=sample), size=5) +
+        geom_errorbar(aes(ymin=value-ci95, ymax=value+ci95, color=sample), width=1) + 
+        scale_color_brewer(palette="Dark2") +
+        theme_bw() + labs(title=genesetName) + ylab("log2 fold change")
+    print(p)
+    ggsave(file.path(changeCurve, paste0(make.names(genesetName), ".pdf")), 
+           width=8, height=6)
+}, foldchange, names(foldchange))
+```
+
+### scaled heatmap
+
+Heatmaps are rescaled for each genes.
+
+> What data is depicted in the heat maps? I don’t understand where the yellow (increases) are coming from, since many of those genes decrease and don’t increase over time.
+
+_A_: The source data for heatmap are logFC data compare to time 0. They are saved in the folder `heatmap`.
+To emphasize the change of each gene, heatmaps are rescaled by row (each gene). 
+The un-scaled figure can be find in next section.
+
+```{r, fig.width=4, fig.height=8}
+library(pheatmap)
+heatmap <- "crz1hog1.ET and crz1hog1.Fk506.heatmap"
+dir.create(heatmap)
+null <- mapply(function(log2fc, genesetName){
+    null <- write.csv(log2fc, file.path(heatmap, paste0(make.names(genesetName), ".csv")))
+    pheatmap(log2fc, color=colorRampPalette(c("#22B8E2", "#000000", "#FEFB30"))(11),
+             cluster_cols = FALSE, treeheight_row=0, border_color = NA, scale="row")
+    pheatmap(log2fc, color=colorRampPalette(c("#22B8E2", "#000000", "#FEFB30"))(11),
+             cluster_cols = FALSE, treeheight_row=0, border_color = NA, scale="row",
+             filename = file.path(heatmap, paste0(make.names(genesetName), ".pdf")),
+             width=4, height=nrow(log2fc)/10+2)
+}, foldchange, names(foldchange))
+```
+
+
+### un-scaled heatmap
+
+```{r, fig.width=4, fig.height=8}
+null <- mapply(function(log2fc, genesetName){
+    pheatmap(log2fc, color=colorRampPalette(c("#22B8E2", "#000000", "#FEFB30"))(11),
+             cluster_cols = FALSE, treeheight_row=0, border_color = NA, scale="none")
+    pheatmap(log2fc, color=colorRampPalette(c("#22B8E2", "#000000", "#FEFB30"))(11),
+             cluster_cols = FALSE, treeheight_row=0, border_color = NA, scale="none",
+             filename = file.path(heatmap, paste0(make.names(genesetName), ".unscaled.pdf")),
+             width=4, height=nrow(log2fc)/10+2)
+}, foldchange, names(foldchange))
+```
+
+
+
+
+
+
+## 5. Determine whether the fold change at each time point compared to time 0 is significantly different between crz1hog1.ET samples and previous crz1.ET experiments, for all genes (This is to test interaction between time and strains)
+### 5.1 extract crz1.ET count table from Jianhong's work and combine with crz1hog1.ET count table
+```{r}
+directory <- "htseq" ## htseq-count outputs
+sampleTable <- read.delim("design.txt") ## design table
+## assign fileName to design table
+sampleTable$fileName <- paste0("tophat2.sc3.", sampleTable$file, ".count.tab")
+colnames(sampleTable)[1] <- "sampleName"
+sampleTable <- sampleTable[, c(1, 6, 2:5)]
+#head(sampleTable)
+## we only want count table, so design is not useful at this step.
+ddsHTSeq <- DESeqDataSetFromHTSeqCount(sampleTable, directory, design=~group)
+##ddsHTSeq
+countTable <- counts(ddsHTSeq)
+#dim(countTable)
+#head(countTable)
+##export crz1.ET countTable (Haibo)
+crz1 <- subset(sampleTable, group == "crz1.ET" & time %in% c(0, 10,30,60))
+
+count.table.crz1 <- countTable[,crz1$sampleName]
+colnames(count.table.crz1) <- gsub("-", "_", paste("Pre",colnames(count.table.crz1), sep="_"))
+
+crz1$sampleName <- gsub("-", "_", paste("Pre",crz1$sampleName, sep="_"))
+
+write.table(crz1, "Old.crz1.ET.metadata.txt", row.names=F, quote = F, sep="\t")
+write.table(count.table.crz1, "Old.crz1.ET.count.table.txt", row.names=T, quote = F, sep="\t")
+
+####
+meta.crz1 <- read.delim("Old.crz1.ET.metadata.txt", as.is =T)
+
+## metadata for AUG 27 2017 samples
+meta <- read.delim("AUG27.metadata.txt", as.is=T)[1:16,]
+meta.crz1 <- meta.crz1[, c(1,3:6)]
+colnames(meta.crz1) <- colnames(meta)
+meta.crz1$Batch <- ifelse(meta.crz1$Batch==1, 3, meta.crz1$Batch)
+
+meta.crz1$Batch <- ifelse(meta.crz1$Batch==2, 4, meta.crz1$Batch)
+
+
+meta.crz1.crz1hog1 <- rbind(meta.crz1, subset(meta, Group=="crz1hog1.ET"))
+meta.crz1.crz1hog1$lev <- as.factor(with(meta.crz1.crz1hog1, paste(Group, Time, sep="_")))
+
+final.meta <- meta.crz1.crz1hog1
+#head(final.meta)
+
+###countTable for crz1hog1.ET
+count.crz1hog1 <-read.delim("crz1hog1.ET+crz1hog1.FK506.count.table.txt", as.is =T)
+
+
+##### merge
+count.table.crz1 <- as.data.frame(count.table.crz1)
+count.table.crz1$GeneID <- rownames(count.table.crz1)
+
+final.count <- merge(count.table.crz1,count.crz1hog1, by="GeneID" )
+
+rownames(final.count) <- final.count[, 1]
+final.count <- as.matrix(final.count[,-1])
+
+
+## only ET samples
+final.count <- final.count[, grepl("^Pre|^A|^C", colnames(final.count))]
+
+```
+### 5.2.1 Because crz1.ET and crz1hog1.ET experiments were done in completely different time, biological effects might confound with batch effects. First, calculate fold change at each time point relative to time 0, assuming no batch effect.
+
+### 
+# By Julie, did the same analysis (5.2.1 and 5.2.2 together) as 3 except no batch effect was included (confounded with time of the experiment)
+```{r}
+sampleTable <- final.meta
+countTable <- final.count
+head(countTable)
+head(sampleTable)
+#all(sampleTable$SampleID == colnames(countTable))
+
+design <- model.matrix(~0 + lev, data=sampleTable)
+colnames(design) <- gsub("^lev", "", colnames(design))
+
+y <- DGEList(countTable)
+y <- calcNormFactors(y)
+v <- voom(y, design)
+corfit <- duplicateCorrelation(v, design, block=sampleTable$sample)
+#corfit$consensus
+v <- voom(y, design, block=sampleTable$sample, correlation=corfit$consensus)
+corfit2 <- duplicateCorrelation(v, design, block=sampleTable$sample)
+#corfit2$consensus
+fit <- lmFit(v, design, block=sampleTable$sample, correlation=corfit2$consensus)
+## make contrasts
+contrasts <- colnames(design)[-(ncol(design))]
+keep <- grepl("\\_0$", contrasts)
+
+A <- contrasts[!keep]
+B <- contrasts[keep]
+
+
+B <- rep(B, each=3)
+contrasts <- paste(A, B, sep="-")
+names(contrasts) <- A
+#contrasts
+
+
+cm <- makeContrasts(contrasts=contrasts, levels=design)
+fit2 <- contrasts.fit(fit, cm)
+fit2 <- eBayes(fit2)
+
+results <- sapply(contrasts, topTable, 
+                  fit=fit2, number=nrow(fit2), sort.by="none", 
+                  simplify=FALSE)
+
+results2 <- mapply(function(.ele, .n){
+    cbind(FoldChange=2^.ele$logFC, .ele)
+    }, results, names(results), SIMPLIFY=FALSE)
+
+rown <- sapply(results2, rownames)
+#dim(rown)
+rown <- apply(rown, 1, unique)
+
+#length(rown) ## all rowname are identical.
+results2 <- do.call(cbind, results2)
+#dim(results2)
+
+
+results2$GeneID <- rownames(results2)
+
+results2 <- merge(geneSymbol, results2, by.x= "Gene.stable.ID", by.y = "GeneID", all.y=TRUE)
+
+write.csv(results2, "crz1hog1.ET.vs.crz1.ET.within-condition.differential.expression.genes.double.voom.csv")
+```
+
+### 5.2.2. Comparison for each time point normalized by time 0. Here we will get one table named as `Condition-by-time interaction.genes.double.voom.crz1.ET.vs.crz1hog1.ET.csv`,
+
+```{r}
+
+contrasts2 <- matrix(contrasts, nrow=3, ncol=2 )
+cn <- combn(2,2, simplify = FALSE)
+
+## interaction contrasts
+contrasts3 <- lapply(cn, function(.ele){
+    paste0("(", contrasts2[, .ele[1]], ")-(", contrasts2[, .ele[2]], ")")
+})
+
+names(contrasts3) <- "crz1.ET.vs.crz1hog1.ET"
+contrasts3
+
+
+null <- mapply(function(contr, name){
+    cm2 <- makeContrasts(contrasts=contr, levels=design)
+    fit3 <- contrasts.fit(fit, cm2)
+    fit3 <- eBayes(fit3)
+    results3 <- sapply(contr, topTable, 
+                      fit=fit3, number=nrow(fit3), sort.by="none", 
+                      simplify=FALSE)
+    results4 <- mapply(function(.ele, .n){
+        cbind(FoldChange=2^.ele$logFC, .ele)
+        }, results3, names(results3), SIMPLIFY=FALSE)
+    
+    rown <- sapply(results4, rownames)
+    dim(rown)
+    rown <- apply(rown, 1, unique)
+    length(rown) ## all rowname are identical.
+    results4 <- do.call(cbind, results4)
+    dim(results4)
+    
+    results4$GeneID <- rownames(results4)
+
+    results4 <- merge(geneSymbol, results4, by.x= "Gene.stable.ID", by.y = "GeneID", all.y=TRUE)
+    write.csv(results4, paste0("Condition-by-time interaction.genes.double.voom.", name, ".csv"))
+}, contrasts3, names(contrasts3))
+```
+
+
+### 5.3.1 Because crz1.ET and crz1hog1.ET experiments were done in completely different time, biological effects might confound with batch effects. First, estimate surrogate variables to account batch effect, then calculate fold change at each time point relative to time 0.
+
+```{r}
+
+#### to use sva, the count table must be filtered to remove genes with extremetly low expression
+keep <- rowSums(cpm(countTable)>1) >= 2
+countTable.filtered <- countTable[keep, ]
+#dim(countTable.filtered)
+
+cds <- DGEList(countTable.filtered)
+
+#### TMM normalization
+cds <- calcNormFactors(cds)
+
+### Get normalized count table
+
+scale <- cds$samples$lib.size*cds$samples$norm.factors
+normCount <- round(t(t(countTable.filtered )/scale)*mean(scale))
+
+### use functions from sva package
+get.sva <- function (expr.data=NULL, meta.data=NULL)
+{
+    mod <- model.matrix(~0 + lev, data=meta.data)
+    mod0 <- model.matrix(~1, data=meta.data)
+    
+    num.sva <-svaseq(expr.data, mod, mod0)$n.sv
+    sv <- svaseq(expr.data, mod, mod0, n.sv=num.sva)$sv
+    
+    colnames(sv)<- paste0("sv",1:num.sva)
+    
+    meta.data.sva <-cbind(meta.data, sv ) 
+    
+    meta.data.sva
+}
+final.meta.sva <-  get.sva(expr.data = normCount, meta.data = sampleTable)
+
+## 4 surrogate variables estimated
+
+design <- model.matrix(~ 0 +lev + sv1 + sv2 +sv3 +sv4, data=final.meta.sva)
+colnames(design) <- gsub("^lev", "", colnames(design))
+```
+
+```{r}
+sampleTable <- final.meta.sva
+
+y <- DGEList(countTable.filtered)
+y <- calcNormFactors(y)
+v <- voom(y, design)
+
+corfit <- duplicateCorrelation(v, design, block=sampleTable$Sample)
+#corfit$consensus
+v <- voom(y, design, block=sampleTable$Sample, correlation=corfit$consensus)
+corfit2 <- duplicateCorrelation(v, design, block=sampleTable$Sample)
+#corfit2$consensus
+fit <- lmFit(v, design, block=sampleTable$Sample, correlation=corfit2$consensus)
+## make contrasts
+contrasts <- colnames(design)[1:8]
+keep <- grepl("\\_0$", contrasts)
+
+A <- contrasts[!keep]
+B <- contrasts[keep]
+
+
+B <- rep(B, each=3)
+contrasts <- paste(A, B, sep="-")
+names(contrasts) <- A
+#contrasts
+
+
+cm <- makeContrasts(contrasts=contrasts, levels=design)
+fit2 <- contrasts.fit(fit, cm)
+fit2 <- eBayes(fit2)
+
+results <- sapply(contrasts, topTable, 
+                  fit=fit2, number=nrow(fit2), sort.by="none", 
+                  simplify=FALSE)
+
+results2 <- mapply(function(.ele, .n){
+    cbind(FoldChange=2^.ele$logFC, .ele)
+    }, results, names(results), SIMPLIFY=FALSE)
+
+rown <- sapply(results2, rownames)
+#dim(rown)
+rown <- apply(rown, 1, unique)
+
+#length(rown) ## all rowname are identical.
+results2 <- do.call(cbind, results2)
+#dim(results2)
+
+results2$GeneID <- rownames(results2)
+
+results2 <- merge(geneSymbol, results2, by.x= "Gene.stable.ID", by.y = "GeneID", all.y=TRUE)
+write.csv(results2, "crz.ET.and.crz1hog1.ET.within-condition.differential.expression.genes.sva.double.voom.csv")
+```
+
+### 5.3.2. Comparison for each time point normalized by time 0. Here we will get one table named as `Condition-by-time interaction.genes.sva.double.voom.crz1.ET.vs.crz1hog1.ET.csv`,
+
+```{r}
+
+contrasts2 <- matrix(contrasts, nrow=3, ncol=2 )
+cn <- combn(2,2, simplify = FALSE)
+
+## interaction contrasts
+contrasts3 <- lapply(cn, function(.ele){
+    paste0("(", contrasts2[, .ele[1]], ")-(", contrasts2[, .ele[2]], ")")
+})
+
+names(contrasts3) <- "crz1.ET.vs.crz1hog1.ET"
+#contrasts3
+
+
+null <- mapply(function(contr, name){
+    cm2 <- makeContrasts(contrasts=contr, levels=design)
+    fit3 <- contrasts.fit(fit, cm2)
+    fit3 <- eBayes(fit3)
+    results3 <- sapply(contr, topTable, 
+                      fit=fit3, number=nrow(fit3), sort.by="none", 
+                      simplify=FALSE)
+    results4 <- mapply(function(.ele, .n){
+        cbind(FoldChange=2^.ele$logFC, .ele)
+        }, results3, names(results3), SIMPLIFY=FALSE)
+    
+    rown <- sapply(results4, rownames)
+    dim(rown)
+    rown <- apply(rown, 1, unique)
+    length(rown) ## all rowname are identical.
+    results4 <- do.call(cbind, results4)
+    dim(results4)
+    
+    results4$GeneID <- rownames(results4)
+
+    results4 <- merge(geneSymbol, results4, by.x= "Gene.stable.ID", by.y = "GeneID", all.y=TRUE)
+    write.csv(results4, paste0("Condition-by-time interaction.genes.sva.double.voom.", name, ".csv"))
+}, contrasts3, names(contrasts3))
+```
