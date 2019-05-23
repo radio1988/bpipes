@@ -168,9 +168,9 @@ rule bam_qc:
 
 rule bamCoverage:
     input:
-        sorted_reads/{sample}.bam
+        "sorted_reads/{sample}.bam"
     output:
-        bigWig/{sample}.cpm.bw
+        "bigWig/{sample}.cpm.bw"
     threads:
         4
     log:
