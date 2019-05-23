@@ -3,26 +3,20 @@ configfile: "config.yaml"
 
 SAMPLES=config["SAMPLES"]
 GENOME=config["GENOME"]
-INDEX=config["INDEX"]
-GTF=config["GTF"]
-STRAND=config["STRAND"]
+INDEX=GENOME+".sa"
 
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
 shell.prefix("""
-            # fastqc
             module load fastqc/0.11.5
             module load python3/3.5.0_packages/multiqc/1.4
-            # star
-            module load java/1.8.0_77
-            module load star/2.5.3a
-            #module load samtools/dev-2016_06_06
+            module load bwa/0.7.15
             samtools="singularity exec $HOME/singularity/hand_sandbox samtools"
             samstat="singularity exec $HOME/singularity/hand_sandbox samstat"
             """)
 
 # Requirements
-# inputs in ./fastq/xxx.{fastq,fq}.gz
+# inputs in ./fastq/
 # named as {sample}.{R1,R2}.{fastq,fq}.gz
 
 # SnakeMake Coding Notes:
@@ -34,7 +28,7 @@ rule all:
         # 2. feed {sample}
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
-        dag="dag.all.svg", # create DAG
+        dag="Workflow_DAG.all.svg", # create DAG
 
 rule fastqc:
     # don't need input, if you agree on not checking them
@@ -57,6 +51,16 @@ rule fastqc:
         multiqc fastqc/details -o fastqc &>> {log}
         """
 
+rule bwa_index:
+    input:
+        GENOME
+    output:
+        INDEX
+    shell:
+        """
+        bwa index -a bwtsw {input}
+        """
+
 rule bwa_map:
     input:
         index=INDEX,
@@ -71,4 +75,107 @@ rule bwa_map:
     log:
         "log/bwa_map/{sample}.bwa.log"
     shell:
+        """
+        bwa mem -t {threads} {GENOME} \
+        {input.r1} {input.r2} \
+        | $samtools view -Sb - -o {output}
+        """
+
+
+rule samtools_sort:
+    input:
+        "mapped_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam"
+    params:
+        mem="1200"
+    threads:
+        4
+    log:
+        "log/samtools_sort/{sample}.sort.log"
+    run:
+        shell("$samtools sort -@ {threads} -m 1G {input} -o sorted_reads/{wildcards.sample}.bam &> {log}")
+
+
+rule samtools_index:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam.bai"
+    params:
+        mem="2000"
+    threads:
+        1
+    log:
+        "log/samtools_index/{sample}.index.log"
+    shell:
+        "$samtools index {input} &> {log}"
+
+
+rule bam_qc:
+    input:
+        bam="sorted_reads/{sample}.bam",
+        bai="sorted_reads/{sample}.bam.bai"
+    output:
+        "bam_qc/samstat/{sample}.bam.samstat.html"
+    params:
+        mem="2000"
+    threads:
+        6
+    log:
+        idxstats="log/bam_qc/idxstats/{sample}.idxstats.log",
+        flagstat="log/bam_qc/flagstat/{sample}.flagstat.log",
+        stats="log/bam_qc/stats/{sample}.stats.log",
+        samstat="log/bam_qc/samstat/{sample}.samstat.log",
+    shell:
+        """
+        mkdir -p bam_qc 
+        mkdir -p bam_qc/idxstats
+        mkdir -p bam_qc/flagstat
+        mkdir -p bam_qc/stats
+        mkdir -p bam_qc/samstat
+        $samtools idxstats {input.bam} > bam_qc/idxstats/{wildcards.sample}.idxstats.txt 2> {log.idxstats} &
+        $samtools flagstat {input.bam} > bam_qc/flagstat/{wildcards.sample}.flagsat.txt 2> {log.flagstat} &
+        $samtools stats {input.bam} > bam_qc/stats/{wildcards.sample}.stats.txt 2> {log.stats} &
+        $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat 2> {log.samstat}
+        """
+
+
+rule bamCoverage:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "bigWig/{sample}.cpm.bw"
+    threads:
+        4
+    params:
+        mem="2000"
+    log:
+        "log/bamCoverage/{sample}.bamCoverage.log"
+    shell:
+        """
+        bamCoverage --bam {input} \
+        -o  {output} \
+        --numberOfProcessors 4 \
+        --outFileFormat bigwig \
+        --normalizeUsing CPM \
+        --minFragmentLength 50 \
+        --maxFragmentLength 1000 \
+        --binSize 10 \
+        -e 150 \
+        """
+
         
+rule create_dag:
+    params:
+        mem="1000"  
+        # every job has to have this defined 
+        # to use snakemake --cluster 'bsub -q short -R "rusage[mem={params.mem}]" -n {threads}'
+    threads:
+        1
+    output:
+        "Workflow_DAG.all.svg"
+    log:
+        "log/create_dag/Workflow_DAG.all.svg.log"
+    shell:
+        "snakemake --dag all | dot -Tsvg > {output} 2> {log}"

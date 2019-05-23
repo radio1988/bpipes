@@ -2,7 +2,9 @@
 - [x] feature_count: auto 3 params
 - [x] feed wildcards (sample/strand) by rule all, input; and config, using expand, but not expand in rule feature_count, output
 - [x] log
-- [] R1/R2
+- [] auto R1/R2
 - [x] LSF smart
 - [x] params
-- [] Robust LSF MEM request for STAR: incase not enough CPU were given, 36GB RAM not reached as a result, not possible with {threads} but will this affect in reality, say snakemake -j 5, which gives 5 * 3000 RAM for human
+- [x] bamCoverage
+- [] FPKM/TPM
+- [] Robust LSF MEM request for STAR: incase not enough CPU were given, 36GB RAM not reached as a result
