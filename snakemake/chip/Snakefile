@@ -1,0 +1,74 @@
+configfile: "config.yaml"
+
+
+SAMPLES=config["SAMPLES"]
+GENOME=config["GENOME"]
+INDEX=config["INDEX"]
+GTF=config["GTF"]
+STRAND=config["STRAND"]
+
+# load modules (have to use """, to keep in one block)
+# - alias does not work, have to use $samstat
+shell.prefix("""
+            # fastqc
+            module load fastqc/0.11.5
+            module load python3/3.5.0_packages/multiqc/1.4
+            # star
+            module load java/1.8.0_77
+            module load star/2.5.3a
+            #module load samtools/dev-2016_06_06
+            samtools="singularity exec $HOME/singularity/hand_sandbox samtools"
+            samstat="singularity exec $HOME/singularity/hand_sandbox samstat"
+            """)
+
+# Requirements
+# inputs in ./fastq/xxx.{fastq,fq}.gz
+# named as {sample}.{R1,R2}.{fastq,fq}.gz
+
+# SnakeMake Coding Notes:
+# input don't have to be used, just for draw nice DAG
+
+rule all:
+    input:
+        # 1. everything listed here will be produced by the pipeline
+        # 2. feed {sample}
+        fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
+        bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
+        dag="dag.all.svg", # create DAG
+
+rule fastqc:
+    # don't need input, if you agree on not checking them
+    # without output, output will not be created
+    output:
+        "fastqc/multiqc_report.html"
+    params:
+        mem="1000"
+    threads:
+        6
+    log:
+        "log/fastqc/fastqc.log"
+    shell:
+        # {input/output} don't have to be in command
+        # have to load module in one block
+        """
+        mkdir -p fastqc
+        mkdir -p fastqc/details
+        fastqc -t {threads} fastq/*q.gz -o fastqc/details &> {log}
+        multiqc fastqc/details -o fastqc &>> {log}
+        """
+
+rule bwa_map:
+    input:
+        index=INDEX,
+        r1="fastq/{sample}.R1.fastq.gz",
+        r2="fastq/{sample}.R2.fastq.gz",
+    output:
+        temp("mapped_reads/{sample}.bam")
+    params:
+        mem="3000"  # todo auto adjust based on {threads}
+    threads:
+        12
+    log:
+        "log/bwa_map/{sample}.bwa.log"
+    shell:
+        
