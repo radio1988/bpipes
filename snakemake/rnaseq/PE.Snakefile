@@ -173,6 +173,8 @@ rule bamCoverage:
         "bigWig/{sample}.cpm.bw"
     threads:
         4
+    params:
+        mem="2000"
     log:
         "log/bamCoverage/{sample}.bamCoverage.log"
     shell:
