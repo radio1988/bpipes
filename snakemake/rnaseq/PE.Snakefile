@@ -36,6 +36,7 @@ rule all:
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
         feature_count=expand("feature_count/counts.gene_id.s{strand}.txt", strand=STRAND), # feed {strand}
+        bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
         dag="Workflow_DAG.all.svg", # create DAG
 
 
@@ -162,6 +163,27 @@ rule bam_qc:
         $samtools flagstat {input.bam} > bam_qc/flagstat/{wildcards.sample}.flagsat.txt 2> {log.flagstat} &
         $samtools stats {input.bam} > bam_qc/stats/{wildcards.sample}.stats.txt 2> {log.stats} &
         $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat 2> {log.samstat}
+        """
+
+
+rule bamCoverage:
+    input:
+        sorted_reads/{sample}.bam
+    output:
+        bigWig/{sample}.cpm.bw
+    threads:
+        4
+    log:
+        "log/bamCoverage/{sample}.bamCoverage.log"
+    shell:
+        """
+        bamCoverage --bam {input} \
+        -o  {output} \
+        --numberOfProcessors 4 \
+        --outFileFormat bigwig \
+        --normalizeUsing CPM \
+        --binSize 10 \
+        # -e 150 \
         """
 
 
