@@ -1,9 +1,8 @@
 configfile: "config.yaml"
-
-
 SAMPLES=config["SAMPLES"]
 GENOME=config["GENOME"]
 INDEX=GENOME+".sa"
+MQ_MIN=config["MQ_MIN"]
 
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
@@ -18,17 +17,21 @@ shell.prefix("""
 # Requirements
 # inputs in ./fastq/
 # named as {sample}.{R1,R2}.{fastq,fq}.gz
+# e.g. A.R1.fastq.gz A.R2.fastq.gz B...
 
-# SnakeMake Coding Notes:
-# input don't have to be used, just for draw nice DAG
 
 rule all:
     input:
         # 1. everything listed here will be produced by the pipeline
         # 2. feed {sample}
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
-        bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
+        bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}, ensure aligment 
+        bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
+        plotFingerprint="chip_qc/fingerprint.pdf",
+        plotCorrelation="chip_qc/multiBamSummary.heatmap.pdf",
+        bamPEFragmentSize="chip_qc/fragment_size.pdf",
         dag="Workflow_DAG.all.svg", # create DAG
+
 
 rule fastqc:
     # don't need input, if you agree on not checking them
@@ -38,7 +41,7 @@ rule fastqc:
     params:
         mem="1000"
     threads:
-        6
+        8
     log:
         "log/fastqc/fastqc.log"
     shell:
@@ -51,6 +54,7 @@ rule fastqc:
         multiqc fastqc/details -o fastqc &>> {log}
         """
 
+
 rule bwa_index:
     input:
         GENOME
@@ -58,8 +62,9 @@ rule bwa_index:
         INDEX
     shell:
         """
-        bwa index -a bwtsw {input}
+        bwa index -a bwtsw {input} &> {log}
         """
+
 
 rule bwa_map:
     input:
@@ -71,18 +76,18 @@ rule bwa_map:
     params:
         mem="3000"  # todo auto adjust based on {threads}
     threads:
-        12
+        16
     log:
         "log/bwa_map/{sample}.bwa.log"
     shell:
         """
         bwa mem -t {threads} {GENOME} \
         {input.r1} {input.r2} \
-        | $samtools view -Sb - -o {output}
+        | $samtools view -Sb - -o {output} &> {log}
         """
 
 
-rule samtools_sort:
+rule samtools_sort_index:
     input:
         "mapped_reads/{sample}.bam"
     output:
@@ -94,28 +99,13 @@ rule samtools_sort:
     log:
         "log/samtools_sort/{sample}.sort.log"
     run:
-        shell("$samtools sort -@ {threads} -m 1G {input} -o sorted_reads/{wildcards.sample}.bam &> {log}")
-
-
-rule samtools_index:
-    input:
-        "sorted_reads/{sample}.bam"
-    output:
-        "sorted_reads/{sample}.bam.bai"
-    params:
-        mem="2000"
-    threads:
-        1
-    log:
-        "log/samtools_index/{sample}.index.log"
-    shell:
-        "$samtools index {input} &> {log}"
+        shell("$samtools sort -@ {threads} -m 1G {input} -o {output} &> {log}")
+        shell("$samtools index {output} &> {log}")
 
 
 rule bam_qc:
     input:
-        bam="sorted_reads/{sample}.bam",
-        bai="sorted_reads/{sample}.bam.bai"
+        bam="sorted_reads/{sample}.bam"
     output:
         "bam_qc/samstat/{sample}.bam.samstat.html"
     params:
@@ -142,30 +132,132 @@ rule bam_qc:
 
 
 rule bamCoverage:
+    # for ChIP
     input:
         "sorted_reads/{sample}.bam"
     output:
         "bigWig/{sample}.cpm.bw"
     threads:
-        4
+        12
     params:
         mem="2000"
     log:
         "log/bamCoverage/{sample}.bamCoverage.log"
     shell:
+        # Aim: same as our downstream filters, extensions
         """
         bamCoverage --bam {input} \
         -o  {output} \
-        --numberOfProcessors 4 \
+        --numberOfProcessors {threads} \
         --outFileFormat bigwig \
         --normalizeUsing CPM \
         --minFragmentLength 50 \
         --maxFragmentLength 1000 \
         --binSize 10 \
-        -e 150 \
+        -e 150 &> {log}
         """
 
+
+rule plotFingerprint:
+    input:
+        expand("sorted_reads/{sample}.bam", sample=SAMPLES)
+    output:
+        plot="chip_qc/fingerprint.pdf",
+        txt="chip_qc/fingerprint.txt",
+    params:
+        mem="2000"
+    threads:
+        6
+    log:
+        "log/chip_qc/fingerprint.log"
+    shell:
+        """
+        plotFingerprint -b {input} \
+            --plotFile {output.plot} \
+            --outRawCounts {output.txt} \
+            --plotTitle "Fingerprint Plot" \
+            --smartLabels \
+            --minMappingQuality {MQ_MIN} \
+            --extendReads \
+            --centerReads \
+            --samFlagInclude 2 \
+            -p {threads} &> {log}
+        """
+        # --samFlagInclude 2: mate properly paired only
+        # --extendReads: use mate into
+
+
+rule bamPEFragmentSize:
+    input:
+        expand("sorted_reads/{sample}.bam", sample=SAMPLES)
+    output:
+        plot="chip_qc/fragment_size.pdf",
+        txt="chip_qc/fragment_size.txt"
+    params:
+        mem="2000"
+    threads:
+        4
+    log:
+        "log/chip_qc/fragment_size.log"
+    shell:
+        """
+        bamPEFragmentSize \
+        -hist {output.plot} \
+        --outRawFragmentLengths {output.txt} \
+        -T "Fragment Size Distribution" \
+        --maxFragmentLength 1500 \
+        -b {input} \
+        -p {threads} &> {log}
+        """
+
+
+rule multiBamSummary:
+    input:
+        expand("sorted_reads/{sample}.bam", sample=SAMPLES)
+    output:
+        "chip_qc/multiBamSummary.npz",
+    threads:
+        12
+    params:
+        mem="1500"
+    log:
+        "log/chip_qc/multiBamSummary.log"
+    shell:
+        """
+        multiBamSummary bins \
+        -b {input} \
+        -o {output} \
+        --smartLabels \
+        -p {threads} \
+        --minMappingQuality {MQ_MIN} \
+        -e \
+        --samFlagInclude 2 &> {log}
+        """
         
+
+rule plotCorrelation:
+    input:
+        "chip_qc/multiBamSummary.npz",
+    output:
+        "chip_qc/multiBamSummary.heatmap.pdf"
+    threads:
+        6
+    params:
+        mem="1500"
+    log:
+        "log/chip_qc/plotCorrelation.log"
+    shell:
+        """
+        plotCorrelation \
+        -in {input} \
+        --corMethod pearson --skipZeros \
+        --whatToPlot heatmap \
+        -T 'Pearson Corr Between Bins' \
+        --removeOutliers \
+        -o {output} &> {log}
+        """
+
+
 rule create_dag:
     params:
         mem="1000"  
