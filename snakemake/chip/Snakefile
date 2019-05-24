@@ -3,6 +3,7 @@ SAMPLES=config["SAMPLES"]
 GENOME=config["GENOME"]
 INDEX=GENOME+".sa"
 MQ_MIN=config["MQ_MIN"]
+BIN_SIZE=config['BIN_SIZE']
 
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
@@ -140,7 +141,7 @@ rule bamCoverage:
     threads:
         12
     params:
-        mem="2000"
+        mem="1000"  # total 6-10G
     log:
         "log/bamCoverage/{sample}.bamCoverage.log"
     shell:
@@ -178,6 +179,7 @@ rule plotFingerprint:
             --plotTitle "Fingerprint Plot" \
             --smartLabels \
             --minMappingQuality {MQ_MIN} \
+            --binSize {BIN_SIZE} \
             --extendReads \
             --centerReads \
             --samFlagInclude 2 \
@@ -227,6 +229,7 @@ rule multiBamSummary:
         multiBamSummary bins \
         -b {input} \
         -o {output} \
+        --binSize {BIN_SIZE} \
         --smartLabels \
         -p {threads} \
         --minMappingQuality {MQ_MIN} \
