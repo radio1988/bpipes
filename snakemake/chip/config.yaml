@@ -1,10 +1,14 @@
 # Analysis Params
 SAMPLES:
-    - A
-    - B
+    - Epi_EED_Rep1
+    - Epi_Input_Rep1
+    - Epi_K27me3_Rep1
+    - Mes_EED_Rep1
+    - Mes_Input_Rep1
+    - Mes_K27me3_Rep1
 
-GENOME:
-    genome/test.fa
+GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
+GTF: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
 
-GTF:
-    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+MQ_MIN: 0 
+BIN_SIZE: 500
