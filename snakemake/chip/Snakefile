@@ -11,6 +11,8 @@ shell.prefix("""
             module load fastqc/0.11.5
             module load python3/3.5.0_packages/multiqc/1.4
             module load bwa/0.7.15
+            module load picard/2.17.8
+            PICARD=/share/pkg/picard/2.17.8/picard.jar
             samtools="singularity exec $HOME/singularity/hand_sandbox samtools"
             samstat="singularity exec $HOME/singularity/hand_sandbox samstat"
             """)
@@ -27,6 +29,7 @@ rule all:
         # 2. feed {sample}
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}, ensure aligment 
+        insert_size=expand("bam_qc/{sample}.insert_size.pdf", sample=SAMPLES),
         bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
         plotFingerprint="chip_qc/fingerprint.pdf",
         plotCorrelation="chip_qc/multiBamSummary.heatmap.pdf",
@@ -131,11 +134,51 @@ rule bam_qc:
         $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat 2> {log.samstat}
         """
 
+rule markDup:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        bam="markDup/{sample}.bam",
+        metrics="markDup/{sample}.markDup_metrics.txt",
+        bai="markDup/{sample}.bam.bai"
+    log:
+        "log/markDup/{sample}.markDup.log"
+    threads:
+        1
+    params:
+        mem="16000"
+    shell:
+        """
+        java -Xmx15g -jar $PICARD MarkDuplicates \
+        I={input} \
+        O={output.bam} \
+        M={output.metrics} \
+       	REMOVE_DUPLICATES=true \
+        ASSUME_SORTED=true \
+        &> {log}
+
+        $samtools index {out.bam} &>> {log}
+        """
+
+rule samtools_index:
+    input:
+        "markDup/{sample}.bam"
+    output:
+        "markDup/{sample}.bam.bai"
+    threads:
+        1
+    params:
+        mem="4000"
+    log:
+        "log/markDup/{sample}.samtools_index.log"
+    shell:
+        "$samtools index {input} &> {log}"
+
 
 rule bamCoverage:
     # for ChIP
     input:
-        "sorted_reads/{sample}.bam"
+        "markDup/{sample}.bam"
     output:
         "bigWig/{sample}.cpm.bw"
     threads:
@@ -161,7 +204,7 @@ rule bamCoverage:
 
 rule plotFingerprint:
     input:
-        expand("sorted_reads/{sample}.bam", sample=SAMPLES)
+        expand("markDup/{sample}.bam", sample=SAMPLES)
     output:
         plot="chip_qc/fingerprint.pdf",
         txt="chip_qc/fingerprint.txt",
@@ -191,7 +234,7 @@ rule plotFingerprint:
 
 rule bamPEFragmentSize:
     input:
-        expand("sorted_reads/{sample}.bam", sample=SAMPLES)
+        expand("markDup/{sample}.bam", sample=SAMPLES)
     output:
         plot="chip_qc/fragment_size.pdf",
         txt="chip_qc/fragment_size.txt"
@@ -215,7 +258,7 @@ rule bamPEFragmentSize:
 
 rule multiBamSummary:
     input:
-        expand("sorted_reads/{sample}.bam", sample=SAMPLES)
+        expand("markDup/{sample}.bam", sample=SAMPLES)
     output:
         "chip_qc/multiBamSummary.npz",
     threads:
@@ -260,6 +303,23 @@ rule plotCorrelation:
         -o {output} &> {log}
         """
 
+rule CollectInsertSizeMetrics:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        txt="bam_qc/{sample}.insert_size.txt",
+        pdf="bam_qc/{sample}.insert_size.pdf"
+    threads:
+        1
+    params:
+        mem="16000"
+    shell:
+        """
+        java -Xmx15g -jar $PICARD CollectInsertSizeMetrics \
+        I={input} \
+        O={output.txt} \
+        H={output.pdf}
+        """ 
 
 rule create_dag:
     params:
