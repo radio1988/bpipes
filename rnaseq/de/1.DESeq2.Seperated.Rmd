@@ -92,7 +92,7 @@ process_deseq_res <- function(res, name='name', anno='anno(df)'){
     # res <- res[order(res$log2FoldChange, decreasing = T), ]
     ## Merge with normalized count data
     resdata <- merge(as.data.frame(res), anno, 
-                     by.x=0, by.y=1, sort=FALSE)
+                     by.x=0, by.y=1, sort=FALSE, all.x=T)
     names(resdata)[1] <- "Gene"
     head(resdata)
     ## Write results
@@ -193,7 +193,7 @@ tpm <- calculateTPM(cts, df$Length)
 tpm <- data.frame(tpm)
 colnames(tpm) <- paste("TPM", colnames(tpm), sep = ":")
 head(tpm)
-tpm_out <- merge(anno, tpm, by.x=1, by.y=0)
+tpm_out <- merge(anno, tpm, by.x=1, by.y=0, all.y=T)
 head(tpm_out)
 WriteXLS(x = tpm_out, 
          ExcelFileName = 'TPM.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
