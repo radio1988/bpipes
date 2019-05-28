@@ -36,6 +36,7 @@ rule all:
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
         feature_count=expand("feature_count/counts.gene_id.s{strand}.txt", strand=STRAND), # feed {strand}
+        fpkm_tpm=expand("fpkm_tpm/strand_{strand}/FPKM.xlsx", strand=STRAND),
         bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
         dag="Workflow_DAG.all.svg", # create DAG
 
@@ -244,7 +245,7 @@ rule fpkm_tpm:
         "log/fpkm_tpm/fpkm_tpm.{strand}.log"
     shell:
         """
-        Rscripts scripts/rnaseq_normalization_annotation.R {input.count} {input.anno_tab} fpkm_tpm/strand_{wildcards.strand}
+        Rscript scripts/rnaseq_normalization_annotation.R {input.count} {input.anno_tab} fpkm_tpm/strand_{wildcards.strand} &> {log}
         """
 
 
