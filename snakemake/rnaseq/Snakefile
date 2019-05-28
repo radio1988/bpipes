@@ -68,10 +68,11 @@ rule star_map:
         reads="fastq/{sample}.fastq.gz"
     output:
         "mapped_reads/{sample}.bam"
-    params:
-        mem="3000"  # todo auto adjust based on {threads}
     threads:
         12
+    params:
+        mem=3000 
+        # todo auto adjust based on {threads}, however, {threads} not accessable in params
     log:
         "log/star_map/{sample}.star.log"
     shell:
@@ -141,7 +142,7 @@ rule bam_qc:
     params:
         mem="2000"
     threads:
-        4
+        8
     log:
         idxstats="log/bam_qc/idxstats/{sample}.idxstats.log",
         flagstat="log/bam_qc/flagstat/{sample}.flagstat.log",
