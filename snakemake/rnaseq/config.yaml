@@ -10,5 +10,7 @@ INDEX:
     /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx
 GTF:
     /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+ANNO_TAB:
+  ~/github/bpipes/rnaseq/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz
 
 STRAND: [0, 1, 2]  # can run [0, 1, 2] to get all possible results, can also select one

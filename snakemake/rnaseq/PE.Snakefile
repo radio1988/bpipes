@@ -145,13 +145,12 @@ rule bam_qc:
     params:
         mem="2000"
     threads:
-        4
+        6
     log:
         idxstats="log/bam_qc/idxstats/{sample}.idxstats.log",
         flagstat="log/bam_qc/flagstat/{sample}.flagstat.log",
         stats="log/bam_qc/stats/{sample}.stats.log",
         samstat="log/bam_qc/samstat/{sample}.samstat.log",
-
     shell:
         """
         mkdir -p bam_qc 
@@ -228,6 +227,25 @@ rule feature_count:
         # liberal overlap settings (--minOverlap 1 --fracOverlap 0) will give you more counted reads
         # samtools sorted bams are smaller, and faster to be counted, compared to unsorted bams/star sorted bams
         # star sorted bams are slow to count => use samtools sorted reads, delete star bam (set as temp)
+
+
+rule fpkm_tpm:
+    input:
+        count="feature_count/counts.gene_id.s{strand}.txt",
+        anno_tab=config['ANNO_TAB']
+    output:
+        fpkm="fpkm_tpm/strand_{strand}/FPKM.xlsx",
+        tpm='fpkm_tpm/strand_{strand}/TPM.xlsx',
+    params:
+        mem="4000"
+    threads:
+        2
+    log:
+        "log/fpkm_tpm/fpkm_tpm.{strand}.log"
+    shell:
+        """
+        Rscripts scripts/rnaseq_normalization_annotation.R {input.count} {input.anno_tab} fpkm_tpm/strand_{wildcards.strand}
+        """
 
 
 rule create_dag:
