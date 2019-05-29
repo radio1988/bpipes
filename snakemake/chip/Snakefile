@@ -78,7 +78,7 @@ rule bwa_map:
     output:
         temp("mapped_reads/{sample}.bam")
     params:
-        mem="3000"  # todo auto adjust based on {threads}
+        mem="1500"  # todo auto adjust based on {threads}, for human need 18G+ 
     threads:
         16
     log:
@@ -131,7 +131,7 @@ rule bam_qc:
         $samtools idxstats {input.bam} > bam_qc/idxstats/{wildcards.sample}.idxstats.txt 2> {log.idxstats} &
         $samtools flagstat {input.bam} > bam_qc/flagstat/{wildcards.sample}.flagsat.txt 2> {log.flagstat} &
         $samtools stats {input.bam} > bam_qc/stats/{wildcards.sample}.stats.txt 2> {log.stats} &
-        $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat 2> {log.samstat}
+        $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat > {log.samstat} 2>&1 
         """
 
 rule markDup:
@@ -144,12 +144,12 @@ rule markDup:
     log:
         "log/markDup/{sample}.markDup.log"
     threads:
-        1
+        2
     params:
         mem="16000"
     shell:
         """
-        java -Xmx15g -jar $PICARD MarkDuplicates \
+        java -Xmx30g -jar $PICARD MarkDuplicates \
         I={input} \
         O={output.bam} \
         M={output.metrics} \
@@ -157,23 +157,8 @@ rule markDup:
         ASSUME_SORTED=true \
         &> {log}
 
-        $samtools index {out.bam} &>> {log}
+        $samtools index {output.bam} &>> {log}
         """
-
-rule samtools_index:
-    input:
-        "markDup/{sample}.bam"
-    output:
-        "markDup/{sample}.bam.bai"
-    threads:
-        1
-    params:
-        mem="4000"
-    log:
-        "log/markDup/{sample}.samtools_index.log"
-    shell:
-        "$samtools index {input} &> {log}"
-
 
 rule bamCoverage:
     # for ChIP
