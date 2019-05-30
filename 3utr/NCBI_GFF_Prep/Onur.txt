@@ -1,0 +1,36 @@
+05/22/2019
+Hi Nathan and Rui,
+
+This issue didn’t occur with the other gtf file (GRCz11ensembl95ucsc). Besides, it turns out there are more conflicting annotations:
+
+"NM_001002098.1";: chr4 vs chrUn_KN149790v1
+"NM_001007215.1";: chrUn_KN149916v1 vs chrUn_KN150481v1
+"NM_001013574.2";: chr22 vs chrUn_KZ115968v1
+"NM_001017876.1";: chrUn_KN149824v1 vs chrUn_KN150034v1
+"NM_001017876.1";: chrUn_KN149824v1 vs chrUn_KN150104v1
+"NM_001045030.1";: chr18 vs chrUn_KN150056v1
+"NM_001045030.1";: chr18 vs chrUn_KN150119v1
+"NM_001077286.1";: chr10 vs chr12
+"NM_001077726.2";: chr8 vs chrUn_KN149997v1
+"NM_001080619.1";: chrUn_KN149816v1 vs chrUn_KN150583v1
+"NM_001082815.1";: chr21 vs chrUn_KN149809v1
+"NM_001098192.1";: chr18 vs chrUn_KN150030v1
+"NM_001099253.1";: chr2 vs chr7
+"NM_001102623.1";: chr10 vs chrUn_KN150440v1
+"NM_001110347.1";: chrUn_KZ115979v1 vs chrUn_KZ115993v1
+"NM_001123055.1";: chr7 vs chrUn_KN150384v1
+"NM_001134684.1";: chr4 vs chrUn_KN149822v1
+"NM_001251832.1";: chr13 vs chrUn_KN149729v1
+"NM_001251832.1";: chr13 vs chrUn_KN150320v1
+"NM_001258230.1";: chr14 vs chrUn_KN150383v1
+"NM_001278851.1";: chr21 vs chrUn_KN150598v1
+"NM_131836.1";: chr10 vs chr3
+"NM_153672.2";: chr24 vs chrUn_KN150650v1
+"NM_199992.1";: chrUn_KN149932v1 vs chrUn_KN150518v1
+"NM_200546.1_1";: chrUn_KN149818v1 vs chrUn_KN150158v1
+"NM_200591.1";: chr12 vs chrUn_KN150621v1
+"NM_207075.1";: chrUn_KN150112v1 vs chrUn_KN150354v1
+"NM_212911.1";: chrUn_KN150206v1 vs chrUn_KZ116008v1
+
+Best,
+Onur

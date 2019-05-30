@@ -1,0 +1,29 @@
+#BSUB -J "flt3P[1-2]"  # n jobs in array, batch size
+#BSUB -R rusage[mem=500]  # for each cpu
+#BSUB -n 2  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/flt3P.%J.%I.log
+#BSUB -W 72:00
+#BSUB -q long
+#BSUB -N
+
+# works from scripts/
+module purge
+source activate py35
+
+dir=../fastq
+cd $dir
+pwd
+
+i=$(($LSB_JOBINDEX- 1))
+R1s=(`ls *R1.fastq.gz`)
+R1=${R1s[$i]}  
+R2=${R1/R1/R2}
+name=${R1s[$i]}  
+name=${name/_R1.fastq.gz/}
+
+printf "$name; $R1; $R2\n"
+
+# filter and trim
+python3 ~/bsub/3utr/find_trim_3P_PE_adaptor.py $R1 $R2 -t 1 -s 61.5
