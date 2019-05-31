@@ -71,6 +71,7 @@ rule bwa_index:
 
 
 rule bwa_map:
+    # 1min/1M reads with 16 cores
     input:
         index=INDEX,
         r1="fastq/{sample}.R1.fastq.gz",
@@ -92,6 +93,7 @@ rule bwa_map:
 
 
 rule samtools_sort_index:
+    # 2M/min
     input:
         "mapped_reads/{sample}.bam"
     output:
@@ -135,6 +137,7 @@ rule bam_qc:
         """
 
 rule markDup:
+    # same speed as bwa_map, slow
     input:
         "sorted_reads/{sample}.bam"
     output:
