@@ -180,8 +180,8 @@ rule bamCoverage:
         --numberOfProcessors {threads} \
         --outFileFormat bigwig \
         --normalizeUsing CPM \
-        --minFragmentLength 50 \
-        --maxFragmentLength 1000 \
+        --minFragmentLength {config['minFragmentLength']} \
+        --maxFragmentLength {config['maxFragmentLength']} \
         --binSize 10 \
         -e 150 &> {log}
         """
@@ -208,6 +208,8 @@ rule plotFingerprint:
             --smartLabels \
             --minMappingQuality {MQ_MIN} \
             --binSize {BIN_SIZE} \
+            --minFragmentLength {config['minFragmentLength']} \
+            --maxFragmentLength {config['maxFragmentLength']} \
             --extendReads \
             --centerReads \
             --samFlagInclude 2 \
@@ -261,6 +263,8 @@ rule multiBamSummary:
         --smartLabels \
         -p {threads} \
         --minMappingQuality {MQ_MIN} \
+        --minFragmentLength {config['minFragmentLength']} \
+        --maxFragmentLength {config['maxFragmentLength']} \
         -e \
         --samFlagInclude 2 &> {log}
         """
