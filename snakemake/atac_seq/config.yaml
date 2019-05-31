@@ -1,0 +1,26 @@
+genome: 
+  "/Users/rui/genomes/human/ucsc_hg38_primary/hg38.primary.fa"
+
+pair_end:
+  # if True, use R1 and R2
+  # if False, use R1 only
+  True
+
+SAMPLES: 
+  - "A"
+  - "B"
+  # B: [fastq/B.R1.fastq.gz, fastq/B.R2.fastq.gz]
+
+R1:
+  - fastq/A.R1.fastq.gz
+  - fastq/B.R1.fastq.gz
+
+R2:
+  - fastq/A.R2.fastq.gz
+  - fastq/B.R2.fastq.gz
+
+# RESOURCES
+CPU:
+  12
+RAM:
+  "12G"
