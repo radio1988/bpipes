@@ -87,7 +87,7 @@ rule bwa_map:
         """
         bwa mem -t {threads} {GENOME} \
         {input.r1} {input.r2} \
-        | $samtools view -Sb - -o {output} &> {log}
+        | $samtools view -Sb -@ 1 - -o {output} &> {log}
         """
 
 
