@@ -183,8 +183,8 @@ rule bamCoverage:
         --numberOfProcessors {threads} \
         --outFileFormat bigwig \
         --normalizeUsing CPM \
-        --minFragmentLength {config['minFragmentLength']} \
-        --maxFragmentLength {config['maxFragmentLength']} \
+        --minFragmentLength {config[minFragmentLength]} \
+        --maxFragmentLength {config[maxFragmentLength]} \
         --binSize 10 \
         -e 150 &> {log}
         """
@@ -197,7 +197,7 @@ rule plotFingerprint:
         plot="chip_qc/fingerprint.pdf",
         txt="chip_qc/fingerprint.txt",
     params:
-        mem="2000"
+        mem="10000"
     threads:
         6
     log:
@@ -211,8 +211,8 @@ rule plotFingerprint:
             --smartLabels \
             --minMappingQuality {MQ_MIN} \
             --binSize {BIN_SIZE} \
-            --minFragmentLength {config['minFragmentLength']} \
-            --maxFragmentLength {config['maxFragmentLength']} \
+            --minFragmentLength {config[minFragmentLength]} \
+            --maxFragmentLength {config[maxFragmentLength]} \
             --extendReads \
             --centerReads \
             --samFlagInclude 2 \
@@ -254,7 +254,7 @@ rule multiBamSummary:
     threads:
         12
     params:
-        mem="1500"
+        mem="6000"
     log:
         "log/chip_qc/multiBamSummary.log"
     shell:
@@ -266,8 +266,8 @@ rule multiBamSummary:
         --smartLabels \
         -p {threads} \
         --minMappingQuality {MQ_MIN} \
-        --minFragmentLength {config['minFragmentLength']} \
-        --maxFragmentLength {config['maxFragmentLength']} \
+        --minFragmentLength {config[minFragmentLength]} \
+        --maxFragmentLength {config[maxFragmentLength]} \
         -e \
         --samFlagInclude 2 &> {log}
         """
@@ -281,7 +281,7 @@ rule plotCorrelation:
     threads:
         6
     params:
-        mem="1500"
+        mem="5000"
     log:
         "log/chip_qc/plotCorrelation.log"
     shell:
