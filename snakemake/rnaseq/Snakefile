@@ -71,7 +71,9 @@ rule star_map:
         r1="fastq/{sample}.R1.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz",
         r2="fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz", # trick snakemake to skip r2
     output:
-        temp("mapped_reads/{sample}.bam")
+        bam=temp("mapped_reads/{sample}.bam"),
+        genome=temp("mapped_reads/{sample}._STARgenome"),
+        tmp=temp("mapped_reads/{sample}._STARtmp"),
     params:
         mem="3000",  # todo auto adjust based on {threads}
         reads="fastq/{sample}.R1.fastq.gz fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz",
@@ -146,7 +148,7 @@ rule bam_qc:
     output:
         "bam_qc/samstat/{sample}.bam.samstat.html"
     params:
-        mem="2000"
+        mem="4000"
     threads:
         6
     log:
@@ -175,36 +177,26 @@ rule bamCoverage:
     output:
         "bigWig/{sample}.cpm.bw"
     threads:
-        4
+        8
     params:
-        mem="2000",
-        common="""--outFileFormat bigwig \
-                --normalizeUsing CPM \
-                --minMappingQuality 20 \
-                --binSize 10 \
-                """,
-        pe="""--minFragmentLength 50 \
-            --maxFragmentLength 1000 \
-            """
+        mem="4000",
+        common="--outFileFormat bigwig --normalizeUsing CPM --minMappingQuality 20 --binSize 10 ",
+        pe="--minFragmentLength 50 --maxFragmentLength 1000 "
     log:
         "log/bamCoverage/{sample}.bamCoverage.log"
     run:
         if config["PAIR_END"]:
             # todo need test
-            shell("""
-            bamCoverage --bam {input.bam} \
+            shell("""bamCoverage --bam {input.bam} \
             -o  {output} \
             --numberOfProcessors {threads} \
-            {params.common}
-            {params.pe}
-            # -e 150 \
+            {params.common} {params.pe} &> {log}
             """)
         else:
-            shell("""
-            bamCoverage --bam {input.bam} \
+            shell("""bamCoverage --bam {input.bam} \
             -o  {output} \
             --numberOfProcessors {threads} \
-            {params.common}
+            {params.common} &> {log}
             """)
 
 
@@ -212,6 +204,7 @@ rule bamCoverage:
 rule feature_count:
     input:
         bams=expand("sorted_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
+        bais=expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES),
         gtf=GTF
     output:
         "feature_count/counts.gene_id.s{strand}.txt"
