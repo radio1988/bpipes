@@ -29,6 +29,7 @@ shell.prefix("""
 # SnakeMake Coding Notes:
 # input don't have to be used, just for draw nice DAG
 
+
 rule all:
     input:
         # 1. everything listed here will be produced by the pipeline
@@ -36,7 +37,9 @@ rule all:
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
         feature_count=expand("feature_count/counts.gene_id.s{strand}.txt", strand=STRAND), # feed {strand}
-        dag="dag.all.svg", # create DAG
+        fpkm_tpm=expand("fpkm_tpm/strand_{strand}/FPKM.xlsx", strand=STRAND),
+        bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
+        dag="Workflow_DAG.all.svg", # create DAG
 
 
 rule fastqc:
@@ -65,23 +68,24 @@ rule star_map:
     input:
         index=INDEX,
         gtf=GTF,
-        reads="fastq/{sample}.fastq.gz"
+        r1="fastq/{sample}.R1.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz",
+        r2="fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz", # trick snakemake to skip r2
     output:
-        "mapped_reads/{sample}.bam"
+        temp("mapped_reads/{sample}.bam")
+    params:
+        mem="3000",  # todo auto adjust based on {threads}
+        reads="fastq/{sample}.R1.fastq.gz fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz",
     threads:
         12
-    params:
-        mem=3000 
-        # todo auto adjust based on {threads}, however, {threads} not accessable in params
     log:
         "log/star_map/{sample}.star.log"
-    shell:
+    run:
         # align; rename
-        """STAR --runThreadN {threads} \
+        shell("""STAR --runThreadN {threads} \
         --genomeDir {input.index} \
         --sjdbGTFfile {input.gtf} \
         --readFilesCommand zcat \
-        --readFilesIn {input.reads} \
+        --readFilesIn {params.reads} \
         --outFileNamePrefix mapped_reads/{wildcards.sample}. \
         --outFilterType BySJout \
         --outFilterMultimapNmax 20 \
@@ -100,7 +104,9 @@ rule star_map:
         &> {log}
 
         mv mapped_reads/{wildcards.sample}*.out.bam mapped_reads/{wildcards.sample}.bam
-        """
+        
+        gzip -f mapped_reads/{wildcards.sample}.Unmapped.out.mate*
+        """)
 
 
 rule samtools_sort:
@@ -109,13 +115,13 @@ rule samtools_sort:
     output:
         "sorted_reads/{sample}.bam"
     params:
-        mem="1200"
+        mem="3300"
     threads:
         4
     log:
         "log/samtools_sort/{sample}.sort.log"
     run:
-        shell("$samtools sort -@ {threads} -m 1G {input} -o sorted_reads/{wildcards.sample}.bam &> {log}")
+        shell("$samtools sort -@ {threads} -m 3G {input} -o sorted_reads/{wildcards.sample}.bam &> {log}")
 
 
 rule samtools_index:
@@ -142,13 +148,12 @@ rule bam_qc:
     params:
         mem="2000"
     threads:
-        8
+        6
     log:
         idxstats="log/bam_qc/idxstats/{sample}.idxstats.log",
         flagstat="log/bam_qc/flagstat/{sample}.flagstat.log",
         stats="log/bam_qc/stats/{sample}.stats.log",
         samstat="log/bam_qc/samstat/{sample}.samstat.log",
-
     shell:
         """
         mkdir -p bam_qc 
@@ -163,38 +168,112 @@ rule bam_qc:
         """
 
 
+rule bamCoverage:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "bigWig/{sample}.cpm.bw"
+    threads:
+        4
+    params:
+        mem="2000",
+        common="""--outFileFormat bigwig \
+                --normalizeUsing CPM \
+                --minMappingQuality 20 \
+                --binSize 10 \
+                """,
+        pe="""--minFragmentLength 50 \
+            --maxFragmentLength 1000 \
+            """
+    log:
+        "log/bamCoverage/{sample}.bamCoverage.log"
+    run:
+        if config["PAIR_END"]:
+            # todo need test
+            shell("""
+            bamCoverage --bam {input} \
+            -o  {output} \
+            --numberOfProcessors {threads} \
+            {params.common}
+            {params.pe}
+            # -e 150 \
+            """)
+        else:
+            shell("""
+            bamCoverage --bam {input} \
+            -o  {output} \
+            --numberOfProcessors {threads} \
+            {params.common}
+            """)
+
+
+
 rule feature_count:
     input:
-        bams=expand("mapped_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
+        bams=expand("sorted_reads/{sample}.bam", sample=SAMPLES), # for star, faster counting
         gtf=GTF
     output:
         "feature_count/counts.gene_id.s{strand}.txt"
     params:
         mem="4000",
-        common="-g gene_id -Q 20 --minOverlap 2 --fracOverlap 0.2",
-        pair_end="-p -B -d 50 -D 1000 -C"
+        common="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0 ",
+        pair_end="-p -B -d 50 -D 1000 -C "
     threads:
         4
     log:
         "log/feature_count/counts.gene_id.s{strand}.log"
+    run:
+        if config["PAIR_END"]:
+            shell("""
+            featureCounts -a {input.gtf} -o {output} \
+            -T {threads} \
+            {params.common} {params.pair_end} \
+            -s {wildcards.strand} \
+            {input.bams} &> {log}
+            """)
+        else:
+            shell("""
+            featureCounts -a {input.gtf} -o {output} \
+            -T {threads} \
+            {params.common} \
+            -s {wildcards.strand} \
+            {input.bams} &> {log}
+            """)
+
+# -p: count Fragments rather than reads for Paired-end reads (remove this for SE data)
+# -C: exclude chimeric (most times, for cancer maybe not include this)
+# -d 50, -D 1000: including PE reads with fragment length in between, which is better than default 50-600
+# -T: num threads
+# -s: strand info, very important; use $i to perform all three possibilities, pick the correct one after counting
+# -Q: min MAPQ, if MAPQ from star, we need to be careful, because star ignores PE information, we might need to add addional step to rescue PE info. (https://github.com/alexdobin/STAR/issues/615)
+# -M: count multiple-mapping reads, based on NH, not useful for RNA-seq, may create misleading summary, by counting multi-mapping reads several times
+# -B: Only count read pairs that have both ends aligned.
+# --fracOverlap 0.2: 20% of read length
+# -–minOverlap 2: 2bp
+# Notes:
+# liberal overlap settings (--minOverlap 1 --fracOverlap 0) will give you more counted reads
+# samtools sorted bams are smaller, and faster to be counted, compared to unsorted bams/star sorted bams
+# star sorted bams are slow to count => use samtools sorted reads, delete star bam (set as temp)
+
+
+
+rule fpkm_tpm:
+    input:
+        count="feature_count/counts.gene_id.s{strand}.txt",
+        anno_tab=config['ANNO_TAB']
+    output:
+        fpkm="fpkm_tpm/strand_{strand}/FPKM.xlsx",
+        tpm='fpkm_tpm/strand_{strand}/TPM.xlsx',
+    params:
+        mem="4000"
+    threads:
+        2
+    log:
+        "log/fpkm_tpm/fpkm_tpm.{strand}.log"
     shell:
         """
-        featureCounts -a {input.gtf} -o {output} \
-        -T {threads} \
-        {params.common} {params.pair_end} \
-        -s {wildcards.strand} \
-        {input.bams} &> {log}
+        Rscript scripts/rnaseq_normalization_annotation.R {input.count} {input.anno_tab} fpkm_tpm/strand_{wildcards.strand} &> {log}
         """
-        # -p: count Fragments rather than reads for Paired-end reads (remove this for SE data)
-        # -C: exclude chimeric (most times, for cancer maybe not include this)
-        # -d 50, -D 1000: including PE reads with fragment length in between, which is better than default 50-600
-        # -T: num threads
-        # -s: strand info, very important; use $i to perform all three possibilities, pick the correct one after counting
-        # -Q: min MAPQ, if MAPQ from star, we need to be careful, because star ignores PE information, we might need to add addional step to rescue PE info. (https://github.com/alexdobin/STAR/issues/615)
-        # -M: count multiple-mapping reads, based on NH, not useful for RNA-seq, may create misleading summary, by counting multi-mapping reads several times
-        # -B: Only count read pairs that have both ends aligned.
-        # --fracOverlap 0.2: 20% of read length
-        # -–minOverlap 2: 2bp
 
 
 rule create_dag:
@@ -205,9 +284,9 @@ rule create_dag:
     threads:
         1
     output:
-        "dag.all.svg"
+        "Workflow_DAG.all.svg"
     log:
-        "create_dag/dag.all.svg.log"
+        "log/create_dag/Workflow_DAG.all.svg.log"
     shell:
         "snakemake --dag all | dot -Tsvg > {output} 2> {log}"
 
