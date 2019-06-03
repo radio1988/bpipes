@@ -7,11 +7,6 @@ INDEX=config["INDEX"]
 GTF=config["GTF"]
 STRAND=config["STRAND"]
 
-if config["PAIR_END"]:
-    print("PAIR_END")
-else:
-    print("Single_END");
-
 
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
@@ -34,6 +29,7 @@ shell.prefix("""
 # SnakeMake Coding Notes:
 # input don't have to be used, just for draw nice DAG
 
+
 rule all:
     input:
         # 1. everything listed here will be produced by the pipeline
@@ -44,7 +40,6 @@ rule all:
         fpkm_tpm=expand("fpkm_tpm/strand_{strand}/FPKM.xlsx", strand=STRAND),
         bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
         dag="Workflow_DAG.all.svg", # create DAG
-
 
 
 rule fastqc:
@@ -68,92 +63,50 @@ rule fastqc:
         multiqc fastqc/details -o fastqc &>> {log}
         """
 
-if config["PAIR_END"]:
-    rule star_map:
-        input:
-            index=INDEX,
-            gtf=GTF,
-            r1="fastq/{sample}.R1.fastq.gz",
-            r2="fastq/{sample}.R2.fastq.gz",
-        output:
-            temp("mapped_reads/{sample}.bam")
-        params:
-            mem="3000"  # todo auto adjust based on {threads}
-        threads:
-            12
-        log:
-            "log/star_map/{sample}.star.log"
-        run:
-            # align; rename
-            shell("""STAR --runThreadN {threads} \
-            --genomeDir {input.index} \
-            --sjdbGTFfile {input.gtf} \
-            --readFilesCommand zcat \
-            --readFilesIn {input.r1} {input.r2} \
-            --outFileNamePrefix mapped_reads/{wildcards.sample}. \
-            --outFilterType BySJout \
-            --outFilterMultimapNmax 20 \
-            --alignSJoverhangMin 8 \
-            --alignSJDBoverhangMin 3 \
-            --outFilterMismatchNmax 999 \
-            --outFilterMismatchNoverReadLmax 0.05 \
-            --alignIntronMin 20 \
-            --alignIntronMax 1000000 \
-            --alignMatesGapMax 1000000 \
-            --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
-            --outSAMstrandField None \
-            --outSAMtype BAM Unsorted \
-            --quantMode GeneCounts \
-            --outReadsUnmapped Fastx \
-            &> {log}
 
-            mv mapped_reads/{wildcards.sample}*.out.bam mapped_reads/{wildcards.sample}.bam
-            
-            gzip -f mapped_reads/{wildcards.sample}.Unmapped.out.mate*
-            """)
-else:
-    rule star_map:
-        input:
-            index=INDEX,
-            gtf=GTF,
-            r1="fastq/{sample}.fastq.gz",
-        output:
-            temp("mapped_reads/{sample}.bam")
-        params:
-            mem="3000"  # todo auto adjust based on {threads}
-        threads:
-            12
-        log:
-            "log/star_map/{sample}.star.log"
-        run:
-            # align; rename
-            shell("""STAR --runThreadN {threads} \
-            --genomeDir {input.index} \
-            --sjdbGTFfile {input.gtf} \
-            --readFilesCommand zcat \
-            --readFilesIn {input.r1} \
-            --outFileNamePrefix mapped_reads/{wildcards.sample}. \
-            --outFilterType BySJout \
-            --outFilterMultimapNmax 20 \
-            --alignSJoverhangMin 8 \
-            --alignSJDBoverhangMin 3 \
-            --outFilterMismatchNmax 999 \
-            --outFilterMismatchNoverReadLmax 0.05 \
-            --alignIntronMin 20 \
-            --alignIntronMax 1000000 \
-            --alignMatesGapMax 1000000 \
-            --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
-            --outSAMstrandField None \
-            --outSAMtype BAM Unsorted \
-            --quantMode GeneCounts \
-            --outReadsUnmapped Fastx \
-            &> {log}
+rule star_map:
+    input:
+        index=INDEX,
+        gtf=GTF,
+        r1="fastq/{sample}.R1.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz",
+        r2="fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz", # trick snakemake to skip r2
+    output:
+        temp("mapped_reads/{sample}.bam")
+    params:
+        mem="3000",  # todo auto adjust based on {threads}
+        reads="fastq/{sample}.R1.fastq.gz fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz",
+    threads:
+        12
+    log:
+        "log/star_map/{sample}.star.log"
+    run:
+        # align; rename
+        shell("""STAR --runThreadN {threads} \
+        --genomeDir {input.index} \
+        --sjdbGTFfile {input.gtf} \
+        --readFilesCommand zcat \
+        --readFilesIn {params.reads} \
+        --outFileNamePrefix mapped_reads/{wildcards.sample}. \
+        --outFilterType BySJout \
+        --outFilterMultimapNmax 20 \
+        --alignSJoverhangMin 8 \
+        --alignSJDBoverhangMin 3 \
+        --outFilterMismatchNmax 999 \
+        --outFilterMismatchNoverReadLmax 0.05 \
+        --alignIntronMin 20 \
+        --alignIntronMax 1000000 \
+        --alignMatesGapMax 1000000 \
+        --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
+        --outSAMstrandField None \
+        --outSAMtype BAM Unsorted \
+        --quantMode GeneCounts \
+        --outReadsUnmapped Fastx \
+        &> {log}
 
-            mv mapped_reads/{wildcards.sample}*.out.bam mapped_reads/{wildcards.sample}.bam
-            
-            gzip -f mapped_reads/{wildcards.sample}.Unmapped.out.mate*
-            """)
-
+        mv mapped_reads/{wildcards.sample}*.out.bam mapped_reads/{wildcards.sample}.bam
+        
+        gzip -f mapped_reads/{wildcards.sample}.Unmapped.out.mate*
+        """)
 
 
 rule samtools_sort:
@@ -223,22 +176,35 @@ rule bamCoverage:
     threads:
         4
     params:
-        mem="2000"
+        mem="2000",
+        common="""--outFileFormat bigwig \
+                --normalizeUsing CPM \
+                --minMappingQuality 20 \
+                --binSize 10 \
+                """,
+        pe="""--minFragmentLength 50 \
+            --maxFragmentLength 1000 \
+            """
     log:
         "log/bamCoverage/{sample}.bamCoverage.log"
-    shell:
-        """
-        bamCoverage --bam {input} \
-        -o  {output} \
-        --numberOfProcessors 4 \
-        --outFileFormat bigwig \
-        --normalizeUsing CPM \
-        --minMappingQuality 20 \
-        --minFragmentLength 50 \
-        --maxFragmentLength 1000 \
-        --binSize 10 \
-        # -e 150 \
-        """
+    run:
+        if config["PAIR_END"]:
+            # todo need test
+            shell("""
+            bamCoverage --bam {input} \
+            -o  {output} \
+            --numberOfProcessors {threads} \
+            {params.common}
+            {params.pe}
+            # -e 150 \
+            """)
+        else:
+            shell("""
+            bamCoverage --bam {input} \
+            -o  {output} \
+            --numberOfProcessors {threads} \
+            {params.common}
+            """)
 
 
 
@@ -250,8 +216,8 @@ rule feature_count:
         "feature_count/counts.gene_id.s{strand}.txt"
     params:
         mem="4000",
-        common="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0",
-        pair_end="-p -B -d 50 -D 1000 -C"
+        common="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0 ",
+        pair_end="-p -B -d 50 -D 1000 -C "
     threads:
         4
     log:
