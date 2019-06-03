@@ -130,13 +130,13 @@ rule samtools_index:
     output:
         "sorted_reads/{sample}.bam.bai"
     params:
-        mem="2000"
+        mem="4000"
     threads:
-        1
+        2
     log:
         "log/samtools_index/{sample}.index.log"
     shell:
-        "$samtools index {input} &> {log}"
+        "$samtools index -@ {threads} {input} &> {log}"
 
 
 rule bam_qc:
@@ -170,7 +170,8 @@ rule bam_qc:
 
 rule bamCoverage:
     input:
-        "sorted_reads/{sample}.bam"
+        bam="sorted_reads/{sample}.bam",
+        bai="sorted_reads/{sample}.bam.bai"
     output:
         "bigWig/{sample}.cpm.bw"
     threads:
@@ -191,7 +192,7 @@ rule bamCoverage:
         if config["PAIR_END"]:
             # todo need test
             shell("""
-            bamCoverage --bam {input} \
+            bamCoverage --bam {input.bam} \
             -o  {output} \
             --numberOfProcessors {threads} \
             {params.common}
@@ -200,7 +201,7 @@ rule bamCoverage:
             """)
         else:
             shell("""
-            bamCoverage --bam {input} \
+            bamCoverage --bam {input.bam} \
             -o  {output} \
             --numberOfProcessors {threads} \
             {params.common}
