@@ -4,6 +4,8 @@ SAMPLES:
     - S2
     - B
 
+PAIR_END: False  # True/False
+
 GENOME:
     /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
 INDEX:
