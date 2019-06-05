@@ -1,0 +1,43 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cluster nodes: 999
+Job counts:
+	count	jobs
+	1	all
+	3	feature_count
+	4
+
+[Wed May  8 01:52:23 2019]
+rule feature_count:
+    input: mapped_reads/S1.bam, mapped_reads/S2.bam, mapped_reads/B.bam, /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+    output: feature_count/counts.gene_id.s1.txt
+    log: log/feature_count/counts.gene_id.s1.log
+    jobid: 1
+    wildcards: strand=1
+    threads: 4
+
+Submitted job 1 with external jobid 'Job <4741089> is submitted to queue <short>.'.
+
+[Wed May  8 01:52:23 2019]
+rule feature_count:
+    input: mapped_reads/S1.bam, mapped_reads/S2.bam, mapped_reads/B.bam, /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+    output: feature_count/counts.gene_id.s2.txt
+    log: log/feature_count/counts.gene_id.s2.log
+    jobid: 2
+    wildcards: strand=2
+    threads: 4
+
+Submitted job 2 with external jobid 'Job <4741090> is submitted to queue <short>.'.
+
+[Wed May  8 01:52:23 2019]
+rule feature_count:
+    input: mapped_reads/S1.bam, mapped_reads/S2.bam, mapped_reads/B.bam, /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+    output: feature_count/counts.gene_id.s0.txt
+    log: log/feature_count/counts.gene_id.s0.log
+    jobid: 7
+    wildcards: strand=0
+    threads: 4
+
+Submitted job 7 with external jobid 'Job <4741091> is submitted to queue <short>.'.
+Will exit after finishing currently running jobs.
+Will exit after finishing currently running jobs.

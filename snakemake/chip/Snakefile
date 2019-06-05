@@ -71,6 +71,7 @@ rule bwa_index:
 
 
 rule bwa_map:
+    # 1min/1M reads with 16 cores
     input:
         index=INDEX,
         r1="fastq/{sample}.R1.fastq.gz",
@@ -87,11 +88,12 @@ rule bwa_map:
         """
         bwa mem -t {threads} {GENOME} \
         {input.r1} {input.r2} \
-        | $samtools view -Sb - -o {output} &> {log}
+        | $samtools view -Sb -1 -@ 2 - -o {output} &> {log}
         """
 
 
 rule samtools_sort_index:
+    # 2M/min
     input:
         "mapped_reads/{sample}.bam"
     output:
@@ -135,6 +137,7 @@ rule bam_qc:
         """
 
 rule markDup:
+    # same speed as bwa_map, slow
     input:
         "sorted_reads/{sample}.bam"
     output:
@@ -180,8 +183,8 @@ rule bamCoverage:
         --numberOfProcessors {threads} \
         --outFileFormat bigwig \
         --normalizeUsing CPM \
-        --minFragmentLength {config['minFragmentLength']} \
-        --maxFragmentLength {config['maxFragmentLength']} \
+        --minFragmentLength {config[minFragmentLength]} \
+        --maxFragmentLength {config[maxFragmentLength]} \
         --binSize 10 \
         -e 150 &> {log}
         """
@@ -194,7 +197,7 @@ rule plotFingerprint:
         plot="chip_qc/fingerprint.pdf",
         txt="chip_qc/fingerprint.txt",
     params:
-        mem="2000"
+        mem="10000"
     threads:
         6
     log:
@@ -208,8 +211,8 @@ rule plotFingerprint:
             --smartLabels \
             --minMappingQuality {MQ_MIN} \
             --binSize {BIN_SIZE} \
-            --minFragmentLength {config['minFragmentLength']} \
-            --maxFragmentLength {config['maxFragmentLength']} \
+            --minFragmentLength {config[minFragmentLength]} \
+            --maxFragmentLength {config[maxFragmentLength]} \
             --extendReads \
             --centerReads \
             --samFlagInclude 2 \
@@ -251,7 +254,7 @@ rule multiBamSummary:
     threads:
         12
     params:
-        mem="1500"
+        mem="6000"
     log:
         "log/chip_qc/multiBamSummary.log"
     shell:
@@ -263,8 +266,8 @@ rule multiBamSummary:
         --smartLabels \
         -p {threads} \
         --minMappingQuality {MQ_MIN} \
-        --minFragmentLength {config['minFragmentLength']} \
-        --maxFragmentLength {config['maxFragmentLength']} \
+        --minFragmentLength {config[minFragmentLength]} \
+        --maxFragmentLength {config[maxFragmentLength]} \
         -e \
         --samFlagInclude 2 &> {log}
         """
@@ -278,7 +281,7 @@ rule plotCorrelation:
     threads:
         6
     params:
-        mem="1500"
+        mem="5000"
     log:
         "log/chip_qc/plotCorrelation.log"
     shell:

@@ -1,2 +1,0 @@
-'-g gene_id -Q 20 --minOverlap 2 --fracOverlap 0.2'
-'-p -B -d 50 -D 1000 -C'

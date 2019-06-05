@@ -1,1 +1,0 @@
-$samtools index sorted_reads/S2.bam

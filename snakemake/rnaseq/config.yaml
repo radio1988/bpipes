@@ -4,6 +4,8 @@ SAMPLES:
     - S2
     - B
 
+PAIR_END: False  # True/False
+
 GENOME:
     /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
 INDEX:
@@ -14,3 +16,6 @@ ANNO_TAB:
   ~/github/bpipes/rnaseq/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz
 
 STRAND: [0, 1, 2]  # can run [0, 1, 2] to get all possible results, can also select one
+
+# script paths
+FPKM: "scripts/rnaseq_normalization_annotation.R"

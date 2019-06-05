@@ -1,0 +1,1 @@
+bsub -q long -W 144:00 -R rusage[mem=64000] -n 1 'for f in */;do cellranger mat2csv ${f} ${f/\//.csv};gzip ${f/\//.csv};done'
