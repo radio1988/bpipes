@@ -1,0 +1,121 @@
+---
+title: "Venn 4Groups (Plot Only, No list)"
+author: "RuiLi"
+date: "06/05/2019"
+output:
+  html_document:
+    toc: yes  # table of content
+    code_folding: hide
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+library(VennDiagram)
+library(gdata)
+library(WriteXLS)
+MIN_LFC <- 0.0
+MIN_FDR <- 1.0
+
+filter_sig_genes <- function(df, MIN_FDR, MIN_LFC){
+    largeLFC <- abs(df$log2FoldChange) > MIN_LFC 
+    smallFDR <- df$padj < MIN_FDR
+    sig_idx <- largeLFC & smallFDR
+    print(table(largeLFC))
+    print(table(smallFDR))
+    print(table(sig_idx))
+    
+    return (df[sig_idx,])
+}
+```
+
+## Code Notes:
+- Venn of 4 Groups
+- Plot Only, No list output
+
+
+## Read A
+```{r readdata}
+name1 <- "A" # c11.gk3164_spg7.VS.wt_spg7
+df1 <- readxl::read_xlsx( '../A_20_vs_0.deseq2.sig.FDR.0.05.LFC.1.xlsx', na='-', sheet=1)  # na term important
+df1 <- data.frame(df1)  #important
+
+colnames(df1)
+dim(df1)
+
+
+
+df1_sig <- filter_sig_genes(df1, MIN_FDR, MIN_LFC)
+head(df1_sig)
+
+
+list1 <- df1_sig$Row.names
+area1 <- length(list1)
+```
+
+
+## Read B
+```{r}
+name2 <- "B" # c10.tm4919_spg7.VS.wt_spg7
+df2 <- readxl::read_xlsx( '../B_20_vs_0.deseq2.sig.FDR.0.05.LFC.1.xlsx', na='-', sheet=1)  # na term important
+df2 <- data.frame(df2)  #important
+
+colnames(df2)
+dim(df2)
+
+df2_sig <- filter_sig_genes(df2, MIN_FDR, MIN_LFC)
+head(df2_sig)
+
+
+list2 <- df2_sig$Row.names
+area2 <- length(list2)
+```
+
+## Read C
+```{r}
+name3 <- "C" # c10.tm4919_spg7.VS.wt_spg7
+df3 <- readxl::read_xlsx( '../C_20_vs_0.deseq2.sig.FDR.0.05.LFC.1.xlsx', na='-', sheet=1)  # na term important
+df3 <- data.frame(df3)  #important
+
+colnames(df3)
+dim(df3)
+
+df3_sig <- filter_sig_genes(df3, MIN_FDR, MIN_LFC)
+head(df3_sig)
+
+
+list3 <- df3_sig$Row.names
+area3 <- length(list3)
+```
+
+## Read D
+```{r}
+name4 <- "D" # c10.tm4919_spg7.VS.wt_spg7
+df4 <- readxl::read_xlsx( '../D_20_vs_0.deseq2.sig.FDR.0.05.LFC.1.xlsx', na='-', sheet=1)  # na term important
+df4 <- data.frame(df4)  #important
+
+colnames(df4)
+dim(df4)
+
+df4_sig <- filter_sig_genes(df4, MIN_FDR, MIN_LFC)
+head(df4_sig)
+
+
+list4 <- df4_sig$Row.names
+area4 <- length(list4)
+```
+
+
+## Venn
+```{r}
+venn.diagram(
+    x = list(df1_sig$Gene , 
+             df2_sig$Gene , 
+             df3_sig$Gene, 
+             df4_sig$Gene),
+    category.names = c(name1 , name2, name3, name4),
+    filename = '#14_venn_diagramm.png',
+    fill = c('yellow', 'blue', 'orange', 'purple'),
+    main = "20-min vs 0-min"
+)
+```
+
