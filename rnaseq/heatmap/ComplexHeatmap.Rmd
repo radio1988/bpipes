@@ -1,0 +1,77 @@
+---
+title: "Heatmap for DEG"
+author: "RuiLi"
+date: "06/09/2019"
+output:
+  html_document:
+    code_folding: hide
+    toc: yes  # table of content
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("ComplexHeatmap")
+# https://bioconductor.org/packages/devel/bioc/vignettes/ComplexHeatmap/inst/doc/s4.heatmap_annotation.html 
+library(ComplexHeatmap)
+library(circlize)
+require(gdata)  # best for reading excel
+```
+
+# Communication:
+For Minggang:
+- Sig DEG for Fasudil vs DMSO (FDR < 0.05), 1370 genes
+
+# Code Notes:
+- float code
+
+# Read Data
+```{r}
+df = read.xls ("../DESeq2/Fasudil_vs_DMSO.OneModel.deseq2.sig.FDR.0.05.LFC.0.xlsx", 
+               sheet = 1, header = TRUE)
+row.names(df) <- df$Name
+values <- df[,14:19]
+logNormed_sig <- log10(values + 1)  # log transformation
+# saveRDS(df, "df.rds")
+# df <- readRDS('df.rds')
+```
+
+
+## Heatmap for DEG 
+```{r heatmap fig, fig.height = 6, fig.width = 4, fofig.align = "center", echo=FALSE}
+mat <- logNormed_sig
+row.names(mat) <- row.names(logNormed_sig)
+max_exp <- max(logNormed_sig)
+
+labels <- as.character(row.names(logNormed_sig))
+# markers <- c("Ctgf", "Cyr61", 'Ankrd1', 'Axin2')  # MEF
+markers <- c('FXN')  # INTESTINE, NGN3 not found (alias tested)
+paste("markers", markers)
+
+marker_idx <- match(tolower(markers), tolower(labels))
+labels[marker_idx]
+
+header = data.frame(type = c('DMSO', 'DMSO', 'Fasudil', 'Fasudil', "KD025", "KD025"))
+
+ha = HeatmapAnnotation(df = header,  
+                       col = list(type = c("DMSO" =  "blue", 
+                                           "Fasudil" = "Orange",
+                                           "KD025" = "red"
+                                           )))
+Heatmap(mat, 
+        name = 'Exp',
+        show_row_names = F,
+        show_column_names = F,
+        show_row_dend = T, 
+        show_column_dend = F,
+        top_annotation = ha, 
+        col = colorRamp2(c(0, max_exp/2, max_exp), c("blue", "white", "red")), 
+        fontsize(4)
+        ) + 
+  rowAnnotation(link = row_anno_link(at = marker_idx, labels = markers),
+                width = unit(5, "mm") + 
+                  max_text_width(markers))
+
+```
+
