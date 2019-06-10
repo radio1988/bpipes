@@ -1,7 +1,7 @@
 ---
 title: "DEseq2"
 author: "RuiLi"
-date: "05/16/2018"
+date: "06/10/2019"
 output:
   html_document:
     toc: yes
@@ -23,6 +23,7 @@ output:
 - better VolcanoPlot by setting Max Y to 50 (>50 set to 50)
 - better html output, skip nb, use html
 - both OneBigModel and SeperatedModels
+- fixed row.names (gencode id) bug
 
 ```{r setup, include=FALSE}
 library(DESeq2)
@@ -153,8 +154,8 @@ colnames(df) <- gsub("sorted_reads.", "", colnames(df))
 # paste(colnames(df), colname_formatted, sep = "->")
 # colnames(df) <- colname_formatted
 
-row.names(df) <- gsub("\\.*", "", row.names(df))  # for annotation purpose
 colnames(df)
+head(row.names(df))
 dim(df)
 ```
 
@@ -180,7 +181,6 @@ dim(df)
 anno <- read.table(
     "~/github/bpipes/rnaseq/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz", 
     header=T)
-anno$Gene <- gsub("\\.*", "", anno$Gene)  # for annotation purpose
 
 dim(anno)
 head(anno)
