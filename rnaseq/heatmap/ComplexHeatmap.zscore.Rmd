@@ -1,0 +1,160 @@
+---
+title: "Heatmap for DEG: complex heatmap"
+author: "RuiLi"
+date: "06/18/2019"
+output:
+  html_document:
+    toc: yes  # table of content
+    code_folding: hide
+    toc_float: yes
+fig_width: 3
+fig_height: 6
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8) 
+library(ComplexHeatmap)
+library(circlize)
+```
+
+## Communications
+- For Mandy
+- Visualized with log10(TPM+1)
+- Only significant Differentially Expressed Genes (DEG) with FDR < 0.05 included
+
+## Code log:
+- Use zscore for each gene scaled among samples for visualization
+
+## Read Data
+```{r}
+outname <- 'Heatmap of DEG'
+
+df <- readxl::read_xlsx( '../../DESeq2_batch/High_vs_Low.deseq2.sig.FDR.0.05.LFC.0.xlsx', na='-')  # na term important
+df <- data.frame(df)  #important
+
+# sort by LFC
+df <- df[order(df$log2FoldChange), ]
+exp_idx <- grepl("TPM", colnames(df))
+colnames(df) <- gsub("TPM.", "", colnames(df))
+
+head(df)
+```
+
+
+## Significance Filter (skipped)
+```{r}
+# sig_idx <- read.table("../1a_DE_UnionSet/DE_Union.txt") 
+df.sig <- df
+row.names(df.sig) <- df.sig$Name
+# head(df.sig)
+```
+
+## Select expression columns, transform into Z-score
+```{r}
+exp_df.sig <- df.sig[, exp_idx]
+colnames(exp_df.sig)
+row.names(exp_df.sig)[1:5]
+dim(exp_df.sig)
+
+z.exp_df.sig <- t(scale(t(exp_df.sig)))
+
+# num_df <- log10(exp_df + 1)  # log transformation
+num_df <- z.exp_df.sig
+
+num_sig <- dim(num_df)[1]
+paste( dim(num_df)[1], "significant genes")
+
+head(num_df)
+write.csv(num_df, "sig.zscore.csv", row.names = T)
+```
+
+## Heatmap for DEG 
+```{r, echo=FALSE}
+max_exp <- max(num_df)
+max_exp <- 2  # params
+min_exp <- -2  # params
+hist(num_df, 50,
+     main = "Histogram of Z-score\n red-line: max in heatmaps\nblue: min")
+abline(v=max_exp, col = 'red')
+abline(v=min_exp, col = 'blue')
+
+
+labels <- as.character(exp_df.sig$Name)  # with duplicates, bug?
+
+markers <- c('GeneSymbol', 'GeneSymbol2')  # params
+marker_idx <- match(tolower(markers), tolower(labels))
+
+labels[marker_idx]
+
+header = data.frame(type = rep(c('High', "Low"), each=3))
+
+ha = HeatmapAnnotation(df = header,  
+                       col = list(type = c("High" =  "orange", 
+                                           'Low' = 'green'
+                                           )))
+```
+
+
+
+
+## Heatmap Complete Hierarchical Clustering by Manhattan Distance
+- Used Z-score for clustering and visualization
+- Z-score calculated from TPM for each gene, scaled among samples
+```{r, fig.height = 8, fig.width = 6, fofig.align = "center"}
+Heatmap(num_df, 
+        column_title = outname,
+        row_title = paste(num_sig, 'DEG'),
+        name = 'Z-score',
+        
+        cluster_rows = T,
+        cluster_columns = F, 
+        clustering_distance_rows = "manhattan",
+        clustering_method_rows = 'complete', 
+        
+        show_row_names = F,
+        show_column_names = T,
+        
+        show_row_dend = T, 
+        show_column_dend = T,
+        
+        top_annotation = ha, 
+        
+        col = colorRamp2(c(min_exp, 0, max_exp), c("blue", 'white',  "red")), 
+        fontsize(4)
+        ) + 
+  rowAnnotation(link = row_anno_link(at = marker_idx, labels = markers),
+                width = unit(5, "mm") + 
+                  max_text_width(markers))
+
+```
+
+
+
+<!-- ## Heatmap Sort by LFC (Log2 Fold Change) -->
+<!-- ```{r , fig.height = 6, fig.width = 5, fofig.align = "center", echo=FALSE, results="hide"} -->
+<!-- Heatmap(mat,  -->
+<!--         column_title = outname, -->
+<!--         row_title = paste(num_sig, 'DEG'), -->
+<!--         name = 'Exp', -->
+
+<!--         cluster_rows = F, -->
+<!--         cluster_columns = F,  -->
+<!--         clustering_method_rows = 'centroid',  -->
+
+<!--         show_row_names = F, -->
+<!--         show_column_names = T, -->
+
+<!--         show_row_dend = T,  -->
+<!--         show_column_dend = T, -->
+
+<!--         top_annotation = ha,  -->
+
+<!--         col = colorRamp2(c(0, max_exp/2, max_exp), c("blue", 'white',  "red")),  -->
+<!--         fontsize(4) -->
+<!--         ) +  -->
+<!--   rowAnnotation(link = row_anno_link(at = marker_idx, labels = markers), -->
+<!--                 width = unit(5, "mm") +  -->
+<!--                   max_text_width(markers)) -->
+
+<!-- ``` -->
