@@ -20,7 +20,7 @@ library(circlize)
 
 ## Communications
 - For Mandy
-- Visualized with log10(TPM+1)
+- Visualized with Zscore
 - Only significant Differentially Expressed Genes (DEG) with FDR < 0.05 included
 
 ## Code log:
@@ -30,7 +30,7 @@ library(circlize)
 ```{r}
 outname <- 'Heatmap of DEG'
 
-df <- readxl::read_xlsx( '../../DESeq2_batch/High_vs_Low.deseq2.sig.FDR.0.05.LFC.0.xlsx', na='-')  # na term important
+df <- readxl::read_xlsx( '../DESeq2_batch/High_vs_Low.deseq2.sig.FDR.0.05.LFC.0.xlsx', na='-')  # na term important
 df <- data.frame(df)  #important
 
 # sort by LFC
