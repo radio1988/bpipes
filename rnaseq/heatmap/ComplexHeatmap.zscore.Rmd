@@ -19,7 +19,7 @@ library(circlize)
 ```
 
 ## Communications
-- For Mandy
+- For Caitlin
 - Visualized with Zscore
 - Only significant Differentially Expressed Genes (DEG) with FDR < 0.05 included
 
@@ -30,7 +30,7 @@ library(circlize)
 ```{r}
 outname <- 'Heatmap of DEG'
 
-df <- readxl::read_xlsx( '../DESeq2_batch/High_vs_Low.deseq2.sig.FDR.0.05.LFC.0.xlsx', na='-')  # na term important
+df <- readxl::read_xlsx( '../DESeq2/RSL_vs_DMSO.deseq2.sig.FDR.0.05.LFC.0.xlsx', na='-')  # na term important
 df <- data.frame(df)  #important
 
 # sort by LFC
@@ -72,9 +72,10 @@ write.csv(num_df, "sig.zscore.csv", row.names = T)
 ## Heatmap for DEG 
 ```{r, echo=FALSE}
 max_exp <- max(num_df)
-max_exp <- 2  # params
-min_exp <- -2  # params
-hist(num_df, 50,
+min_exp <- min(num_df)
+max_exp <- 1.5  # params
+min_exp <- -1.5  # params
+hist(num_df, 50, xlim = c(min_exp, max_exp),
      main = "Histogram of Z-score\n red-line: max in heatmaps\nblue: min")
 abline(v=max_exp, col = 'red')
 abline(v=min_exp, col = 'blue')
@@ -87,11 +88,11 @@ marker_idx <- match(tolower(markers), tolower(labels))
 
 labels[marker_idx]
 
-header = data.frame(type = rep(c('High', "Low"), each=3))
+header = data.frame(type = rep(c('DMSO', "RSL"), each=2))  # params
 
 ha = HeatmapAnnotation(df = header,  
-                       col = list(type = c("High" =  "orange", 
-                                           'Low' = 'green'
+                       col = list(type = c("DMSO" =  "green", 
+                                           'RSL' = 'orange'
                                            )))
 ```
 
@@ -101,7 +102,9 @@ ha = HeatmapAnnotation(df = header,
 ## Heatmap Complete Hierarchical Clustering by Manhattan Distance
 - Used Z-score for clustering and visualization
 - Z-score calculated from TPM for each gene, scaled among samples
-```{r, fig.height = 8, fig.width = 6, fofig.align = "center"}
+
+### Hide gene names
+```{r, fig.height = 8, fig.width = 5, fofig.align = "center"}
 Heatmap(num_df, 
         column_title = outname,
         row_title = paste(num_sig, 'DEG'),
@@ -120,6 +123,37 @@ Heatmap(num_df,
         
         top_annotation = ha, 
         
+        col = colorRamp2(c(min_exp, 0, max_exp), 
+                         c("blue", 'white',  "red")), 
+        fontsize(4)
+        ) + 
+rowAnnotation(
+    link = row_anno_link(at = marker_idx, labels = markers),
+    width = unit(5, "mm") + max_text_width(markers))
+
+```
+
+
+### Show gene names
+```{r, fig.height = 21, fig.width = 6, fofig.align = "center"}
+Heatmap(num_df, 
+        column_title = outname,
+        row_title = paste(num_sig, 'DEG'),
+        name = 'Z-score',
+        
+        cluster_rows = T,
+        cluster_columns = F, 
+        clustering_distance_rows = "manhattan",
+        clustering_method_rows = 'complete', 
+        
+        show_row_names = T,
+        show_column_names = T,
+        
+        show_row_dend = T, 
+        show_column_dend = T,
+        
+        top_annotation = ha, 
+        
         col = colorRamp2(c(min_exp, 0, max_exp), c("blue", 'white',  "red")), 
         fontsize(4)
         ) + 
@@ -128,8 +162,6 @@ Heatmap(num_df,
                   max_text_width(markers))
 
 ```
-
-
 
 <!-- ## Heatmap Sort by LFC (Log2 Fold Change) -->
 <!-- ```{r , fig.height = 6, fig.width = 5, fofig.align = "center", echo=FALSE, results="hide"} -->
