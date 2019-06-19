@@ -33,6 +33,7 @@ rule all:
         bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
         plotFingerprint="chip_qc/fingerprint.pdf",
         plotCorrelation="chip_qc/multiBamSummary.heatmap.pdf",
+        plotPCA="chip_qc/multiBamSummary.pca.pdf",
         bamPEFragmentSize="chip_qc/fragment_size.pdf",
         dag="Workflow_DAG.all.svg", # create DAG
 
@@ -293,6 +294,24 @@ rule plotCorrelation:
         -T 'Pearson Corr Between Bins' \
         --removeOutliers \
         -o {output} &> {log}
+        """
+
+rule plotPCA:
+    input:
+        "chip_qc/multiBamSummary.npz",
+    output:
+        "chip_qc/multiBamSummary.pca.pdf"
+    threads:
+        2
+    params:
+        mem="8000"
+    log:
+        "log/chip_qc/plotPCA.log"
+    shell:
+        """
+        plotPCA \
+        --corData {input} \
+        --plotFile {output} &> {log}
         """
 
 rule CollectInsertSizeMetrics:
