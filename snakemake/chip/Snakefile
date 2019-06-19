@@ -230,7 +230,7 @@ rule bamPEFragmentSize:
         plot="chip_qc/fragment_size.pdf",
         txt="chip_qc/fragment_size.txt"
     params:
-        mem="2000"
+        mem="4000"
     threads:
         4
     log:
@@ -304,7 +304,7 @@ rule plotPCA:
     threads:
         2
     params:
-        mem="8000"
+        mem="16000"
     log:
         "log/chip_qc/plotPCA.log"
     shell:
