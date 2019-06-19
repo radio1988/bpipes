@@ -171,9 +171,9 @@ rule bamCoverage:
     output:
         "bigWig/{sample}.cpm.bw"
     threads:
-        12
+        8
     params:
-        mem="1000"  # total 6-10G
+        mem="1500"  # total 6-10G
     log:
         "log/bamCoverage/{sample}.bamCoverage.log"
     shell:
@@ -198,7 +198,7 @@ rule plotFingerprint:
         plot="chip_qc/fingerprint.pdf",
         txt="chip_qc/fingerprint.txt",
     params:
-        mem="10000"
+        mem="2000"
     threads:
         6
     log:
@@ -253,9 +253,9 @@ rule multiBamSummary:
     output:
         "chip_qc/multiBamSummary.npz",
     threads:
-        12
+        8
     params:
-        mem="6000"
+        mem="3500"
     log:
         "log/chip_qc/multiBamSummary.log"
     shell:
@@ -280,9 +280,9 @@ rule plotCorrelation:
     output:
         "chip_qc/multiBamSummary.heatmap.pdf"
     threads:
-        6
+        1
     params:
-        mem="5000"
+        mem="12000"
     log:
         "log/chip_qc/plotCorrelation.log"
     shell:
@@ -302,9 +302,9 @@ rule plotPCA:
     output:
         "chip_qc/multiBamSummary.pca.pdf"
     threads:
-        2
+        1
     params:
-        mem="16000"
+        mem="20000"
     log:
         "log/chip_qc/plotPCA.log"
     shell:
