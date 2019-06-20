@@ -2,7 +2,6 @@
 SAMPLES:
     - S1
     - S2
-    - B
 
 PAIR_END: False  # True/False
 
