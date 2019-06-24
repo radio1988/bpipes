@@ -66,6 +66,27 @@ rule fastqc:
         """
 
 
+rule star_idx:
+    input:
+        fa=GENOME,
+        gtf=GTF
+    output:
+        INDEX
+    params:
+        mem="3000"
+    threads:
+        12
+    log:
+        "log/star_idx/star_idx.log"
+    shell:
+        """
+        STAR --runThreadN {threads} --runMode genomeGenerate \
+        --genomeDir {output} \
+        --genomeFastaFiles {input.fa} \
+        --sjdbGTFfile {input.gtf} &> {log}
+        """
+
+
 rule star_map:
     input:
         index=INDEX,
@@ -119,9 +140,9 @@ rule samtools_sort:
     output:
         "sorted_reads/{sample}.bam"
     params:
-        mem="3300"
+        mem="62000"
     threads:
-        4
+        2
     log:
         "log/samtools_sort/{sample}.sort.log"
     run:
