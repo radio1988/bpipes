@@ -6,6 +6,7 @@ GENOME=config["GENOME"]
 INDEX=config["INDEX"]
 GTF=config["GTF"]
 STRAND=config["STRAND"]
+MODE=config["MODE"]
 
 
 # load modules (have to use """, to keep in one block)
@@ -38,9 +39,10 @@ rule all:
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
         feature_count_strict=expand("feature_count/counts.gene_id.s{strand}.strict.txt", strand=STRAND), # feed {strand}
         feature_count_liberal=expand("feature_count/counts.gene_id.s{strand}.liberal.txt", strand=STRAND), # feed {strand}
-        #fpkm_tpm=expand("fpkm_tpm/strand_{strand}/FPKM.xlsx", strand=STRAND),
-        bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
+        bamCoverage=expand("bigWig/{sample}.{mode}.cpm.bw", sample=SAMPLES, mode=MODE),
         dag="Workflow_DAG.all.svg", # create DAG
+    params:
+        mem="1000"
     shell:
         "rm -rf mapped_reads/*_STARgenome mapped_reads/*tmp"
 
@@ -204,29 +206,44 @@ rule bamCoverage:
         bam="sorted_reads/{sample}.bam",
         bai="sorted_reads/{sample}.bam.bai"
     output:
-        "bigWig/{sample}.cpm.bw"
+        "bigWig/{sample}.{mode}.cpm.bw"
     threads:
         8
     params:
         mem="4000",
-        common="--outFileFormat bigwig --normalizeUsing CPM --minMappingQuality 20 --binSize 10 ",
-        pe="--minFragmentLength 50 --maxFragmentLength 1000 "
+        common_strict="--outFileFormat bigwig --normalizeUsing CPM --minMappingQuality 20 --binSize 10 ",
+        common_liberal="--outFileFormat bigwig --normalizeUsing CPM --binSize 10",
+        pe_strict="--minFragmentLength 50 --maxFragmentLength 1000 ",
+        pe_liberal=" "
     log:
-        "log/bamCoverage/{sample}.bamCoverage.log"
+        "log/bamCoverage/{sample}.{mode}.bamCoverage.log"
     run:
         if config["PAIR_END"]:
-            # todo need test
-            shell("""bamCoverage --bam {input.bam} \
-            -o  {output} \
-            --numberOfProcessors {threads} \
-            {params.common} {params.pe} &> {log}
-            """)
+            if {wildcards.mode} == "strict":
+                shell("""bamCoverage --bam {input.bam} \
+                -o  {output} \
+                --numberOfProcessors {threads} \
+                {params.common_strict} {params.pe_strict} &> {log}
+                """)
+            elif {wildcards.mode} == "liberal":
+                shell("""bamCoverage --bam {input.bam} \
+                -o  {output} \
+                --numberOfProcessors {threads} \
+                {params.common_liberal} {params.pe_liberal} &> {log}
+                """)
         else:
-            shell("""bamCoverage --bam {input.bam} \
-            -o  {output} \
-            --numberOfProcessors {threads} \
-            {params.common} &> {log}
-            """)
+            if {wildcards.mode} == "strict":
+                shell("""bamCoverage --bam {input.bam} \
+                -o  {output} \
+                --numberOfProcessors {threads} \
+                {params.common_strict} &> {log}
+                """)
+            else:
+                shell("""bamCoverage --bam {input.bam} \
+                -o  {output} \
+                --numberOfProcessors {threads} \
+                {params.common_liberal} &> {log}
+                """)
 
 
 
