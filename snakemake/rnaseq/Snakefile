@@ -6,6 +6,7 @@ GENOME=config["GENOME"]
 INDEX=config["INDEX"]
 GTF=config["GTF"]
 STRAND=config["STRAND"]
+MODE=config["MODE"]
 
 
 # load modules (have to use """, to keep in one block)
@@ -36,9 +37,12 @@ rule all:
         # 2. feed {sample}
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}
-        feature_count=expand("feature_count/counts.gene_id.s{strand}.txt", strand=STRAND), # feed {strand}
-        bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
+        feature_count_strict=expand("feature_count/counts.gene_id.s{strand}.strict.txt", strand=STRAND), # feed {strand}
+        feature_count_liberal=expand("feature_count/counts.gene_id.s{strand}.liberal.txt", strand=STRAND), # feed {strand}
+        bamCoverage=expand("bigWig/{sample}.{mode}.cpm.bw", sample=SAMPLES, mode=MODE),
         dag="Workflow_DAG.all.svg", # create DAG
+    params:
+        mem="1000"
     shell:
         "rm -rf mapped_reads/*_STARgenome mapped_reads/*tmp"
 
@@ -202,29 +206,44 @@ rule bamCoverage:
         bam="sorted_reads/{sample}.bam",
         bai="sorted_reads/{sample}.bam.bai"
     output:
-        "bigWig/{sample}.cpm.bw"
+        "bigWig/{sample}.{mode}.cpm.bw"
     threads:
         8
     params:
         mem="4000",
-        common="--outFileFormat bigwig --normalizeUsing CPM --minMappingQuality 20 --binSize 10 ",
-        pe="--minFragmentLength 50 --maxFragmentLength 1000 "
+        common_strict="--outFileFormat bigwig --normalizeUsing CPM --minMappingQuality 20 --binSize 10 ",
+        common_liberal="--outFileFormat bigwig --normalizeUsing CPM --binSize 10",
+        pe_strict="--minFragmentLength 50 --maxFragmentLength 1000 ",
+        pe_liberal=" "
     log:
-        "log/bamCoverage/{sample}.bamCoverage.log"
+        "log/bamCoverage/{sample}.{mode}.bamCoverage.log"
     run:
         if config["PAIR_END"]:
-            # todo need test
-            shell("""bamCoverage --bam {input.bam} \
-            -o  {output} \
-            --numberOfProcessors {threads} \
-            {params.common} {params.pe} &> {log}
-            """)
+            if {wildcards.mode} == "strict":
+                shell("""bamCoverage --bam {input.bam} \
+                -o  {output} \
+                --numberOfProcessors {threads} \
+                {params.common_strict} {params.pe_strict} &> {log}
+                """)
+            elif {wildcards.mode} == "liberal":
+                shell("""bamCoverage --bam {input.bam} \
+                -o  {output} \
+                --numberOfProcessors {threads} \
+                {params.common_liberal} {params.pe_liberal} &> {log}
+                """)
         else:
-            shell("""bamCoverage --bam {input.bam} \
-            -o  {output} \
-            --numberOfProcessors {threads} \
-            {params.common} &> {log}
-            """)
+            if {wildcards.mode} == "strict":
+                shell("""bamCoverage --bam {input.bam} \
+                -o  {output} \
+                --numberOfProcessors {threads} \
+                {params.common_strict} &> {log}
+                """)
+            else:
+                shell("""bamCoverage --bam {input.bam} \
+                -o  {output} \
+                --numberOfProcessors {threads} \
+                {params.common_liberal} &> {log}
+                """)
 
 
 
@@ -234,31 +253,51 @@ rule feature_count:
         bais=expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES),
         gtf=GTF
     output:
-        "feature_count/counts.gene_id.s{strand}.txt"
+        # PE/SE; mult/uniq; pe_strict/pe_liberal
+        strict="feature_count/counts.gene_id.s{strand}.strict.txt",
+        liberal="feature_count/counts.gene_id.s{strand}.liberal.txt",
     params:
         mem="4000",
-        common="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0 ",
-        pair_end="-p -B -d 50 -D 1000 -C "
+        common_uniq="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0 ",
+        common_mult="-g gene_id -M --minOverlap 1 --fracOverlap 0",
+        pe_strict="-p -B -d 50 -D 1000 -C ",
+        pe_liberal="-p",
     threads:
         4
     log:
-        "log/feature_count/counts.gene_id.s{strand}.log"
+        pe_strict="log/feature_count/counts.gene_id.s{strand}.uniq.pe_strict.log",
+        pe_liberal="log/feature_count/counts.gene_id.s{strand}.mult.pe_liberal.log",
+        se_uniq="log/feature_count/counts.gene_id.s{strand}.uniq.se.log",
+        se_mult="log/feature_count/counts.gene_id.s{strand}.mult.se.log",
+
     run:
         if config["PAIR_END"]:
             shell("""
-            featureCounts -a {input.gtf} -o {output} \
+            featureCounts -a {input.gtf} -o {output.strict} \
             -T {threads} \
-            {params.common} {params.pair_end} \
+            {params.common_uniq} {params.pe_strict} \
             -s {wildcards.strand} \
-            {input.bams} &> {log}
+            {input.bams} &> {log.pe_strict}
+
+            featureCounts -a {input.gtf} -o {output.liberal} \
+            -T {threads} \
+            {params.common_mult} {params.pe_liberal} \
+            -s {wildcards.strand} \
+            {input.bams} &> {log.pe_liberal}
             """)
         else:
             shell("""
-            featureCounts -a {input.gtf} -o {output} \
+            featureCounts -a {input.gtf} -o {output.strict} \
             -T {threads} \
-            {params.common} \
+            {params.common_uniq} \
             -s {wildcards.strand} \
-            {input.bams} &> {log}
+            {input.bams} &> {log.se_uniq}
+
+            featureCounts -a {input.gtf} -o {output.liberal} \
+            -T {threads} \
+            {params.common_mult} \
+            -s {wildcards.strand} \
+            {input.bams} &> {log.se_mult}
             """)
 
 # -p: count Fragments rather than reads for Paired-end reads (remove this for SE data)
@@ -277,6 +316,25 @@ rule feature_count:
 # star sorted bams are slow to count => use samtools sorted reads, delete star bam (set as temp)
 
 
+
+# rule fpkm_tpm:
+#     input:
+#         count="feature_count/counts.gene_id.s{strand}.txt",
+#         anno_tab=config['ANNO_TAB']
+#     output:
+#         fpkm="fpkm_tpm/strand_{strand}/FPKM.xlsx",
+#         tpm='fpkm_tpm/strand_{strand}/TPM.xlsx',
+#     params:
+#         mem="4000"
+#     threads:
+#         2
+#     log:
+#         "log/fpkm_tpm/fpkm_tpm.{strand}.log"
+#     shell:
+#         """
+#         Rscript {config[FPKM]} {input.count} {input.anno_tab} fpkm_tpm/strand_{wildcards.strand} &> {log}
+#         """
+#         # {config[FPKM]} without quotes
 
 
 rule create_dag:
