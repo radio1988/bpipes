@@ -3,7 +3,14 @@ bigDataUrl  https://dl.dropboxusercontent.com/s/wtcf4sbsunyiqsf/Epi_IN_Rep1.cpm.
 shortLabel Epi_IN_Rep1
 longLabel Example long lable1
 type bigWig
-visibility dense
+visibility full
+
+track  bigWig2
+bigDataUrl  https://dl.dropboxusercontent.com/s/2p01b9u8ilgyxkm/Epi_K27me3_Rep1.cpm.bw?dl=0
+shortLabel Epi_K27me3_Rep1
+longLabel Example long lable2
+type bigWig
+visibility full
 
 #track bigBed1
 #bigDataUrl http://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeCaltechRnaSeq/wgEncodeCaltechRnaSeqGm12891R2x75Il200JunctionsRep1V3.bigBed
