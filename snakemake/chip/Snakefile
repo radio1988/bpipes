@@ -8,13 +8,11 @@ BIN_SIZE=config['BIN_SIZE']
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
 shell.prefix("""
-            module load fastqc/0.11.5
-            module load python3/3.5.0_packages/multiqc/1.4
-            module load bwa/0.7.15
+            source /home/rl44w/.bash_profile
             module load picard/2.17.8
+            module load fastqc/0.11.5
             PICARD=/share/pkg/picard/2.17.8/picard.jar
-            samtools="singularity exec $HOME/singularity/hand_sandbox samtools"
-            samstat="singularity exec $HOME/singularity/hand_sandbox samstat"
+            samstat="singularity exec $HOME/singularity/hand_sandbox samstat" # alias in .bash_profile not working in snakemake
             """)
 
 # Requirements
