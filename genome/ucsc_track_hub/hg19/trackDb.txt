@@ -1,0 +1,29 @@
+track  bigWig1
+bigDataUrl http://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeCshlLongRnaSeq/wgEncodeCshlLongRnaSeqA549CellLongnonpolyaMinusRawSigRep1.bigWig
+shortLabel bigWig example
+longLabel This bigWig file is an example from the ENCODE RNA-seq CSHL Track
+type bigWig
+visibility dense
+
+track bigBed1
+bigDataUrl http://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeCaltechRnaSeq/wgEncodeCaltechRnaSeqGm12891R2x75Il200JunctionsRep1V3.bigBed
+shortLabel bigBed example
+longLabel This bigBed file is an example from the ENCODE RNA-seq Caltech Track
+type bigBed
+visibility dense
+
+track bam1
+bigDataUrl http://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeCshlLongRnaSeq/wgEncodeCshlLongRnaSeqK562CellTotalAlnRep2.bam
+#Note: There is a corresponding fileName.bam.bai in the same above directory 
+shortLabel BAM example
+longLabel This BAM file is an example from the ENCODE RNA-seq CSHL Track
+type bam
+visibility dense
+
+track vcf1
+bigDataUrl http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/ALL.chr21.integrated_phase1_v3.20101123.snps_indels_svs.genotypes.vcf.gz
+#Note: there is a corresponding fileName.vcf.gz.tbi in the same above directory
+shortLabel chr21 VCF example
+longLabel This chr21 VCF file is an example from the 1000 Genomes Phase 1 Integrated Variant Calls Track
+type vcfTabix
+visibility dense

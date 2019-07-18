@@ -6,11 +6,11 @@ SAMPLES:
 PAIR_END: False  # True/False
 
 GENOME:
-    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
+    genome/test.fa
 INDEX:
-    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx
+    genome/star_idx
 GTF:
-    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+    genome/test.gtf
 ANNO_TAB:
   ~/github/bpipes/rnaseq/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz
 
