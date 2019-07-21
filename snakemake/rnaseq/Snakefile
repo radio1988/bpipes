@@ -12,15 +12,11 @@ MODE=config["MODE"]
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
 shell.prefix("""
-            # fastqc
+            source /home/rl44w/.bash_profile
             module load fastqc/0.11.5
-            module load python3/3.5.0_packages/multiqc/1.4
-            # star
             module load java/1.8.0_77
             module load star/2.5.3a
-            #module load samtools/dev-2016_06_06
-            samtools="singularity exec $HOME/singularity/hand_sandbox samtools"
-            samstat="singularity exec $HOME/singularity/hand_sandbox samstat"
+            samstat="singularity exec $HOME/singularity/hand_sandbox samstat" # alias in .bash_profile not working in snakemake
             """)
 
 # Requirements
@@ -253,7 +249,7 @@ rule feature_count:
         common_uniq="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0 ",
         #common_mult="-g gene_id -M --minOverlap 1 --fracOverlap 0",
         common_mult="-g gene_id -M --primary -Q 0 --minOverlap 1 --fracOverlap 0",
-        pe_strict="-p -B -d 50 -D 1000 -C ",
+        pe_strict="-p -B -C ",
         pe_liberal="-p",
     threads:
         4
