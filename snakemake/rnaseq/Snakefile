@@ -12,15 +12,11 @@ MODE=config["MODE"]
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
 shell.prefix("""
-            # fastqc
+            source /home/rl44w/.bash_profile
             module load fastqc/0.11.5
-            module load python3/3.5.0_packages/multiqc/1.4
-            # star
             module load java/1.8.0_77
             module load star/2.5.3a
-            #module load samtools/dev-2016_06_06
-            samtools="singularity exec $HOME/singularity/hand_sandbox samtools"
-            samstat="singularity exec $HOME/singularity/hand_sandbox samstat"
+            samstat="singularity exec $HOME/singularity/hand_sandbox samstat" # alias in .bash_profile not working in snakemake
             """)
 
 # Requirements
@@ -29,6 +25,7 @@ shell.prefix("""
 
 # SnakeMake Coding Notes:
 # input don't have to be used, just for draw nice DAG
+# 07/10/2019 randomized primary alignment
 
 
 rule all:
@@ -103,8 +100,8 @@ rule star_map:
         r2="fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz", # trick snakemake to skip r2
     output:
         bam=temp("mapped_reads/{sample}.bam"),
-        #genome=temp("mapped_reads/{sample}._STARgenome"),
-        #tmp=temp("mapped_reads/{sample}._STARtmp"),
+        genome=temp(directory("mapped_reads/{sample}._STARgenome")),
+        tmp=temp(directory("mapped_reads/{sample}._STARtmp")),
     params:
         mem="3000",  # todo auto adjust based on {threads}
         reads="fastq/{sample}.R1.fastq.gz fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz",
@@ -121,7 +118,8 @@ rule star_map:
         --readFilesIn {params.reads} \
         --outFileNamePrefix mapped_reads/{wildcards.sample}. \
         --outFilterType BySJout \
-        --outFilterMultimapNmax 20 \
+        --outMultimapperOrder Random \
+        --outFilterMultimapNmax 200 \
         --alignSJoverhangMin 8 \
         --alignSJDBoverhangMin 3 \
         --outFilterMismatchNmax 999 \
@@ -212,38 +210,28 @@ rule bamCoverage:
     params:
         mem="4000",
         common_strict="--outFileFormat bigwig --normalizeUsing CPM --minMappingQuality 20 --binSize 10 ",
-        common_liberal="--outFileFormat bigwig --normalizeUsing CPM --binSize 10",
-        pe_strict="--minFragmentLength 50 --maxFragmentLength 1000 ",
-        pe_liberal=" "
+        common_liberal="--outFileFormat bigwig --normalizeUsing CPM --binSize 10 ",
     log:
         "log/bamCoverage/{sample}.{mode}.bamCoverage.log"
     run:
-        if config["PAIR_END"]:
-            if {wildcards.mode} == "strict":
-                shell("""bamCoverage --bam {input.bam} \
-                -o  {output} \
-                --numberOfProcessors {threads} \
-                {params.common_strict} {params.pe_strict} &> {log}
-                """)
-            elif {wildcards.mode} == "liberal":
-                shell("""bamCoverage --bam {input.bam} \
-                -o  {output} \
-                --numberOfProcessors {threads} \
-                {params.common_liberal} {params.pe_liberal} &> {log}
-                """)
+        if {wildcards.mode} == "strict":
+            shell("""
+            echo '{output}'
+
+            bamCoverage --bam {input.bam} \
+            -o  {output} \
+            --numberOfProcessors {threads} \
+            {params.common_strict} &> {log}
+            """)
         else:
-            if {wildcards.mode} == "strict":
-                shell("""bamCoverage --bam {input.bam} \
-                -o  {output} \
-                --numberOfProcessors {threads} \
-                {params.common_strict} &> {log}
-                """)
-            else:
-                shell("""bamCoverage --bam {input.bam} \
-                -o  {output} \
-                --numberOfProcessors {threads} \
-                {params.common_liberal} &> {log}
-                """)
+            shell("""
+            echo '{output}'
+            
+            bamCoverage --bam {input.bam} \
+            -o  {output} \
+            --numberOfProcessors {threads} \
+            {params.common_liberal} &> {log}
+            """)
 
 
 
@@ -259,8 +247,9 @@ rule feature_count:
     params:
         mem="4000",
         common_uniq="-g gene_id -Q 20 --minOverlap 1 --fracOverlap 0 ",
-        common_mult="-g gene_id -M --minOverlap 1 --fracOverlap 0",
-        pe_strict="-p -B -d 50 -D 1000 -C ",
+        #common_mult="-g gene_id -M --minOverlap 1 --fracOverlap 0",
+        common_mult="-g gene_id -M --primary -Q 0 --minOverlap 1 --fracOverlap 0",
+        pe_strict="-p -B -C ",
         pe_liberal="-p",
     threads:
         4
@@ -277,7 +266,7 @@ rule feature_count:
             -T {threads} \
             {params.common_uniq} {params.pe_strict} \
             -s {wildcards.strand} \
-            {input.bams} &> {log.pe_strict}
+            {input.bams} &> {log.pe_strict} &
 
             featureCounts -a {input.gtf} -o {output.liberal} \
             -T {threads} \
@@ -291,7 +280,7 @@ rule feature_count:
             -T {threads} \
             {params.common_uniq} \
             -s {wildcards.strand} \
-            {input.bams} &> {log.se_uniq}
+            {input.bams} &> {log.se_uniq} &
 
             featureCounts -a {input.gtf} -o {output.liberal} \
             -T {threads} \
