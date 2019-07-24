@@ -235,7 +235,7 @@ WriteXLS(x = tpm_out,
 ```
 
 
-# FPKKM calculation
+# FPKM calculation
 ```{r}
 fpkm <- calculateFPKM(cts, df$Length)
 fpkm <- data.frame(fpkm)
