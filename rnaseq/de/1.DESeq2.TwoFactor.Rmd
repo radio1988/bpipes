@@ -1,7 +1,7 @@
 ---
 title: "DEseq2"
 author: "RuiLi"
-date: "06/10/2019"
+date: "07/24/2019"
 output:
   html_document:
     toc: yes
@@ -10,14 +10,15 @@ output:
 ---
 
 # Communication
-- For Osama in Kaufman Lab
+- For Paul GE
 - Step1: create TPM and tracks
 - Step2: DE analysis
 
 # Notes:
-- Good FastQC: 50-60M fragments/lib, 150bp PE, rnaseq reads
-- Reverse stranded
-- 
+- Good FastQC: ~25-40M fragments/lib, 150bp PE
+- Unstranded
+- Unique mapping rate ~93%, Good
+- FeatureCount assignment rate: ~60%, a bit lower than normal
 
 # Code LOG:
 - included annotation
@@ -34,7 +35,7 @@ output:
 - output both FPKM and TPM, 06/28/2019
 - both shrinked LFC and raw LFC in same output Excel, and both plots
 - add lib-size
-- 
+- added COUNT excel output
 
 
 ```{r setup, include=FALSE}
@@ -159,7 +160,7 @@ paste("Log2FC cut-off:", thresh_LFC)
 
 # Read Data
 ```{r}
-df <- read.table('../snakemake/feature_count/counts.gene_id.s2.strict.txt', 
+df <- read.table('../../snakemake/feature_count/counts.gene_id.s0.strict.txt', 
                  sep="\t", header=TRUE, 
                  row.names = 1) # row.name in cts(matrix)
 colnames(df)
@@ -212,6 +213,15 @@ dim(anno)
 head(anno)
 ```
 
+# COUNT output
+```{r}
+count <- cts
+count_out <- merge(anno, count,  by.x=1, by.y=0, all.y=T)
+head(count_out)
+WriteXLS(x = count_out, 
+         ExcelFileName = 'COUNT.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
 
 # TPM calculation
 ```{r}
@@ -241,17 +251,17 @@ WriteXLS(x = fpkm_out,
 # DESeq Experiment Design (One Big Model)
 - for QC and comparison with seperated model only
 ```{r design}
-genotype <- factor(rep(c("A", "B", "C", "D"), each=2))
-genotype
-
-batch <- factor(rep(c("1", "2"),4))
-batch
-
-type <- factor(paste(genotype, batch, sep = "_"))
+type <- factor(rep(c("DM4", "DM5", "DM_G", "O4", "O5", "O_G"), each=3))
 type
+# 
+# batch <- factor(rep(c("1", "2", "3"),6))
+# batch
+# 
+# type <- factor(paste(genotype, batch, sep = "_"))
+# type
 #mouse <- factor(rep(c("Mouse1", "Mouse2", "Mouse3"), 6))
 coldata <- data.frame(row.names=colnames(cts), 
-                      type, genotype, batch)
+                      type)
 coldata
 ```
 
@@ -259,7 +269,7 @@ coldata
 ```{r}
 dds <- DESeqDataSetFromMatrix(countData = cts, 
                               colData = coldata, 
-                              design = ~  genotype
+                              design = ~  type
                               )  # converted to alph-order
 # dds$type <- relevel(dds$type, 
 #                     ref = "DMSO_2D"
@@ -294,19 +304,19 @@ logNormed <- log10(normed+1)
 hist(logNormed, main='log10(x+1) normalized expression')
 ```
 
-<!-- ## Dispersion plot -->
-<!-- ```{r} -->
-<!-- plotDispEsts(dds, main="Dispersion plot") -->
-<!-- ``` -->
+## Dispersion plot
+```{r}
+plotDispEsts(dds, main="Dispersion plot")
+```
 
 
 ## PCA plots
 - look at batch effect 
 ```{r}
-pcaData <- plotPCA(vsd, intgroup=c("genotype", "batch"), returnData=TRUE)
+pcaData <- plotPCA(vsd, intgroup=c("type", "type"), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 
-ggplot(pcaData, aes(PC1, PC2, color=genotype, shape=batch)) +
+ggplot(pcaData, aes(PC1, PC2, color=type, shape=type)) +
   geom_point(size=3) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
@@ -335,34 +345,74 @@ pheatmap(samplePoisDistMatrix,
 
 # Results from different contrasts
 
-## One Big Model (A_vs_D)
+## One Big Model (DM-G_vs_DM4)
 ```{r}
 #resultsNames(dds)
-name <- "A_vs_D"
-contrast <- c('genotype', 'A', 'D')
+name <- "DM-G_vs_DM4"
+contrast <- c('type', 'DM_G', 'DM4')
 res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
 res2 <- results(dds, contrast = contrast)
 process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
 ```
 
-## Seperated Model (A_vs_D)
+## One Big Model (DM-G_vs_DM5)
 ```{r}
 #resultsNames(dds)
-#idx <- grep('D7', coldata$type)
-idx <- c(1, 2, 7, 8)
-head(cts[, idx])
-coldata[idx,]
-dds <- DESeqDataSetFromMatrix(countData = cts[, idx], 
-                              colData = coldata[idx,], 
-                              design =  ~ genotype)  # converted to alph-order
-dds
-dds <-DESeq(dds)
-dds
-resultsNames(dds)
-
-name <- "A_vs_D"
-contrast <- c('genotype', 'A', 'D')
+name <- "DM-G_vs_DM5"
+contrast <- c('type', 'DM_G', 'DM5')
 res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
 res2 <- results(dds, contrast = contrast)
 process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
 ```
+
+## One Big Model (DM-G_vs_O_G)
+```{r}
+#resultsNames(dds)
+name <- "DM-G_vs_O-G"
+contrast <- c('type', 'DM_G', 'O_G')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+## One Big Model (O-G_vs_O4)
+```{r}
+#resultsNames(dds)
+name <- "O-G_vs_O4"
+contrast <- c('type', 'O_G', 'O4')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+## One Big Model (O-G_vs_O5)
+```{r}
+#resultsNames(dds)
+name <- "O-G_vs_O5"
+contrast <- c('type', 'O_G', 'O5')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+<!-- ## Seperated Model (DM-G_vs_DM4) less DEG, discarded -->
+<!-- ```{r} -->
+<!-- #resultsNames(dds) -->
+<!-- #idx <- grep('D7', coldata$type) -->
+<!-- idx <- c(1, 2, 3,  7, 8, 9) -->
+<!-- head(cts[, idx]) -->
+<!-- coldata[idx,] -->
+<!-- dds <- DESeqDataSetFromMatrix(countData = cts[, idx],  -->
+<!--                               colData = coldata[idx,],  -->
+<!--                               design =  ~ type)  # converted to alph-order -->
+<!-- dds -->
+<!-- dds <-DESeq(dds) -->
+<!-- dds -->
+<!-- resultsNames(dds) -->
+
+<!-- name <- "DM-G_vs_DM4" -->
+<!-- contrast <- c('type', 'DM_G', 'DM4') -->
+<!-- res <- lfcShrink(dds, contrast = contrast, type = 'ashr') -->
+<!-- res2 <- results(dds, contrast = contrast) -->
+<!-- process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm) -->
+<!-- ``` -->
