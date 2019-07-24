@@ -1,0 +1,499 @@
+---
+title: "DEseq2"
+author: "RuiLi"
+date: "06/10/2019"
+output:
+  html_document:
+    toc: yes
+    code_folding: hide
+    toc_float: yes
+---
+
+# Communication
+- For Niraj
+- s0, unstranded for SE
+- s2, reverse stranded for PE
+- strong batch effect (SE, PE) detected, luckily it can be modeled
+- PointMut and DelMut are clusteblack together, see PCA plot and sample heatmap
+- W1118 and FRT Controls are clustered together
+- **Sum reads for Histone genes: used multi-mapped reads to get gene quantification for His1, which has multiple copies on the genome (max num of mapped location is 20)**
+    - map read to genome, if multi-map, set primary-alignemnt to one of the mappable locations randomly
+    - Max 200 mapped locations on the genome
+    - count gene expression with number of primary-alignemnt reads mapped to each gene, regardless of MAPQ
+    - Most genes's expression stay almost the same with uniqe mapping quantification
+    - Genes with may copies on the genome will be quantified rather than ignored
+    - For Histone genes, we can sum up all copies for each histone and get correct quantification
+
+# Code LOG:
+- included annotation
+- included merging
+- used TPM normalization
+- save seperate results into excel rather than csv to prevent gene name bug in excel
+- print cut-offs
+- export results in original order, not ordered by LFC nor FDR (more robust)
+- export significant results, too (FDR and |LFC|, not including edges)
+- better VolcanoPlot by setting Max Y to 50 (>50 set to 50)
+- better html output, skip nb, use html
+- both OneBigModel and SeperatedModels
+- fixed row.names (gencode id) bug
+- output both FPKM and TPM, 06/28/2019
+- both shrinked LFC and raw LFC in same output Excel, and both plots
+- **function to aggregate multi-loci genes (e.g. his1, his2a, his2b, his3, his4)**
+- Use gray scale for MA/Volcano-plots
+- Output COUNT.xlsx
+
+# Email
+'''
+Hi Julie:
+
+In RNA-seq previously we compared (what BGI gave us in basic bioinformatics) for differential gene expression as follows:
+
+FRT control  vs.  point mutation (Hinfp A-G)
+FRT control  vs.  deletion mutation (Hinfp M2-11)
+W1118 control vs. point mutation (Hinfp A-G)
+W1118 control vs. deletion mutation (Hinfp M2-11)
+FRT control.  vs. W1118 control.
+
+I would request for all above comparison for our understanding. But finally we will be using our legitimate 
+control -FRT19A vs. two mutants for our manuscript.
+
+When Bill's lab did transposon elements analysis for us using Pipipes platform probably they used RPKM value of each genotype for analysis.  
+
+Please let me know if needed previous analysis as a kind of reference.
+
+Thanking you,
+
+Best,
+Niraj
+'''
+
+```{r setup, include=FALSE}
+library(DESeq2)
+library(ggplot2)
+library("scater")
+library(WriteXLS)
+require(plyr)
+library(gdata)
+library(dplyr)
+
+
+thresh_p <- 0.05
+thresh_LFC <- 1
+
+volcanoplot <- function (res, 
+                         lfcthresh=2, sigthresh=thresh_p, 
+                         name='name', 
+                         legendpos="topright", labelsig=FALSE, textcx=1, ...) {
+    res_ <- res
+    res_$pvalue[res_$pvalue < 1e-50 & !is.na(res_$pvalue)] <- 1e-50 # y-axis top value 50
+    
+    main=paste("Volcano Plot", name, sep='\n')
+    # all
+    with(res_, plot(log2FoldChange, -log10(pvalue), pch=20, main=main, col="grey80",cex=.5,
+                    ylim=c(0,50), ...))
+    # small P
+    with(subset(res_, padj<sigthresh ), 
+         points(log2FoldChange, -log10(pvalue), pch=20, col="grey40",cex=.5, ...))
+    # large FC
+    with(subset(res_, abs(log2FoldChange)>lfcthresh), 
+         points(log2FoldChange, -log10(pvalue), pch=20, col="grey60",cex=.5, ...))
+    with(subset(res_, padj<sigthresh & abs(log2FoldChange)>lfcthresh), 
+         points(log2FoldChange, -log10(pvalue), pch=20, col="black",cex=.5, ...))
+    if (labelsig) {
+        require(calibrate)
+        with(subset(res_, padj<sigthresh & abs(log2FoldChange)>lfcthresh), 
+             textxy(log2FoldChange, -log10(pvalue), labs=Gene, cex=textcx, ...))
+    }
+    legend(legendpos, xjust=1, yjust=0.5, 
+           legend=c(paste("FDR<",sigthresh,sep=""), 
+                    paste("|LogFC|>",lfcthresh,sep=""), 
+                    "both"), pch=20,
+           col=c("grey40","grey60","black"))
+}
+
+
+maplot <- function (res, thresh=thresh_p, labelsig=FALSE, textcx=1, ...) {
+    with(res, 
+         plot(baseMean, log2FoldChange, col="grey80", pch=20, cex=.5, log="x", ...))
+    with(subset(res, padj<thresh_p), 
+         points(baseMean, log2FoldChange, col="grey40", pch=20, cex=.5))
+    if (labelsig) {
+        require(calibrate)
+        with(subset(res, padj<thresh_p), 
+             textxy(baseMean, log2FoldChange, labs=Gene, cex=textcx, col=2))
+    }
+}
+
+
+process_deseq_res <- function(res="lfcshrink.res", res2="results.res", name='name', anno='anno.df', norm_exp="tpm.df"){
+    ## Summary
+    print(name)
+    print("Summary using FDR cut-off only (LFC not used)")
+    summary(res, alpha=thresh_p)
+    
+    print("Summary using both FDR and LFC_shrinked cut-off")
+    sig_idx <- res$padj<thresh_p & abs(res$log2FoldChange) > thresh_LFC
+    sig_idx[is.na(sig_idx)] <- FALSE
+    res_sig <- res[sig_idx,]
+    print(table(sig_idx))
+    
+    hist(res$pvalue, breaks=50, col="grey", 
+         main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+         xlab = 'pvalues', ylab = 'Frequency')
+    
+    hist(res$padj, breaks=50, col="grey", 
+         main = paste('Histogram of Q-values (adjusted)', name, sep = "\n"), 
+         xlab = 'padj', ylab = 'Frequency')
+    
+    maplot(res, main=paste("MAplot", paste(name, "LFC_shrinked"), sep="\n"))
+    maplot(res2, main=paste("MAplot", paste(name, "LFC_raw"), sep="\n"))
+    
+    volcanoplot(res,lfcthresh=thresh_LFC, sigthresh=thresh_p, 
+                textcx=.8, xlim=c(-2.3, 2), name= paste(name, "LFC_shrinked"))
+    volcanoplot(res2, lfcthresh=thresh_LFC, sigthresh=thresh_p, 
+                textcx=.8, xlim=c(-2.3, 2), name= paste(name, "LFC_raw"))
+    
+    res.df <- as.data.frame(res)
+    names(res.df)[2] <- "log2FoldChange_shrinked"
+    names(res.df)[3] <- "lfcSE_shrinked"
+
+    res2.df <- as.data.frame(res2)
+    names(res2.df)[2] <- "log2FoldChange_raw"
+    names(res2.df)[3] <- "lfcSE_raw"
+    res2.df <- res2.df[, c(2,3)]
+
+    resdata <- merge(res.df, res2.df, by=0, sort=F, all.x=T)
+    resdata <- merge(anno, resdata, by.x=1, by.y=1, sort=FALSE, all.y=T)
+    resdata <- merge(resdata, norm_exp, by.x=1, by.y=0, all.x=T)
+    
+    head(resdata)
+
+    ## Write results
+    # write.csv(resdata, row.names = FALSE, 
+    #           file=paste(name, 'deseq.csv', sep = '.'))  # for later analysis
+    WriteXLS(x = resdata, 
+         ExcelFileName = paste(name, 'deseq2.xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+    
+    WriteXLS(x = resdata[sig_idx,], 
+     ExcelFileName = paste(name, 'deseq2.sig.FDR', thresh_p, 
+                           'LFC', thresh_LFC, 'xlsx', sep = '.'), 
+     row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+    
+
+
+
+}
+```
+
+# Print Cut-offs
+```{r}
+paste("FDR cut-off:", thresh_p)
+paste("Log2FC cut-off:", thresh_LFC)
+```
+
+
+# Read Data
+
+## SE
+```{r}
+df.se <- read.table('../../../snakemake/Max200/SE/feature_count/counts.gene_id.s0.liberal.txt', 
+                 sep="\t", header=TRUE, 
+                 row.names = 1) # row.name in cts(matrix)
+colnames(df.se)
+dim(df.se)
+```
+
+## PE
+```{r}
+df.pe <- read.table('../../../snakemake/Max200/PE/feature_count/counts.gene_id.s2.liberal.txt', 
+                 sep="\t", header=TRUE, 
+                 row.names = 1) # row.name in cts(matrix)
+colnames(df.pe)
+dim(df.pe)
+```
+
+## Merge SE/PE
+```{r}
+df <- merge(df.se, df.pe, by=c(0, 1, 2, 3, 4, 5))
+row.names(df) = df$Row.names
+df <- df[, -1]
+colnames(df)
+```
+
+## Clean Up Data
+```{r}
+# clean names
+colnames(df) <- gsub("\\.bam$", "", colnames(df))
+colnames(df) <- gsub("sorted_reads.", "", colnames(df))
+# colname_formatted <- c(
+#     "KO_D0_3", "WT_D0_3", "KO_D2_3", "WT_D2_3", "KO_D8_3", "WT_D8_3",
+#     "KO_D0_1", "KO_D0_2", "KO_D2_1", "KO_D2_2", "KO_D8_1", "KO_D8_2", 
+#     "WT_D0_1", "WT_D0_2", "WT_D2_1", "WT_D2_2", "WT_D8_1", "WT_D8_2")
+# paste(colnames(df), colname_formatted, sep = "->")
+# colnames(df) <- colname_formatted
+
+colnames(df)
+
+head(row.names(df))
+dim(df)
+```
+
+# Read Anno
+```{r}
+anno <- read.table(
+    "~/github/bpipes/rnaseq/annotations/drosophila_melanogaster.BDGP6.22.v96/Drosophila_melanogaster.BDGP6.22.96.anno.txt.gz", 
+    header=T)
+
+anno$Name <- toupper(anno$Name)
+
+dim(anno)
+head(anno)
+```
+
+## Create cts
+```{r}
+cts <- df[, 5:ncol(df)]
+cts <- as.matrix(cts)
+cts <- cts[, c("Length",
+               "DelMut.SE", 
+               "DelMut.PE",
+               "PointMut.SE",
+               "PointMut.PE",
+               "FRT19A.CTRL.SE",
+               "FRT19A.CTRL.PE",
+               "W1118.CTRL.SE",
+               "W1118.CTRL.PE" )]
+#colnames(cts)
+head(cts)
+```
+
+## Filter Based on Expression
+```{r}
+expression_filter <- rowSums(cts[,2:ncol(cts)]) >= 1  # default 10
+cts <- cts[expression_filter, ]
+df <- df[expression_filter, ]
+dim(cts)
+dim(df)
+```
+
+## Sum up Histone genes
+- goal: change cts, df, anno
+
+### change cts and df
+```{r}
+aggregate_multi_loci_genes <- function(cts, anno, pattern="^HIS1:", new_name="HIS1"){
+    # sumup length and counts in cts
+    # return updated cts
+    # update anno object sliently (forcely)
+    cts_anno <- merge(anno, cts, by.x=1, by.y=0, all.y=T)
+    idx_his <- grep(pattern, cts_anno$Name)
+    print(cts_anno$Name[idx_his])
+    print(paste("Aggregated into", new_name))
+    his_row <- colSums(cts[idx_his, ])
+    cts <- rbind(cts[-idx_his,], his_row)
+    row.names(cts)[dim(cts)[1]] <- new_name
+    
+    anno_row <- data.frame(Gene=new_name, Name=new_name, Type="aggregated_multi-loci_gene")
+    if (!new_name %in% anno$Gene){
+        anno <<- rbind(anno, anno_row) # change gloabally
+    }
+    
+    return(cts)
+}
+
+cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS1:", new_name = "HIS1")
+cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS2A:", new_name = "HIS2A")
+cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS2B:", new_name = "HIS2B")
+cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS3:", new_name = "HIS3")
+cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS4:", new_name = "HIS4")
+df <- data.frame(cts)
+cts <- cts[, 2:ncol(cts)]
+
+head(df)
+head(cts)
+```
+
+# COUNT output
+```{r}
+count <- data.frame(cts)
+colnames(count) <- paste(colnames(tpm),"COUNT", sep = ":")
+count_out <- merge(anno, count, by.x=1, by.y=0, all.y=T)
+head(count_out)
+WriteXLS(x = count_out, 
+         ExcelFileName = 'COUNT.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+# TPM calculation
+```{r}
+tpm <- calculateTPM(cts, df$Length)
+tpm <- data.frame(tpm)
+colnames(tpm) <- paste("TPM", colnames(tpm), sep = ":")
+tpm_out <- merge(anno, tpm, by.x=1, by.y=0, all.y=T)
+head(tpm_out)
+WriteXLS(x = tpm_out, 
+         ExcelFileName = 'TPM.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+
+# FPKKM calculation
+```{r}
+fpkm <- calculateFPKM(cts, df$Length)
+fpkm <- data.frame(fpkm)
+colnames(fpkm) <- paste("FPKM", colnames(fpkm), sep = ":")
+fpkm_out <- merge(anno, fpkm, by.x=1, by.y=0, all.y=T)
+head(fpkm_out)
+WriteXLS(x = fpkm_out, 
+         ExcelFileName = 'FPKM.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+
+
+# DESeq Experiment Design (One Big Model)
+- for QC and comparison with seperated model only
+```{r design}
+genotype <- factor(rep(c("DelMut",  "PointMut", "FRT19A", "W1118"), each=2))
+genotype
+
+batch <- factor(rep(c("SE", "PE"), 4))
+batch
+
+type <- factor(paste(genotype, batch, sep = "_"))
+type
+#mouse <- factor(rep(c("Mouse1", "Mouse2", "Mouse3"), 6))
+coldata <- data.frame(row.names=colnames(cts), 
+                      type, genotype, batch)
+coldata
+```
+
+## Model fitting
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~ batch + genotype
+                              )  # converted to alph-order
+# dds$type <- relevel(dds$type, 
+#                     ref = "DMSO_2D"
+#                     )
+# dds$mouse <- relevel(dds$mouse, 
+#                      ref = "Mouse1"
+#                      )
+
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+saveRDS(dds, file = 'dds.oneBigModel.rds')
+```
+
+
+# QC Plots
+
+## Data transformation
+```{r}
+vsd <- vst(dds, blind=FALSE)
+
+#rld <- rlog(dds, blind=FALSE)
+counts <- counts(dds, normalized=0)
+logCounts <- log10(counts +1 )
+
+normed <- counts(dds, normalized=1)
+logNormed <- log10(normed+1)
+```
+
+## Histogram of normalized data
+```{r}
+hist(logNormed, main='log10(x+1) normalized expression')
+```
+
+<!-- ## Dispersion plot -->
+<!-- ```{r} -->
+<!-- plotDispEsts(dds, main="Dispersion plot") -->
+<!-- ``` -->
+
+
+## PCA plots
+- look at batch effect 
+```{r}
+pcaData <- plotPCA(vsd, intgroup=c("genotype", "batch"), returnData=TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+
+ggplot(pcaData, aes(PC1, PC2, color=batch, shape=genotype)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
+```
+
+## Sample Heatmap
+```{r}
+library("RColorBrewer")
+library('pheatmap')
+library("PoiClaClu")
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+poisd <- PoissonDistance(t(counts(dds)))
+samplePoisDistMatrix <- as.matrix( poisd$dd ) 
+rownames(samplePoisDistMatrix) <- paste( coldata$type, sep="-" ) 
+colnames(samplePoisDistMatrix) <- NULL 
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(samplePoisDistMatrix,
+         clustering_distance_rows=poisd$dd,
+         clustering_distance_cols=poisd$dd,
+         col=colors, 
+         clustering_method='complete'
+        )
+
+```
+
+# Results from different contrasts
+
+## One Big Model (PointMut_vs_FRT19A)
+```{r}
+#resultsNames(dds)
+name <- "PointMut_vs_FRT19A"
+contrast <- c('genotype', 'PointMut', 'FRT19A')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+## One Big Model (DelMut_vs_FRT19A)
+```{r}
+#resultsNames(dds)
+name <- "DelMut_vs_FRT19A"
+contrast <- c('genotype', 'DelMut', 'FRT19A')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+
+## One Big Model (PointMut_vs_W1118)
+```{r}
+#resultsNames(dds)
+name <- "PointMut_vs_W1118"
+contrast <- c('genotype', 'PointMut', 'W1118')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+
+## One Big Model (DelMut_vs_W1118)
+```{r}
+#resultsNames(dds)
+name <- "DelMut_vs_W1118"
+contrast <- c('genotype', 'DelMut', 'W1118')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+## One Big Model (FRT19A_vs_W1118)
+```{r}
+#resultsNames(dds)
+name <- "FRT19A_vs_W1118"
+contrast <- c('genotype', 'FRT19A', 'W1118')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
