@@ -152,7 +152,7 @@ rule samtools_sort:
     log:
         "log/samtools_sort/{sample}.sort.log"
     run:
-        shell("$samtools sort -@ {threads} -m 3G {input} -o sorted_reads/{wildcards.sample}.bam &> {log}")
+        shell("samtools sort -@ {threads} -m 3G {input} -o sorted_reads/{wildcards.sample}.bam &> {log}")
 
 
 rule samtools_index:
@@ -167,7 +167,7 @@ rule samtools_index:
     log:
         "log/samtools_index/{sample}.index.log"
     shell:
-        "$samtools index -@ {threads} {input} &> {log}"
+        "samtools index -@ {threads} {input} &> {log}"
 
 
 rule bam_qc:
@@ -192,9 +192,9 @@ rule bam_qc:
         mkdir -p bam_qc/flagstat
         mkdir -p bam_qc/stats
         mkdir -p bam_qc/samstat
-        $samtools idxstats {input.bam} > bam_qc/idxstats/{wildcards.sample}.idxstats.txt 2> {log.idxstats} &
-        $samtools flagstat {input.bam} > bam_qc/flagstat/{wildcards.sample}.flagsat.txt 2> {log.flagstat} &
-        $samtools stats {input.bam} > bam_qc/stats/{wildcards.sample}.stats.txt 2> {log.stats} &
+        samtools idxstats {input.bam} > bam_qc/idxstats/{wildcards.sample}.idxstats.txt 2> {log.idxstats} &
+        samtools flagstat {input.bam} > bam_qc/flagstat/{wildcards.sample}.flagsat.txt 2> {log.flagstat} &
+        samtools stats {input.bam} > bam_qc/stats/{wildcards.sample}.stats.txt 2> {log.stats} &
         $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat 2> {log.samstat}
         """
 
