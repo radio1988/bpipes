@@ -51,6 +51,7 @@ output:
 - [x ] length in TPM and DEseq2 outputs after aggregating histone genes
 - [ x] Reverse SampleNAme:RPKM
 - [ x] hist log(count+1)
+- added density scatterplot between length and |LFC|
 
 
 # Email
