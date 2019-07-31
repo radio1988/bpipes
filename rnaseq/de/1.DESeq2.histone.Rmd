@@ -23,6 +23,11 @@ output:
     - Most genes's expression stay almost the same with uniqe mapping quantification
     - Genes with may copies on the genome will be quantified rather than ignored
     - For Histone genes, we can sum up all copies for each histone and get correct quantification
+- Use FDR in volcano-plot, fix xlim, add number of Up/Down genes in plot
+- Addded gene length in output
+- Created scatterplot and cor.test for |LFC| ~ Length for sig-DEG
+    - had to use |LFC| not LFC
+    - had to use sig-DEG, including all genes gives positive correlation because of the noise
 
 # Code LOG:
 - included annotation
@@ -41,6 +46,12 @@ output:
 - **function to aggregate multi-loci genes (e.g. his1, his2a, his2b, his3, his4)**
 - Use gray scale for MA/Volcano-plots
 - Output COUNT.xlsx
+- [x ] volcano plot: four categories
+- [x ] volcano plot: up/down count
+- [x ] length in TPM and DEseq2 outputs after aggregating histone genes
+- [ x] Reverse SampleNAme:RPKM
+- [ x] hist log(count+1)
+
 
 # Email
 '''
@@ -70,6 +81,8 @@ Niraj
 ```{r setup, include=FALSE}
 library(DESeq2)
 library(ggplot2)
+library(viridis)
+library(MASS)
 library("scater")
 library(WriteXLS)
 require(plyr)
@@ -80,35 +93,56 @@ library(dplyr)
 thresh_p <- 0.05
 thresh_LFC <- 1
 
+get_density <- function(x, y, ...) {
+  dens <- MASS::kde2d(x, y, ...)
+  ix <- findInterval(x, dens$x)
+  iy <- findInterval(y, dens$y)
+  ii <- cbind(ix, iy)
+  return(dens$z[ii])
+}
+
 volcanoplot <- function (res, 
                          lfcthresh=2, sigthresh=thresh_p, 
                          name='name', 
                          legendpos="topright", labelsig=FALSE, textcx=1, ...) {
     res_ <- res
-    res_$pvalue[res_$pvalue < 1e-50 & !is.na(res_$pvalue)] <- 1e-50 # y-axis top value 50
+    res_$padj[res_$padj < 1e-50 & !is.na(res_$padj)] <- 1e-50 # y-axis top value 50
+    # res_$log2FoldChange[res_$log2FoldChange > 10] <- 10
+    # res_$log2FoldChange[res_$log2FoldChange < -10] <- -10
     
-    main=paste("Volcano Plot", name, sep='\n')
+    
+    
+    pos <- subset(res_, padj<sigthresh & log2FoldChange>lfcthresh)
+    neg <- subset(res_, padj<sigthresh & log2FoldChange< -lfcthresh)
+    pos.n <- dim(pos)[1]
+    neg.n <- dim(neg)[1]
+    
+    main=paste("Volcano Plot", 
+               name, 
+               paste("Up:", pos.n, ", Down:", neg.n, sep = ""),
+               sep='\n')
     # all
-    with(res_, plot(log2FoldChange, -log10(pvalue), pch=20, main=main, col="grey80",cex=.5,
+    with(res_, plot(log2FoldChange, -log10(padj), pch=20, main=main, col="grey80",cex=.5,
                     ylim=c(0,50), ...))
     # small P
     with(subset(res_, padj<sigthresh ), 
-         points(log2FoldChange, -log10(pvalue), pch=20, col="grey40",cex=.5, ...))
+         points(log2FoldChange, -log10(padj), pch=20, col="grey40",cex=.5, ...))
     # large FC
     with(subset(res_, abs(log2FoldChange)>lfcthresh), 
-         points(log2FoldChange, -log10(pvalue), pch=20, col="grey60",cex=.5, ...))
+         points(log2FoldChange, -log10(padj), pch=20, col="grey60",cex=.5, ...))
     with(subset(res_, padj<sigthresh & abs(log2FoldChange)>lfcthresh), 
-         points(log2FoldChange, -log10(pvalue), pch=20, col="black",cex=.5, ...))
+         points(log2FoldChange, -log10(padj), pch=20, col="black",cex=.5, ...))
     if (labelsig) {
         require(calibrate)
         with(subset(res_, padj<sigthresh & abs(log2FoldChange)>lfcthresh), 
-             textxy(log2FoldChange, -log10(pvalue), labs=Gene, cex=textcx, ...))
+             textxy(log2FoldChange, -log10(), labs=Gene, cex=textcx, ...))
     }
     legend(legendpos, xjust=1, yjust=0.5, 
-           legend=c(paste("FDR<",sigthresh,sep=""), 
+           legend=c("Negative", 
+                    paste("FDR<",sigthresh,sep=""), 
                     paste("|LogFC|>",lfcthresh,sep=""), 
-                    "both"), pch=20,
-           col=c("grey40","grey60","black"))
+                    "Both"), pch=20,
+           col=c("grey80", "grey40","grey60","black"))
 }
 
 
@@ -149,9 +183,9 @@ process_deseq_res <- function(res="lfcshrink.res", res2="results.res", name='nam
     maplot(res2, main=paste("MAplot", paste(name, "LFC_raw"), sep="\n"))
     
     volcanoplot(res,lfcthresh=thresh_LFC, sigthresh=thresh_p, 
-                textcx=.8, xlim=c(-2.3, 2), name= paste(name, "LFC_shrinked"))
+                textcx=.8,  name= paste(name, "LFC_shrinked"))
     volcanoplot(res2, lfcthresh=thresh_LFC, sigthresh=thresh_p, 
-                textcx=.8, xlim=c(-2.3, 2), name= paste(name, "LFC_raw"))
+                textcx=.8,name= paste(name, "LFC_raw"))
     
     res.df <- as.data.frame(res)
     names(res.df)[2] <- "log2FoldChange_shrinked"
@@ -165,26 +199,45 @@ process_deseq_res <- function(res="lfcshrink.res", res2="results.res", name='nam
     resdata <- merge(res.df, res2.df, by=0, sort=F, all.x=T)
     resdata <- merge(anno, resdata, by.x=1, by.y=1, sort=FALSE, all.y=T)
     resdata <- merge(resdata, norm_exp, by.x=1, by.y=0, all.x=T)
-    
+    resdata.sig <- resdata[sig_idx,]
     head(resdata)
+    
+    
+    
 
     ## Write results
-    # write.csv(resdata, row.names = FALSE, 
-    #           file=paste(name, 'deseq.csv', sep = '.'))  # for later analysis
-    WriteXLS(x = resdata, 
-         ExcelFileName = paste(name, 'deseq2.xlsx', sep = '.'), 
+    write.csv(resdata, row.names = FALSE,
+              file=paste(name, 'deseq.csv', sep = '.'))  # for later analysis
+    WriteXLS(x = resdata,
+         ExcelFileName = paste(name, 'deseq2.xlsx', sep = '.'),
          row.names = F, SheetNames = 'sheet1', na = '-')  # for user
-    
-    WriteXLS(x = resdata[sig_idx,], 
-     ExcelFileName = paste(name, 'deseq2.sig.FDR', thresh_p, 
-                           'LFC', thresh_LFC, 'xlsx', sep = '.'), 
+
+    WriteXLS(x = resdata.sig,
+     ExcelFileName = paste(name, 'deseq2.sig.FDR', thresh_p,
+                           'LFC', thresh_LFC, 'xlsx', sep = '.'),
      row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+
+
+    # Corrlelation of Length and LFC for Niraj
+    resdata.sig.cor <- cor.test(resdata.sig$Length, 
+                           abs(resdata.sig$log2FoldChange_shrinked), 
+                           method = "spearman")
+    title <- paste("Spearman Cor:", format(resdata.sig.cor$estimate, digits=2, nsmall=2),
+                   "p-value:", format(resdata.sig.cor$p.value, digits=3, nsmall=3),
+                   sep = " ")
     
+    resdata.sig$density <- get_density(resdata.sig$Length, resdata.sig$log2FoldChange_shrinked, n = 100)
+    ggplot(resdata.sig) + 
+        geom_point(aes(Length, abs(log2FoldChange_shrinked), color = density)) +
+        scale_color_viridis() +
+        ggtitle(paste(paste("Sig-DEG for", name), 
+                      title, sep = "\n") )
 
 
 
 }
 ```
+
 
 # Print Cut-offs
 ```{r}
@@ -314,10 +367,19 @@ head(df)
 head(cts)
 ```
 
+### New anno after aggregation
+```{r}
+new_anno <- merge(anno, df, by.x=1, by.y=0, all.y=T, all.x=F)
+anno <- new_anno[, 1:4]
+head(anno)
+tail(anno)
+
+```
+
 # COUNT output
 ```{r}
 count <- data.frame(cts)
-colnames(count) <- paste(colnames(tpm),"COUNT", sep = ":")
+colnames(count) <- paste(colnames(count),"COUNT", sep = ":")
 count_out <- merge(anno, count, by.x=1, by.y=0, all.y=T)
 head(count_out)
 WriteXLS(x = count_out, 
@@ -328,9 +390,10 @@ WriteXLS(x = count_out,
 ```{r}
 tpm <- calculateTPM(cts, df$Length)
 tpm <- data.frame(tpm)
-colnames(tpm) <- paste("TPM", colnames(tpm), sep = ":")
+colnames(tpm) <- paste(colnames(tpm),"TPM",  sep = ":")
 tpm_out <- merge(anno, tpm, by.x=1, by.y=0, all.y=T)
 head(tpm_out)
+tail(tpm_out)
 WriteXLS(x = tpm_out, 
          ExcelFileName = 'TPM.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
 ```
@@ -340,9 +403,10 @@ WriteXLS(x = tpm_out,
 ```{r}
 fpkm <- calculateFPKM(cts, df$Length)
 fpkm <- data.frame(fpkm)
-colnames(fpkm) <- paste("FPKM", colnames(fpkm), sep = ":")
+colnames(fpkm) <- paste(colnames(fpkm), "FPKM", sep = ":")
 fpkm_out <- merge(anno, fpkm, by.x=1, by.y=0, all.y=T)
 head(fpkm_out)
+tail(fpkm_out)
 WriteXLS(x = fpkm_out, 
          ExcelFileName = 'FPKM.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
 ```
@@ -400,9 +464,9 @@ normed <- counts(dds, normalized=1)
 logNormed <- log10(normed+1)
 ```
 
-## Histogram of normalized data
+## Histogram of Log10(Counts)
 ```{r}
-hist(logNormed, main='log10(x+1) normalized expression')
+hist(logCounts, main='log10(count+1)')
 ```
 
 <!-- ## Dispersion plot -->
