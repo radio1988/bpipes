@@ -71,7 +71,8 @@ rule star_idx:
         fa=GENOME,
         gtf=GTF,
     output:
-        INDEX+"/SAindex"
+        check=INDEX+"/SAindex",
+        formal=INDEX
     params:
         mem="3000"
     threads:
