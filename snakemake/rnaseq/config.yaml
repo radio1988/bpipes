@@ -1,18 +1,18 @@
 # Analysis Params
 SAMPLES:
-    - S1
-    - S2
+    - A
+    - B
 
-PAIR_END: False  # True/False
+PAIR_END: True  # True/False
 
 GENOME:
-    genome/test.fa
+    genome/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa
 INDEX:
     genome/star_idx
 GTF:
-    genome/test.gtf
+    genome/Saccharomyces_cerevisiae.R64-1-1.90.gtf
 ANNO_TAB:
-  ~/github/bpipes/rnaseq/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz
+    ../../rnaseq/annotations/yeast.R64-1-1.90/Saccharomyces_cerevisiae.R64-1-1.90.anno.txt.gz
 
 STRAND: [0, 1, 2]  # can run [0, 1, 2] to get all possible results, can also select one
 MODE: ["liberal", "strict"] # liberal: Multi-Mapping, No fragment size reqirement; strict: opposite
