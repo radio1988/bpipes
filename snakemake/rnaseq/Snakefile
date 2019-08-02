@@ -71,7 +71,7 @@ rule star_idx:
         fa=GENOME,
         gtf=GTF,
     output:
-        formal=directory(INDEX)
+        directory(INDEX)
     params:
         mem="3000"
     threads:
