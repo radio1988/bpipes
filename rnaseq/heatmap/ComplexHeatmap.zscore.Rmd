@@ -19,24 +19,31 @@ library(circlize)
 ```
 
 ## Communications
-- For Caitlin
 - Visualized with Zscore
-- Only significant Differentially Expressed Genes (DEG) with FDR < 0.05 included
+- Only significant Differentially Expressed Genes (DEG) included
 
 ## Code log:
 - Use zscore for each gene scaled among samples for visualization
+- Drop rows with duplicated gene_names and print out which rows are dropped 
 
 ## Read Data
 ```{r}
-outname <- 'Heatmap of DEG'
+outname <- "Heatmap of DEG \n(KD025_vs_DMSO)"
 
-df <- readxl::read_xlsx( '../DESeq2/RSL_vs_DMSO.deseq2.sig.FDR.0.05.LFC.0.xlsx', na='-')  # na term important
+df <- readxl::read_xlsx( '../DESeq2/KD025_vs_DMSO.deseq2.sig.FDR.0.05.LFC.1.xlsx', na='-')  # na term important
 df <- data.frame(df)  #important
+df <- df[!is.na(df$Gene), ]   # drop NA
 
 # sort by LFC
-df <- df[order(df$log2FoldChange), ]
+df <- df[order(df$log2FoldChange_shrinked), ]
 exp_idx <- grepl("TPM", colnames(df))
 colnames(df) <- gsub("TPM.", "", colnames(df))
+
+# remove duplicated gene names
+df.duplicated <- df[duplicated(df$Name),]
+print("duplicated gene names")
+head(df.duplicated )
+df <- df[!duplicated(df$Name),]
 
 head(df)
 ```
@@ -81,18 +88,19 @@ abline(v=max_exp, col = 'red')
 abline(v=min_exp, col = 'blue')
 
 
-labels <- as.character(exp_df.sig$Name)  # with duplicates, bug?
+labels <- as.character(row.names(num_df))  # with duplicates, bug?
 
-markers <- c('GeneSymbol', 'GeneSymbol2')  # params
+markers <- c('FXN', 'GeneSymbol2')  # params
 marker_idx <- match(tolower(markers), tolower(labels))
 
 labels[marker_idx]
 
-header = data.frame(type = rep(c('DMSO', "RSL"), each=2))  # params
+header = data.frame(type = rep(c('DMSO', "Fasudil", "KD025" ), each=2))  # params
 
 ha = HeatmapAnnotation(df = header,  
                        col = list(type = c("DMSO" =  "green", 
-                                           'RSL' = 'orange'
+                                           'Fasudil' = 'orange', 
+                                           'KD025' = 'yellow'
                                            )))
 ```
 
@@ -134,34 +142,34 @@ rowAnnotation(
 ```
 
 
-### Show gene names
-```{r, fig.height = 21, fig.width = 6, fofig.align = "center"}
-Heatmap(num_df, 
-        column_title = outname,
-        row_title = paste(num_sig, 'DEG'),
-        name = 'Z-score',
-        
-        cluster_rows = T,
-        cluster_columns = F, 
-        clustering_distance_rows = "manhattan",
-        clustering_method_rows = 'complete', 
-        
-        show_row_names = T,
-        show_column_names = T,
-        
-        show_row_dend = T, 
-        show_column_dend = T,
-        
-        top_annotation = ha, 
-        
-        col = colorRamp2(c(min_exp, 0, max_exp), c("blue", 'white',  "red")), 
-        fontsize(4)
-        ) + 
-  rowAnnotation(link = row_anno_link(at = marker_idx, labels = markers),
-                width = unit(5, "mm") + 
-                  max_text_width(markers))
+<!-- ### Show gene names -->
+<!-- ```{r, fig.height = 21, fig.width = 6, fofig.align = "center"} -->
+<!-- Heatmap(num_df, -->
+<!--         column_title = outname, -->
+<!--         row_title = paste(num_sig, 'DEG'), -->
+<!--         name = 'Z-score', -->
 
-```
+<!--         cluster_rows = T, -->
+<!--         cluster_columns = F, -->
+<!--         clustering_distance_rows = "manhattan", -->
+<!--         clustering_method_rows = 'complete', -->
+
+<!--         show_row_names = T, -->
+<!--         show_column_names = T, -->
+
+<!--         show_row_dend = T, -->
+<!--         show_column_dend = T, -->
+
+<!--         top_annotation = ha, -->
+
+<!--         col = colorRamp2(c(min_exp, 0, max_exp), c("blue", 'white',  "red")), -->
+<!--         fontsize(4) -->
+<!--         ) + -->
+<!--   rowAnnotation(link = row_anno_link(at = marker_idx, labels = markers), -->
+<!--                 width = unit(5, "mm") + -->
+<!--                   max_text_width(markers)) -->
+
+<!-- ``` -->
 
 <!-- ## Heatmap Sort by LFC (Log2 Fold Change) -->
 <!-- ```{r , fig.height = 6, fig.width = 5, fofig.align = "center", echo=FALSE, results="hide"} -->
