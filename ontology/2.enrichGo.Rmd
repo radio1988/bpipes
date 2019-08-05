@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library("ChIPpeakAnno")
 library("AnnotationDbi") 
 library("org.Hs.eg.db")
+library("org.Mm.eg.db")
 library('reactome.db')
 library("KEGG.db")
 library(WriteXLS)
@@ -31,10 +32,12 @@ library(WriteXLS)
 # Notes:
 - first written for Caitlin
 - 190609: update databases; use gene_symbol for GENCODE anno
+- 190609: added mouse support
+- 190611: print out summaries
 
 # Read
 ```{r}
-df <- readxl::read_xlsx( '../../DESeq2/Fasudil_vs_DMSO.OneModel.deseq2.sig.FDR.0.05.LFC.0.xlsx', na = '-')
+df <- readxl::read_xlsx( '../../D14_KD_vs_CR_v1.deseq2.sig.FDR.0.05.LFC.1.xlsx', na = '-')
 df <- data.frame(df)  #important
 
 df$Gene <-  gsub("\\..+$", "", df$Gene)  # remove extra part
@@ -48,15 +51,17 @@ dim(df)
 ```{r}
 # FOR DEG
 max_padj = 0.05
-min_lfc = 0
+min_lfc = 1
 
 # FOR Enrichment
-max_BH = 0.05
+max_BH = 0.1
+org_eg_eb <- "org.Hs.eg.db"
 ```
 
 
 # Filter Sig DEG
 ```{r}
+print("Filtering Sig DEG:")
 small_fdr <- df$padj<max_padj
 small_fdr[is.na(small_fdr)] <- FALSE
 paste('FDR <', max_padj, ':', sum(small_fdr))
@@ -81,9 +86,11 @@ keys <- df[both, "Name"]
 
 ## ChIPpeakAnno::getEnrichedGO
 ```{r}
+paste(org_eg_eb)
+
 enriched.GO.both.condense <- getEnrichedGO(
     keys, 
-    orgAnn="org.Hs.eg.db", 
+    orgAnn=org_eg_eb, 
     feature_id_type = "gene_symbol", 
     maxP=max_BH,
     minGOterm=10,
@@ -116,7 +123,7 @@ enriched.GO.both.condense <- getEnrichedGO(
 ```{r}
 kegg <- getEnrichedPATH(
     keys, 
-    orgAnn="org.Hs.eg.db", 
+    orgAnn=org_eg_eb, 
     pathAnn = "KEGG.db",
     feature_id_type = "gene_symbol", 
     maxP=max_BH,
@@ -133,14 +140,18 @@ head(kegg)
 ## Output
 ```{r}
 library(WriteXLS)
+
+paste("enriched.GO.both.condense$bp", dim(enriched.GO.both.condense$bp)[1])
 WriteXLS(x = enriched.GO.both.condense$bp,
         ExcelFileName = paste('GO_biological_process', max_BH, 'xlsx', sep = '.'), 
         row.names = F, SheetNames = 'sheet1', na = '-')
 
+paste("enriched.GO.both.condense$cc", dim(enriched.GO.both.condense$cc)[1])
 WriteXLS(x = enriched.GO.both.condense$cc,
         ExcelFileName = paste('GO_cellular_component', max_BH, 'xlsx', sep = '.'),
         row.names = F, SheetNames = 'sheet1', na = '-')
 
+paste("enriched.GO.both.condense$mf", dim(enriched.GO.both.condense$mf)[1])
 WriteXLS(x = enriched.GO.both.condense$mf,
         ExcelFileName = paste('GO_mulecular_function', max_BH, 'xlsx', sep = '.'),
         row.names = F, SheetNames = 'sheet1', na = '-')
@@ -148,6 +159,7 @@ WriteXLS(x = enriched.GO.both.condense$mf,
 # WriteXLS(x = enriched.PATH.both.condense,
 #         ExcelFileName = 'reactome.db.FDR0.05.FC1.5.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
 
+paste("kegg", dim(kegg)[1])
 WriteXLS(x = kegg,
         ExcelFileName = paste('KEGG', max_BH, 'xlsx', sep = '.'),
         row.names = F, SheetNames = 'sheet1', na = '-')
