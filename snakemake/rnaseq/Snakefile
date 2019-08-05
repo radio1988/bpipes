@@ -71,7 +71,7 @@ rule star_idx:
         fa=GENOME,
         gtf=GTF,
     output:
-        INDEX+"/SAindex"
+        INDEX+"/SA"
     params:
         mem="3000"
     threads:
@@ -94,7 +94,7 @@ rule star_idx:
 
 rule star_map:
     input:
-        index=INDEX,
+        index=INDEX+"/SA",
         gtf=GTF,
         r1="fastq/{sample}.R1.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz",
         r2="fastq/{sample}.R2.fastq.gz" if config["PAIR_END"] else "fastq/{sample}.fastq.gz", # trick snakemake to skip r2
@@ -112,7 +112,7 @@ rule star_map:
     run:
         # align; rename
         shell("""STAR --runThreadN {threads} \
-        --genomeDir {input.index} \
+        --genomeDir {INDEX} \
         --sjdbGTFfile {input.gtf} \
         --readFilesCommand zcat \
         --readFilesIn {params.reads} \
