@@ -1,0 +1,271 @@
+---
+title: "Venn:"
+author: "RuiLi"
+date: "05/24/2019"
+output:
+  html_document:
+    toc: yes  # table of content
+    code_folding: hide
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+library(VennDiagram)
+library(gdata)
+library(WriteXLS)
+MIN_LFC <- 1
+MIN_FDR <- 0.05
+
+filter_sig_genes <- function(df, MIN_FDR, MIN_LFC){
+    largeLFC <- abs(df$logFC) > MIN_LFC 
+    smallFDR <- df$FDR < MIN_FDR
+    sig_idx <- largeLFC & smallFDR
+    print(table(largeLFC))
+    print(table(smallFDR))
+    print(table(sig_idx))
+    
+    return (df[sig_idx,])
+}
+
+
+filter_up_genes <- function(df, MIN_FDR, MIN_LFC){
+    largeLFC <- df$logFC > MIN_LFC 
+    smallFDR <- df$FDR < MIN_FDR
+    sig_idx <- largeLFC & smallFDR
+    print(table(largeLFC))
+    print(table(smallFDR))
+    print(table(sig_idx))
+    
+    return (df[sig_idx,])
+}
+
+
+filter_down_genes <- function(df, MIN_FDR, MIN_LFC){
+    largeLFC <- df$logFC < MIN_LFC 
+    smallFDR <- df$FDR < MIN_FDR
+    sig_idx <- largeLFC & smallFDR
+    print(table(largeLFC))
+    print(table(smallFDR))
+    print(table(sig_idx))
+    
+    return (df[sig_idx,])
+}
+
+
+filter_insig_genes <- function(df, MIN_FDR, MIN_LFC){
+    smallLFC <- abs(df$logFC) <= MIN_LFC 
+    largeFDR <- df$FDR >= MIN_FDR
+    insig_idx <- smallLFC | largeFDR
+    print(table(smallLFC))
+    print(table(largeFDR))
+    print(table(insig_idx))
+    
+    return (df[insig_idx,])
+}
+
+```
+
+## Notes:
+- Goal: Mutation specific stress effect
+
+
+
+## Read C11 (Stress: ZIP3 vs WT)
+```{r readdata}
+name1 <- "C11" # c11.gk3164_spg7.VS.wt_spg7
+df_c11 <- readxl::read_xlsx( '../../20171109.batch1.edgeR.results.with.CPM-2.xlsx', na='-', sheet=11)  # na term important
+df_c11 <- data.frame(df_c11)  #important
+```
+
+### Up genes
+```{r}
+c11_up <- filter_up_genes(df_c11, MIN_FDR, MIN_LFC)
+c11_up.list <- c11_up$Row.names
+c11_up.area <- length(c11_up.list)
+head(c11_up)
+```
+
+### Down genes
+```{r}
+c11_down <- filter_down_genes(df_c11, MIN_FDR, -MIN_LFC)
+c11_down.list <- c11_down$Row.names
+c11_down.area <- length(c11_down.list)
+head(c11_down)
+```
+
+### Insignificant genes
+```{r}
+c11_insig <- filter_insig_genes(df_c11, MIN_FDR, MIN_LFC)
+c11_insig.list <- c11_insig$Row.names
+c11_insig.area <- length(c11_down.list)
+head(c11_insig)
+```
+
+
+## Read C10: (Stress: ATFS-1 vs WT) 
+```{r}
+name2 <- "C10" # c10.tm4919_spg7.VS.wt_spg7
+df_c10 <- readxl::read_xlsx( '../../20171109.batch1.edgeR.results.with.CPM-2.xlsx', na='-', sheet=10)  # na term important
+df_c10 <- data.frame(df_c10)  #important
+```
+
+
+### Up genes
+```{r}
+c10_up <- filter_up_genes(df_c10, MIN_FDR, MIN_LFC)
+c10_up.list <- c10_up$Row.names
+c10_up.area <- length(c10_up.list)
+head(c10_up)
+```
+
+### Down genes
+```{r}
+c10_down <- filter_down_genes(df_c10, MIN_FDR, -MIN_LFC)
+c10_down.list <- c10_down$Row.names
+c10_down.area <- length(c10_down.list)
+head(c10_down)
+```
+
+### Insignificant genes
+```{r}
+c10_insig <- filter_insig_genes(df_c10, MIN_FDR, MIN_LFC)
+c10_insig.list <- c10_insig$Row.names
+c10_insig.area <- length(c10_down.list)
+head(c10_insig)
+```
+
+
+
+
+
+
+## Group1
+```{r}
+group1_a.list <- intersect(c11_up.list, c10_down.list)
+group1_a.area <- length(group1_a.list)
+
+group1_b.list <- intersect(c11_down.list, c10_up.list)
+group1_b.area <- length(group1_b.list)
+
+group1.list <- union(group1_a.list, group1_b.list)
+write.table(group1.list, "group1.list.txt", quote = F, row.names = F, col.names = F)
+
+
+group1.table1 <- df_c11[df_c11$Row.names %in% group1.list, ]
+group1.table1 <- group1.table1[order(group1.table1$Row.names),]
+group1.table2 <- df_c10[df_c10$Row.names %in% group1.list, ]
+group1.table2 <- group1.table2[order(group1.table2$Row.names),]
+
+
+WriteXLS(x = group1.table1, 
+         ExcelFileName = paste("group1.c11_c10_opposite", "C11", 'xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')
+
+WriteXLS(x = group1.table2, 
+         ExcelFileName = paste("group1.c11_c10_opposite", "C10", 'xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+
+## Group2
+```{r}
+group2_a.list <- intersect(c11_up.list, c10_insig.list)
+group2_a.area <- length(group2_a.list)
+
+group2_b.list <- intersect(c11_down.list, c10_insig.list)
+group2_b.area <- length(group2_b.list)
+
+group2_c.list <- intersect(c11_insig.list, c10_up.list)
+group2_c.area <- length(group2_c.list)
+
+group2_d.list <- intersect(c11_insig.list, c10_down.list)
+group2_d.area <- length(group2_d.list)
+
+group2.list <-Reduce( union, c(group2_a.list, group2_b.list, group2_c.list, group2_d.list))
+write.table(group2.list, "group2.list.txt", quote = F, row.names = F, col.names = F)
+
+
+group2.table1 <- df_c11[df_c11$Row.names %in% group2.list, ]
+group2.table1 <- group2.table1[order(group2.table1$Row.names),]
+group2.table2 <- df_c10[df_c10$Row.names %in% group2.list, ]
+group2.table2 <- group2.table2[order(group2.table2$Row.names),]
+
+WriteXLS(x = group2.table1, 
+         ExcelFileName = paste("group2.c11_c10_onlyOneSig", "C11", 'xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')
+
+WriteXLS(x = group2.table2, 
+         ExcelFileName = paste("group2.c11_c10_onlyOneSig", "C10", 'xlsx', sep = '.'), 
+         row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+
+<!-- ## Venn plot -->
+<!-- ```{r} -->
+<!-- pdf("venn.pdf") -->
+<!-- ## A more complicated diagram Demonstrating external area labels -->
+<!-- venn.plot <- draw.pairwise.venn(area1           = area1, -->
+<!--                                 area2           = area2, -->
+<!--                                 cross.area      = overlap_area, -->
+<!--                                 category        = c(name1, name2), -->
+<!--                                 fill            = c("blue", "red"), -->
+<!--                                 lty             = c("solid", 'solid'), -->
+<!--                                 scaled = F, -->
+<!--                                 alpha = 0.5, -->
+<!--                                 cex             = 2,  # size of label -->
+<!--                                 cat.cex         = 2,  # size of category names -->
+<!--                                 cat.pos         = c(0, 0), -->
+<!--                                 cat.dist        = 0.03, -->
+<!--                                 # cat.just        = list(c(0, 0), c(0.5, 0)), -->
+<!--                                 # ext.pos         = 0, -->
+<!--                                 # ext.dist        = -0.05, -->
+<!--                                 # ext.length      = 0.85, -->
+<!--                                 # ext.line.lwd    = 2, -->
+<!--                                 # ext.line.lty    = "dashed" -->
+<!--                                ) -->
+<!-- dev.off() -->
+<!-- <!-- ``` --> -->
+<!-- # Save Gene List -->
+<!-- ## df_c11 specific -->
+<!-- ```{r} -->
+<!-- df1_specific <- data.frame(X=setdiff(list1, list2)) -->
+<!-- df1_specific <- merge(df_c11, df1_specific, by.x = 1, by.y = 1) -->
+
+<!-- WriteXLS(x = df1_specific,  -->
+<!--          ExcelFileName = paste(name1, "specific", 'xlsx', sep = '.'),  -->
+<!--          row.names = F, SheetNames = 'sheet1', na = '-') -->
+<!-- ``` -->
+
+<!-- ## df_c10 specific -->
+<!-- ```{r} -->
+<!-- df2_specific <- data.frame(X=setdiff(list2, list1)) -->
+<!-- df2_specific <- merge(df_c10, df2_specific, by.x = 1, by.y = 1) -->
+
+<!-- WriteXLS(x = df2_specific,  -->
+<!--          ExcelFileName = paste(name2, "specific", 'xlsx', sep = '.'),  -->
+<!--          row.names = F, SheetNames = 'sheet1', na = '-') -->
+<!-- ``` -->
+
+
+<!-- ## Overlap in df_c11 -->
+<!-- ```{r} -->
+<!-- df_overlap1 <- data.frame(X=intersect(list2, list1)) -->
+<!-- df_overlap1 <- merge(df_c11, df_overlap1, by.x = 1, by.y = 1) -->
+
+<!-- WriteXLS(x = df_overlap1,  -->
+<!--          ExcelFileName = paste("overlap", name1, 'xlsx', sep = '.'),  -->
+<!--          row.names = F, SheetNames = 'sheet1', na = '-') -->
+<!-- ``` -->
+
+
+
+<!-- ## Overlap in df_c10 -->
+<!-- ```{r} -->
+<!-- df_overlap2 <- data.frame(X=intersect(list2, list1)) -->
+<!-- df_overlap2 <- merge(df_c10, df_overlap2, by.x = 1, by.y = 1) -->
+
+<!-- WriteXLS(x = df_overlap2,  -->
+<!--          ExcelFileName = paste("overlap", name2, 'xlsx', sep = '.'),  -->
+<!--          row.names = F, SheetNames = 'sheet1', na = '-') -->
+<!-- ``` -->
+

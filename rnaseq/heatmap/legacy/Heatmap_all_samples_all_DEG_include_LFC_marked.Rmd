@@ -1,7 +1,7 @@
 ---
-title: "Heatmap for DEG: complex heatmap"
+title: "Heatmap for DEG: Tom and Nathan, 3 sets of DE Sig Genes"
 author: "RuiLi"
-date: "09/14/2018"
+date: "8/30/2018"
 output: html_document
 ---
 
@@ -18,15 +18,12 @@ df = read.xls ("../merged.deseq.ann.rui.xls", sheet = 1, header = TRUE)
 row.names(df) <- df[,1]
 df <- df[, -1]
 colnames(df)
-```
 
-## Filter Data
-```{r}
 thr_p <- 0.05
 thr_lfc <- 1
 
 # select expression columns
-df_ <- df[, c(1:8)]
+df_ <- df[, c(1:8, 15, 10)]
 colnames(df_)
 
 # remove NA from padj
@@ -78,8 +75,9 @@ head(logNormed_sig)
 drows <- dist(logNormed_sig[, 1:8])
 
 annotation_col <- data.frame(
-                    genotype = factor(rep(c("MUT", "WT"), each=4)),
-                    treatment = factor(rep(c("TRT", "UNT", "TRT", "UNT"), each=2))
+                    genotype = factor(c(rep(c("MUT", "WT"), each=4), c("MUT", "WT"))),
+                    treatment = factor(c(rep(c("TRT", "UNT", "TRT", "UNT"), each=2), rep("N.A.", 2))),
+                    data = factor(c(rep("Expression", 8), rep("LFC(TRT/UNT)", 2)))
                             )
 
 annotation_row <- data.frame(
@@ -95,18 +93,8 @@ ann_colors = list(
 
 rownames(annotation_col) <- colnames(logNormed_sig)
 
-nrow <- dim(logNormed_sig)[1]
-
-## labels
-labels <- as.character(df_sig_full$gene_name.y)
-markers <- c("Ctgf", "Cyr61", 'Ankrd1', 'Axin2')
-marker_idx <- match(markers,labels)
-nonmarkera_idx <- setdiff(c(1:length(labels)), marker_idx)
-labels[nonmarkera_idx] <- ""
-
 pheatmap(logNormed_sig, 
-         labels_row = labels,  # define labels
-         cluster_rows=T, show_rownames=T,
+         cluster_rows=T, show_rownames=F,
          cluster_cols=F, show_colnames=F, 
          annotation_col = annotation_col,
          annotation_row = annotation_row, annotation_names_row = F,
@@ -114,22 +102,48 @@ pheatmap(logNormed_sig,
          clustering_distance_rows = drows,
          main = paste("Heatmap of", num_sig, " DEG for", name)
          )
-
 ```
 
-```{r test}
-# source("https://bioconductor.org/biocLite.R")
-# biocLite("ComplexHeatmap")
-library(ComplexHeatmap)
-library(circlize)
+## Heatmap for DEG of all Comparisons, clustered on all 8 samples from WT and MUT, small_fdr < 0.05 
 
-mat = matrix(rnorm(10000), nr = 1000)
-rownames(mat) = sprintf("%.2f", rowMeans(mat))
-subset = sample(1000, 20)
-labels = rownames(mat)[subset]
-Heatmap(mat, show_row_names = FALSE, show_row_dend = FALSE, show_column_dend = FALSE) + 
-rowAnnotation(link = row_anno_link(at = subset, labels = labels),
-  width = unit(1, "cm") + max_text_width(labels))
+```{r, echo=FALSE}
+name <- 'All Genotype: TRT vs UNT'
+df_sig <- df_sig1
+df_sig_full <- df_sig_full1
+num_sig <- num_sig1
 
+logNormed_sig <- log10(df_sig + 1)  # log transformation
+head(logNormed_sig)
+
+drows <- dist(logNormed_sig[, 1:8])
+
+annotation_col <- data.frame(
+                    genotype = factor(c(rep(c("MUT", "WT"), each=4), c("MUT", "WT"))),
+                    treatment = factor(c(rep(c("TRT", "UNT", "TRT", "UNT"), each=2), rep("N.A.", 2))),
+                    data = factor(c(rep("Expression", 8), rep("LFC(TRT/UNT)", 2)))
+                            )
+
+annotation_row <- data.frame(
+  'WT' = factor(df_sig_full$padj.WT.TRT.UNT<thr_p),
+  'MUT' = factor(df_sig_full$padj.MUT.TRT.UNT<thr_p)
+)
+rownames(annotation_row) = rownames(df_sig_full)
+
+ann_colors = list(
+    'WT' = c('TRUE'='red', 'FALSE'='gray'),
+    "MUT" = c('TRUE'='black', 'FALSE'='gray')
+)
+
+rownames(annotation_col) <- colnames(logNormed_sig)
+
+pheatmap(logNormed_sig, 
+         cluster_rows=T, show_rownames=F,
+         cluster_cols=F, show_colnames=F, 
+         annotation_col = annotation_col,
+         annotation_row = annotation_row, annotation_names_row = F,
+         annotation_colors = ann_colors,
+         clustering_distance_rows = drows,
+         main = paste("Heatmap of", num_sig, " DEG for", name)
+         )
 ```
 
