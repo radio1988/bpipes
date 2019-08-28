@@ -69,10 +69,15 @@ get_density <- function(x, y, ...) {
 }
 
 library(EnhancedVolcano)
+
 volcanoplot <- function(res, anno,
-                        lfcthresh=2, sigthresh=thresh_p, 
+                        lfcthresh=2, 
+                        sigthresh=thresh_p, 
                         name='name', 
-                        labelsig=FALSE, xlim=100, ylim=1000, textcx=1) {
+                        labelsig=FALSE, 
+                        xlim=100, 
+                        ylim=1000, 
+                        textcx=1) {
     res<-merge(data.frame(res), anno, by.x = 0, by.y=1, sort=F)
     res$padj[is.na(res$padj)] <- 1
     res$padj[res$padj < 10^(-ylim) & !is.na(res$padj)] <- 10^(-ylim) # y-axis top value 50
@@ -89,29 +94,48 @@ volcanoplot <- function(res, anno,
                 paste("Up:", pos.n, ", Down:", neg.n, sep = ""),
                 sep='\n')
     
-    EnhancedVolcano(res,
+    labelcut <- res$padj[order(res$padj)][100]
+    
+    p <- EnhancedVolcano(res,
                     lab = res$Name,
+                    #selectLab = as.character(res$Name[which(res$padj<labelcut)]),
+                    #selectLab = c("FOS", "LDHA"),
                     x = 'log2FoldChange',
                     y = 'padj',
                     title = title,
+                    xlab = bquote(~Log[2]~ "Fold Change"),
+                    ylab = bquote(~-Log[10]~italic(FDR)),
                     #xlim = c(-6, 6),
                     pCutoff = sigthresh,
                     FCcutoff = lfcthresh,
+                    #pLabellingCutoff = labelcut,
                     cutoffLineType = 'twodash',
                     cutoffLineWidth = 0.8,
-                    transcriptPointSize = 2.0,
-                    transcriptLabSize = 4.0,
-                    colAlpha = 1,
-                    # legend=c('NS','Log2FoldChange','FDR',
-                    #          'FDR & Log2FoldChange'),
+                    transcriptPointSize = 1.0,
+                    transcriptLabSize = 2.0,
+                    DrawConnectors = F,
+                    colAlpha = 0.5,
                     legend=c("Negative",
                              paste("FDR<",sigthresh,sep=""),
                              paste("|LFC|>",lfcthresh,sep=""),
                              "Both"),
                     legendPosition = 'right',
-                    legendLabSize = 16,
-                    legendIconSize = 5.0)
+                    legendLabSize = 10,
+                    axisLabSize = 10,
+                    titleLabSize = 10,
+                    legendIconSize = 3.0)
+    library(gridExtra)
+    library(grid)
+    grid.arrange(p,
+                 ncol=1,
+                 top = textGrob(' ',
+                                just = c('center'),
+                                gp = gpar(fontsize = 32))
+                 )
+    grid.rect(gp=gpar(fill=NA))
+    
 }
+
 
 maplot <- function (res, thresh=thresh_p, labelsig=FALSE, textcx=1, ...) {
     with(res, 
@@ -427,22 +451,23 @@ plotDispEsts(dds, main="Dispersion plot")
 
 
 ## PCA plots
-```{r}
-pcaData <- plotPCA(vsd, intgroup=c("sample", "sample"), returnData=TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
 
-ggplot(pcaData, aes(PC1, PC2, color=sample, shape=sample)) +
-  geom_point(size=3) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed()
-```
+# ```{r}
+# 
+# 
+# ggplot(pcaData, aes(PC1, PC2, color=sample, shape=sample)) +
+#   geom_point(size=3) +
+#   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+#   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+#   coord_fixed()
+# ```
 
-
-### With label
 ```{r}
 library(ggplot2)
 library(ggrepel)
+
+pcaData <- plotPCA(vsd, intgroup=c("sample", "sample"), returnData=TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
 
 pcaplot <- ggplot(pcaData, aes(PC1, PC2, color=sample, shape=sample)) +
     geom_point(size=3) +
