@@ -1,0 +1,27 @@
+project_name : "tet"
+project_dir : "output/"  # for pipeline
+sequencing_runs :
+  - name : 'rui_round1'
+    version : 'v3'
+    dir : "raw_data/190402_NB502075_0299_AHC2M2BGXB/Data/Intensities/BaseCalls/"
+    fastq_path : "Undetermined_S0_{split_affix}_{read}_001.fastq.gz"
+    split_affixes : ["L001", "L002", "L003", "L004"]
+    libraries :
+      - {library_name: "kit-ctrl-d10-1b", library_index: "AGAGGATA"}
+      - {library_name: "kit-t2t3-d10-1b", library_index: "TATGCAGT"}
+      - {library_name: "kit-t2t3-d10-2b", library_index: "AGGCTTAG"}
+      - {library_name: "kit-ctrl-d30-1b", library_index: "CGGAGAGA"}
+      - {library_name: "kit-t2t3-d30-1b", library_index: "AGCTAGAA"}
+      - {library_name: "kit-t2-d10-1b", library_index: "CTTAATAG"}
+      - {library_name: "kit-t2-d10-2b", library_index: "TAAGGCTC"}
+      - {library_name: "kit-t2-d30-1b", library_index: "TTACCTCC"}
+      - {library_name: "kit-t2-d30-2b", library_index: "CCTTTACT"}
+      - {library_name: "kit-ctrl-d10-2b", library_index: "ACTCTAGG"}
+paths :
+  bowtie_index : "/project/umw_merav_socolovsky/scRNAseq/genomes/mouse_mm10_updateSep2017/mouse.GRCm38" # build_index and pipeline
+parameters :
+  bowtie_arguments:
+    m : 200
+    n : 1
+    l : 15
+    e : 100
