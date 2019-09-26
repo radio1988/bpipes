@@ -1,0 +1,19 @@
+#BSUB -J "bcl2fq"  # n jobs in array, batch size
+#BSUB -R rusage[mem=2000]  # for each cpu
+#BSUB -n 6 # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/bcl2fastq.%J.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+#BSUB -B
+
+module load bcl2fastq2/2.20.0
+
+run=190402_NB502075_0299_AHC2M2BGXB
+cd $run
+
+bcl2fastq \
+-r 4 -p 8 -w 4 \
+--use-bases-mask y*,y*,y*,y* --mask-short-adapter-reads 0 --minimum-trimmed-read-length 0
