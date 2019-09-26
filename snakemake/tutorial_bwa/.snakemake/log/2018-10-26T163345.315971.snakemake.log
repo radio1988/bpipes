@@ -1,4 +1,0 @@
-Building DAG of jobs...
-MissingInputException in line 4 of /Users/rui/Google Drive/github/bsub/snakemake/tutorial_bwa/Snakefile:
-Missing input files for rule all:
-report.html
