@@ -1,1 +1,1 @@
-https://raw.githubusercontent.com/radio1988/bpipes/master/genome/ucsc_track_hub/ucsc_track_hub_example/hub.txt
+https://github.com/radio1988/bpipes/tree/master/genome/ucsc_track_hub/hub_Rod/hub.txt
