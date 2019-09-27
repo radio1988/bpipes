@@ -1,0 +1,5 @@
+hub RodTracks
+shortLabel Rod_Tracks
+longLabel Rod_Tracks
+genomesFile genomes.txt
+email  rui.li@umassmed.edu

@@ -1,0 +1,14 @@
+track  Wig
+bigDataUrl https://dl.dropboxusercontent.com/s/c17akqd0xm53oru/GSM859660_jarid1cES-R2w200d4Norm10backg8RatioNCSAR_t2.wig?dl=0
+shortLabel KDM5C
+longLabel KDM5C_GSM859660
+type Wig
+visibility dense
+
+track bed
+bigDataUrl https://dl.dropboxusercontent.com/s/2hq9m33uiy6ck2a/GSM2029573_mES_Rack7_peaks.bed.txt?dl=0 
+shortLabel RACK7
+longLabel RACK7_GSM2029573
+type bed
+visibility dense
+
