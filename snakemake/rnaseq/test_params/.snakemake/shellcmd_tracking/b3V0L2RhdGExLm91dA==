@@ -1,1 +1,0 @@
-echo data/data1.txt data/data2.txt [1, 2] > out/data1.out

@@ -1,0 +1,7 @@
+track bed
+bigDataUrl https://dl.dropboxusercontent.com/s/2hq9m33uiy6ck2a/GSM2029573_mES_Rack7_peaks.bed.txt?dl=0 
+shortLabel RACK7
+longLabel RACK7_GSM2029573
+type bed
+visibility dense
+
