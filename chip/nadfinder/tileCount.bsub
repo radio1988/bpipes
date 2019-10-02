@@ -1,0 +1,14 @@
+#BSUB -J "tileC"  # n jobs in array, batch size
+#BSUB -R rusage[mem=200000]  # for each cpu
+#BSUB -n 2  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/tileCount.%J.%I.log
+#BSUB -W 720:00
+#BSUB -q long
+#BSUB -B
+
+# Rscript, tileCount.R, bam_folder, output_folder, Name, IP, IP.bam, IN.bam
+Rscript tileCount.R ../../markDup 500bp_whole/ Mes_EED_Rep2b Mes_EED_Rep2b.bam Mes_IN_Rep2b.bam 500 100 0.25 &
+Rscript tileCount.R ../../markDup 500bp_whole/ Epi_EED_Rep2b Epi_EED_Rep2b.bam Epi_IN_Rep2b.bam 500 100 0.25 &
+wait
