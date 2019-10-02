@@ -8,3 +8,5 @@
 - [x] bamCoverage
 - [] FPKM/TPM
 - [] Robust LSF MEM request for STAR: incase not enough CPU were given, 36GB RAM not reached as a result
+
+- []MODE: strict and liberal that works for featureCount

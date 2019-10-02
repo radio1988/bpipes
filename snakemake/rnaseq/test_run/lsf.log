@@ -1,0 +1,578 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	create_dag
+	1
+
+[Thu May  9 15:12:45 2019]
+rule create_dag:
+    output: Workflow_DAG.all.svg
+    log: log/create_dag/Workflow_DAG.all.svg.log
+    jobid: 0
+
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+star 2.5.3a is located under /share/pkg/star/2.5.3a
+Building DAG of jobs...
+Error: Directory cannot be locked. This usually means that another Snakemake instance is running on this directory. Another possibility is that a previous run exited unexpectedly.
+[Thu May  9 15:12:47 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c05b06>
+Subject: Job 4772548: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.create_dag.1.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.create_dag.1.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:12:29 2019.
+Job was executed on host(s) <c05b06>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:12:42 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:12:42 2019.
+Terminated at Thu May  9 15:12:47 2019.
+Results reported at Thu May  9 15:12:47 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.create_dag.1.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   1.45 sec.
+    Max Memory :                                 25 MB
+    Average Memory :                             25.00 MB
+    Total Requested Memory :                     1000.00 MB
+    Delta Memory :                               975.00 MB
+    Max Swap :                                   -
+    Max Processes :                              7
+    Max Threads :                                9
+    Run time :                                   5 sec.
+    Turnaround time :                            18 sec.
+
+The output (if any) is above this job summary.
+
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 12
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	star_map
+	1
+
+[Thu May  9 15:12:49 2019]
+rule star_map:
+    input: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx, /project/umw_mccbjdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+, fastq/S1.R1.fastq.gz
+    output: mapped_reads/S1.bam
+    log: log/star_map/S1.star.log
+    jobid: 0
+    wildcards: sample=S1
+    threads: 12
+
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+0
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+star 2.5.3a is located under /share/pkg/star/2.5.3a
+[Thu May  9 15:13:59 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c28b04>
+Subject: Job 4772549: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.fastqc.4.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.fastqc.4.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:12:36 2019.
+Job was executed on host(s) <6*c28b04>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:12:47 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:12:47 2019.
+Terminated at Thu May  9 15:14:00 2019.
+Results reported at Thu May  9 15:14:00 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.fastqc.4.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   78.19 sec.
+    Max Memory :                                 615 MB
+    Average Memory :                             283.20 MB
+    Total Requested Memory :                     6000.00 MB
+    Delta Memory :                               5385.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                31
+    Run time :                                   72 sec.
+    Turnaround time :                            84 sec.
+
+The output (if any) is above this job summary.
+
+[Thu May  9 15:15:17 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c24b05>
+Subject: Job 4772550: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.star_map.9.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.star_map.9.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:12:36 2019.
+Job was executed on host(s) <12*c24b05>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:12:47 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:12:47 2019.
+Terminated at Thu May  9 15:15:17 2019.
+Results reported at Thu May  9 15:15:17 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.star_map.9.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   129.63 sec.
+    Max Memory :                                 32713 MB
+    Average Memory :                             25618.78 MB
+    Total Requested Memory :                     36000.00 MB
+    Delta Memory :                               3287.00 MB
+    Max Swap :                                   -
+    Max Processes :                              10
+    Max Threads :                                23
+    Run time :                                   150 sec.
+    Turnaround time :                            161 sec.
+
+The output (if any) is above this job summary.
+
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	samtools_sort
+	1
+
+[Thu May  9 15:15:31 2019]
+rule samtools_sort:
+    input: mapped_reads/S1.bam
+    output: sorted_reads/S1.bam
+    log: log/samtools_sort/S1.sort.log
+    jobid: 0
+    wildcards: sample=S1
+    threads: 4
+
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+star 2.5.3a is located under /share/pkg/star/2.5.3a
+[Thu May  9 15:15:32 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c28b04>
+Subject: Job 4772567: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.samtools_sort.7.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.samtools_sort.7.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:15:27 2019.
+Job was executed on host(s) <4*c28b04>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:15:31 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:15:31 2019.
+Terminated at Thu May  9 15:15:33 2019.
+Results reported at Thu May  9 15:15:33 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.samtools_sort.7.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   0.54 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     4800.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   1 sec.
+    Turnaround time :                            6 sec.
+
+The output (if any) is above this job summary.
+
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Using shell: /bin/bash
+Using shell: /bin/bash
+Using shell: /bin/bash
+Provided cores: 4
+Provided cores: 4
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Rules claiming more threads will be scaled down.
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	feature_count
+	1
+Job counts:
+	count	jobs
+	1	feature_count
+	1
+Job counts:
+	count	jobs
+	1	samtools_index
+	1
+
+
+
+[Thu May  9 15:16:35 2019]
+[Thu May  9 15:16:35 2019]
+[Thu May  9 15:16:35 2019]
+rule feature_count:
+    input: sorted_reads/S1.bam, /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+    output: feature_count/counts.gene_id.s0.txt
+    log: log/feature_count/counts.gene_id.s0.log
+    jobid: 0
+    wildcards: strand=0
+    threads: 4
+rule feature_count:
+    input: sorted_reads/S1.bam, /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+    output: feature_count/counts.gene_id.s1.txt
+    log: log/feature_count/counts.gene_id.s1.log
+    jobid: 0
+    wildcards: strand=1
+    threads: 4
+rule samtools_index:
+    input: sorted_reads/S1.bam
+    output: sorted_reads/S1.bam.bai
+    log: log/samtools_index/S1.index.log
+    jobid: 0
+    wildcards: sample=S1
+
+
+
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+star 2.5.3a is located under /share/pkg/star/2.5.3a
+star 2.5.3a is located under /share/pkg/star/2.5.3a
+star 2.5.3a is located under /share/pkg/star/2.5.3a
+[Thu May  9 15:16:36 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c28b04>
+Subject: Job 4772575: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.samtools_index.8.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.samtools_index.8.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:16:30 2019.
+Job was executed on host(s) <c28b04>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:16:34 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:16:34 2019.
+Terminated at Thu May  9 15:16:36 2019.
+Results reported at Thu May  9 15:16:36 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.samtools_index.8.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   0.53 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     2000.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   2 sec.
+    Turnaround time :                            6 sec.
+
+The output (if any) is above this job summary.
+
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	feature_count
+	1
+
+[Thu May  9 15:16:40 2019]
+rule feature_count:
+    input: sorted_reads/S1.bam, /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+    output: feature_count/counts.gene_id.s2.txt
+    log: log/feature_count/counts.gene_id.s2.log
+    jobid: 0
+    wildcards: strand=2
+    threads: 4
+
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+star 2.5.3a is located under /share/pkg/star/2.5.3a
+[Thu May  9 15:16:43 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+[Thu May  9 15:16:43 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c28b04>
+Subject: Job 4772573: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.3.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.3.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:16:29 2019.
+Job was executed on host(s) <4*c28b04>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:16:34 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:16:34 2019.
+Terminated at Thu May  9 15:16:46 2019.
+Results reported at Thu May  9 15:16:46 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.3.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   7.69 sec.
+    Max Memory :                                 25 MB
+    Average Memory :                             25.00 MB
+    Total Requested Memory :                     16000.00 MB
+    Delta Memory :                               15975.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                8
+    Run time :                                   9 sec.
+    Turnaround time :                            17 sec.
+
+The output (if any) is above this job summary.
+
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c28b04>
+Subject: Job 4772574: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.2.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.2.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:16:29 2019.
+Job was executed on host(s) <4*c28b04>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:16:34 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:16:34 2019.
+Terminated at Thu May  9 15:16:46 2019.
+Results reported at Thu May  9 15:16:46 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.2.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   7.68 sec.
+    Max Memory :                                 25 MB
+    Average Memory :                             25.00 MB
+    Total Requested Memory :                     16000.00 MB
+    Delta Memory :                               15975.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                8
+    Run time :                                   12 sec.
+    Turnaround time :                            17 sec.
+
+The output (if any) is above this job summary.
+
+[Thu May  9 15:16:51 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c24b05>
+Subject: Job 4772576: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.5.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.5.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:16:30 2019.
+Job was executed on host(s) <4*c24b05>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:16:38 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:16:38 2019.
+Terminated at Thu May  9 15:16:51 2019.
+Results reported at Thu May  9 15:16:51 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.feature_count.5.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   10.17 sec.
+    Max Memory :                                 25 MB
+    Average Memory :                             25.00 MB
+    Total Requested Memory :                     16000.00 MB
+    Delta Memory :                               15975.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                8
+    Run time :                                   13 sec.
+    Turnaround time :                            21 sec.
+
+The output (if any) is above this job summary.
+
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	bam_qc
+	1
+
+[Thu May  9 15:17:13 2019]
+rule bam_qc:
+    input: sorted_reads/S1.bam.bai, sorted_reads/S1.bam
+    output: bam_qc/samstat/S1.bam.samstat.html
+    log: log/bam_qc/samstat/S1.samstat.log, log/bam_qc/stats/S1.stats.log, log/bam_qc/idxstats/S1.idxstats.log, log/bam_qc/flagstat/S1.flagstat.log
+    jobid: 0
+    wildcards: sample=S1
+    threads: 4
+
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+fastqc 0.11.5 is located under /share/pkg/fastqc/0.11.5
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3 3.5.0 is located under /share/pkg/python3/3.5.0
+python3/3.5.0_packages/numpy 1.10.1 is located under /share/pkg/python3/3.5.0_packages/numpy/1.10.1
+python3/3.5.0_packages/multiqc 1.4 is located under /share/pkg/python3/3.5.0_packages/multiqc/1.4
+jdk 1.8.0_77 is located under /share/pkg/jdk/1.8.0_77
+star 2.5.3a is located under /share/pkg/star/2.5.3a
+[2019-05-09 15:17:14]	SAMstat 1.5.1, Copyright (C) 2014 Timo Lassmann <timolassmann@gmail.com>
+[2019-05-09 15:17:14]	cmd: samstat sorted_reads/S1.bam 
+[2019-05-09 15:17:14]	S1.bam
+--------------------------------------------------
+[2019-05-09 15:17:14]	Starting to collect data.
+[2019-05-09 15:17:14]	
+
+[Thu May  9 15:17:14 2019]
+Finished job 0.
+1 of 1 steps (100%) done
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@c28b04>
+Subject: Job 4772581: </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.bam_qc.6.sh> in cluster <umghpcc> Done
+
+Job </home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.bam_qc.6.sh> was submitted from host <ghpcc06> by user <rl44w> in cluster <umghpcc> at Thu May  9 15:17:06 2019.
+Job was executed on host(s) <4*c28b04>, in queue <short>, as user <rl44w> in cluster <umghpcc> at Thu May  9 15:17:12 2019.
+</home/rl44w> was used as the home directory.
+</home/rl44w/github/bpipes/snakemake/rnaseq/test_run> was used as the working directory.
+Started at Thu May  9 15:17:12 2019.
+Terminated at Thu May  9 15:17:14 2019.
+Results reported at Thu May  9 15:17:14 2019.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/.snakemake/tmp._yjdmaqi/snakejob.bam_qc.6.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   0.78 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     8000.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   2 sec.
+    Turnaround time :                            8 sec.
+
+The output (if any) is above this job summary.
+

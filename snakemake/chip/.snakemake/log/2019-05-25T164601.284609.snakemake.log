@@ -1,0 +1,5 @@
+Building DAG of jobs...
+MissingInputException in line 70 of /home/rl44w/github/bpipes/snakemake/chip/Snakefile:
+Missing input files for rule bwa_map:
+fastq/Epi_EED_Rep1.R1.fastq.gz
+fastq/Epi_EED_Rep1.R2.fastq.gz

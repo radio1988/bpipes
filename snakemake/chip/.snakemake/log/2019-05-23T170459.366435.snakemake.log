@@ -1,0 +1,4 @@
+Building DAG of jobs...
+MissingInputException in line 106 of /home/rl44w/github/bpipes/snakemake/chip/Snakefile:
+Missing input files for rule bam_qc:
+sorted_reads/B.bam.bai

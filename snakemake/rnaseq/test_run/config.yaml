@@ -1,0 +1,12 @@
+# Analysis Params
+SAMPLES:
+    - S1
+
+GENOME:
+    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
+INDEX:
+    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx
+GTF:
+    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+
+STRAND: [0, 1, 2]  # can run [0, 1, 2] to get all possible results, can also select one

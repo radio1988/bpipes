@@ -1,0 +1,3 @@
+TypeError in line 17 of /home/rl44w/github/bpipes/snakemake/rnaseq/test_pe_se/Snakefile:
+sequence item 0: expected str instance, tuple found
+  File "/home/rl44w/github/bpipes/snakemake/rnaseq/test_pe_se/Snakefile", line 17, in <module>

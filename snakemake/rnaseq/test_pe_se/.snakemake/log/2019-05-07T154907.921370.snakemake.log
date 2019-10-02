@@ -1,0 +1,3 @@
+NameError in line 33 of /home/rl44w/github/bpipes/snakemake/rnaseq/test_pe_se/Snakefile:
+name 'wildcards' is not defined
+  File "/home/rl44w/github/bpipes/snakemake/rnaseq/test_pe_se/Snakefile", line 33, in <module>

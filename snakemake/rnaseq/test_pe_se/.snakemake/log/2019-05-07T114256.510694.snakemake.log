@@ -1,0 +1,10 @@
+FileNotFoundError in line 4 of /home/rl44w/github/bpipes/snakemake/rnaseq/test_pe_se/Snakefile:
+File b'samples.txt' does not exist
+  File "/home/rl44w/github/bpipes/snakemake/rnaseq/test_pe_se/Snakefile", line 4, in <module>
+  File "/home/rl44w/.local/lib/python3.5/site-packages/pandas/io/parsers.py", line 678, in parser_f
+  File "/home/rl44w/.local/lib/python3.5/site-packages/pandas/io/parsers.py", line 440, in _read
+  File "/home/rl44w/.local/lib/python3.5/site-packages/pandas/io/parsers.py", line 787, in __init__
+  File "/home/rl44w/.local/lib/python3.5/site-packages/pandas/io/parsers.py", line 1014, in _make_engine
+  File "/home/rl44w/.local/lib/python3.5/site-packages/pandas/io/parsers.py", line 1708, in __init__
+  File "pandas/_libs/parsers.pyx", line 384, in pandas._libs.parsers.TextReader.__cinit__
+  File "pandas/_libs/parsers.pyx", line 695, in pandas._libs.parsers.TextReader._setup_parser_source

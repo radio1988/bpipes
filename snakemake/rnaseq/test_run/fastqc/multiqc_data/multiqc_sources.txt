@@ -1,0 +1,6 @@
+Module	Section	Sample Name	Source
+FastQC	all_sections	S1.R1	/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/fastqc/details/S1.R1_fastqc.zip
+FastQC	all_sections	S1.R2	/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/fastqc/details/S1.R2_fastqc.zip
+FastQC	all_sections	S2	/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/fastqc/details/S2_fastqc.zip
+FastQC	all_sections	B	/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/fastqc/details/B_fastqc.zip
+FastQC	all_sections	S1	/home/rl44w/github/bpipes/snakemake/rnaseq/test_run/fastqc/details/S1_fastqc.zip

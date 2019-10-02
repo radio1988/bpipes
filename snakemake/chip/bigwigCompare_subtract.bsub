@@ -1,0 +1,37 @@
+#BSUB -J "bwComp[1-4]"  # n jobs in array, batch size
+#BSUB -R rusage[mem=1500]  # for each cpu
+#BSUB -n 6  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./substraction
+#BSUB -o ./substraction/bigwigCompare.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+##BSUB -N
+##BSUB -B
+
+i=$(($LSB_JOBINDEX- 1))
+
+# use raw bigwig dir as workdir
+
+FILE1=(
+'Epi_H3K27ac_ac_rep1.cpm.bw'
+'Mes_H3K27ac_ac_rep1.cpm.bw'
+'Epi_H3K27ac_me3_rep2.cpm.bw'
+'Mes_H3K27ac_me3_rep1.cpm.bw'
+)
+
+FILE2=(
+'Epi_MNase_rep1.cpm.bw'
+'Mes_MNase_rep1.cpm.bw'
+'Epi_H3K27ac_ac_rep1.cpm.bw'
+'Mes_H3K27ac_ac_rep1.cpm.bw'
+)
+
+
+f1=${FILE1[$i]}
+out=${f1/cpm.bw/sub.bw}
+out="substraction/$out"
+f2=${FILE2[$i]}
+
+echo bigwigCompare -b1 $f1 -b2 $f2 -o $out --scaleFactors 1:1 --operation subtract -v -p 6 --skipNonCoveredRegions 
+bigwigCompare -b1 $f1 -b2 $f2 -o $out --scaleFactors 1:1 --operation subtract -v -p 6 --skipNonCoveredRegions
