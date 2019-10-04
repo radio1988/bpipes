@@ -1,0 +1,33 @@
+#BSUB -J "bowtie2SE[1-4]"  # n jobs in array, batch size
+#BSUB -R rusage[mem=800]  # for each cpu
+#BSUB -n 12  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/bowtie2.SE.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+module load bowtie2/2.3.4.3
+
+
+i=$(($LSB_JOBINDEX- 1))
+GENOME=../../TEdata/dm6_transposon
+
+
+names=(DelMut.SE PointMut.SE FRT19A.CTRL.SE W1118.CTRL.SE)
+NAME=${names[$i]}
+R1=../../trimmed_fastq/$NAME.R1.fastq.gz
+
+echo "command:
+bowtie2 -p 10 -D 20 -R 3 -N 1 -L 20 -i S,1,0.50 --local \
+-k 1 --seed 1 \
+-x $GENOME -U $R1 | samtools view -b -F 4 | samtools sort -@ 4 -m 1G - -o $NAME.run2.bam
+samtools index $NAME.run2.bam
+"
+
+# very sensitive, -N 1, --local
+# -k 1 fixed seed
+
+bowtie2 -p 10 -D 20 -R 3 -N 1 -L 20 -i S,1,0.50 --local \
+-k 1 --seed 1 \
+-x $GENOME -U $R1 | samtools view -b -F 4 | samtools sort -@ 4 -m 1G - -o $NAME.run2.bam
+samtools index $NAME.run2.bam

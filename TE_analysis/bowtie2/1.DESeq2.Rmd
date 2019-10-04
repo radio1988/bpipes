@@ -1,0 +1,617 @@
+---
+title: "DEseq2"
+author: "RuiLi"
+date: "08/05/2019"
+output:
+  html_document:
+    toc: yes
+    code_folding: hide
+    toc_float: yes
+---
+
+# Communication
+- For Niraj TE
+- Mut vs WT
+- Batch: SE and PE
+- Combine Regular Genes Expression (RNAseq data) with TE expression (better normalized expression)
+
+# Notes:
+
+
+# Code LOG:
+- included annotation
+- included merging
+- used TPM normalization
+- save seperate results into excel rather than csv to prevent gene name bug in excel
+- print cut-offs
+- export results in original order, not ordered by LFC nor FDR (more robust)
+- export significant results, too (FDR and |LFC|, not including edges)
+- better VolcanoPlot by setting Max Y to 50 (>50 set to 50)
+- better html output, skip nb, use html
+- both OneBigModel and SeperatedModels
+- fixed row.names (gencode id) bug
+- output both FPKM and TPM, 06/28/2019
+- both shrinked LFC and raw LFC in same output Excel, and both plots
+- add lib-size
+- Pvalue -> FDR in Volcano-plot, ylim 0,50, xlim fixing, smaller dots
+- **optional function to aggregate multi-loci genes (e.g. his1, his2a, his2b, his3, his4)**
+- Use gray scale for MA/Volcano-plots
+- Output COUNT.xlsx
+- volcano plot: up/down count
+- length in TPM and DEseq2 outputs after aggregating histone genes
+- Reverse SampleNAme:RPKM
+- hist log(count+1)
+- added optinal density scatterplot between length and |LFC|
+- fixed sig.xlsx index bug
+
+
+```{r setup, include=FALSE}
+library(DESeq2)
+library(ggplot2)
+library(viridis)
+library(MASS)
+library("scater")
+library(WriteXLS)
+require(plyr)
+library(gdata)
+library(dplyr)
+
+
+thresh_p <- 0.05
+thresh_LFC <- 1
+
+get_density <- function(x, y, ...) {
+  dens <- MASS::kde2d(x, y, ...)
+  ix <- findInterval(x, dens$x)
+  iy <- findInterval(y, dens$y)
+  ii <- cbind(ix, iy)
+  return(dens$z[ii])
+}
+
+volcanoplot <- function (res, 
+                         lfcthresh=2, sigthresh=thresh_p, 
+                         name='name', 
+                         legendpos="topright", labelsig=FALSE, textcx=1, ...) {
+    res_ <- res
+    res_$padj[res_$padj < 1e-50 & !is.na(res_$padj)] <- 1e-50 # y-axis top value 50
+    # res_$log2FoldChange[res_$log2FoldChange > 10] <- 10
+    # res_$log2FoldChange[res_$log2FoldChange < -10] <- -10
+    
+    
+    
+    pos <- subset(res_, padj<sigthresh & log2FoldChange>lfcthresh)
+    neg <- subset(res_, padj<sigthresh & log2FoldChange< -lfcthresh)
+    pos.n <- dim(pos)[1]
+    neg.n <- dim(neg)[1]
+    
+    main=paste("Volcano Plot", 
+               name, 
+               paste("Up:", pos.n, ", Down:", neg.n, sep = ""),
+               sep='\n')
+    # all
+    with(res_, plot(log2FoldChange, -log10(padj), pch=20, main=main, col="grey80",cex=.5,
+                    ylim=c(0,50), ...))
+    # small P
+    with(subset(res_, padj<sigthresh ), 
+         points(log2FoldChange, -log10(padj), pch=20, col="grey40",cex=.5, ...))
+    # large FC
+    with(subset(res_, abs(log2FoldChange)>lfcthresh), 
+         points(log2FoldChange, -log10(padj), pch=20, col="grey60",cex=.5, ...))
+    with(subset(res_, padj<sigthresh & abs(log2FoldChange)>lfcthresh), 
+         points(log2FoldChange, -log10(padj), pch=20, col="black",cex=.5, ...))
+    if (labelsig) {
+        require(calibrate)
+        with(subset(res_, padj<sigthresh & abs(log2FoldChange)>lfcthresh), 
+             textxy(log2FoldChange, -log10(), labs=Gene, cex=textcx, ...))
+    }
+    legend(legendpos, xjust=1, yjust=0.5, 
+           legend=c("Negative", 
+                    paste("FDR<",sigthresh,sep=""), 
+                    paste("|LogFC|>",lfcthresh,sep=""), 
+                    "Both"), pch=20,
+           col=c("grey80", "grey40","grey60","black"))
+}
+
+
+maplot <- function (res, thresh=thresh_p, labelsig=FALSE, textcx=1, ...) {
+    with(res, 
+         plot(baseMean, log2FoldChange, col="grey80", pch=20, cex=.5, log="x", ...))
+    with(subset(res, padj<thresh_p), 
+         points(baseMean, log2FoldChange, col="grey40", pch=20, cex=.5))
+    if (labelsig) {
+        require(calibrate)
+        with(subset(res, padj<thresh_p), 
+             textxy(baseMean, log2FoldChange, labs=Gene, cex=textcx, col=2))
+    }
+}
+
+
+process_deseq_res <- function(res="lfcshrink.res", res2="results.res", name='name', anno='anno.df', norm_exp="tpm.df"){
+    ## Summary
+    print(name)
+    print("\n>>> Summary using FDR cut-off only (LFC not used)")
+    summary(res, alpha=thresh_p)
+    
+    print("\n>>> Summary using both FDR and LFC_shrinked cut-off")
+    sig_idx <- res$padj<thresh_p & abs(res$log2FoldChange) > thresh_LFC
+    sig_idx[is.na(sig_idx)] <- FALSE
+    res_sig <- res[sig_idx,]
+    print(table(sig_idx))
+    
+    up_idx <- res$padj<thresh_p & res$log2FoldChange > thresh_LFC
+    up_idx[is.na(up_idx)] <- FALSE
+    res_sig <- res[up_idx,]
+    print(table(up_idx))
+    
+    down_idx <- res$padj<thresh_p & res$log2FoldChange < -thresh_LFC
+    down_idx[is.na(down_idx)] <- FALSE
+    res_sig <- res[down_idx,]
+    print(table(down_idx))
+    
+    hist(res$pvalue, breaks=50, col="grey", 
+         main = paste('Histogram of p-values (un-adjusted)', name, sep = "\n"), 
+         xlab = 'pvalues', ylab = 'Frequency')
+    
+    hist(res$padj, breaks=50, col="grey", 
+         main = paste('Histogram of Q-values (adjusted)', name, sep = "\n"), 
+         xlab = 'padj', ylab = 'Frequency')
+    
+    maplot(res, main=paste("MAplot", paste(name, "LFC_shrinked"), sep="\n"))
+    maplot(res2, main=paste("MAplot", paste(name, "LFC_raw"), sep="\n"))
+    
+    volcanoplot(res,lfcthresh=thresh_LFC, sigthresh=thresh_p, 
+                textcx=.8,  name= paste(name, "LFC_shrinked"))
+    volcanoplot(res2, lfcthresh=thresh_LFC, sigthresh=thresh_p, 
+                textcx=.8,name= paste(name, "LFC_raw"))
+    
+    res.df <- as.data.frame(res)
+    names(res.df)[2] <- "log2FoldChange_shrinked"
+    names(res.df)[3] <- "lfcSE_shrinked"
+
+    res2.df <- as.data.frame(res2)
+    names(res2.df)[2] <- "log2FoldChange_raw"
+    names(res2.df)[3] <- "lfcSE_raw"
+    res2.df <- res2.df[, c(2,3)]
+
+    resdata <- merge(res.df, res2.df, by=0, sort=F, all.x=T)
+    resdata <- merge(anno, resdata, by.x=1, by.y=1, sort=F, all.y=T)
+    resdata <- merge(resdata, norm_exp, by.x=1, by.y=0, all.x=T, sort=F)
+    head(resdata)
+    sig_idx <- resdata$padj<thresh_p & abs(resdata$log2FoldChange_shrinked) > thresh_LFC # important to put this line right before output sig.xlsx
+    sig_idx[is.na(sig_idx)] <- FALSE
+    resdata.sig <- resdata[sig_idx,]
+    head(resdata.sig)
+    
+
+    ## Write results
+    write.csv(resdata, row.names = FALSE,
+              file=paste(name, 'deseq2.csv', sep = '.'))  # for later analysis
+    WriteXLS(x = resdata,
+             ExcelFileName = paste(name, 'deseq2.xlsx', sep = '.'),
+             row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+    
+    WriteXLS(x = resdata.sig,
+             ExcelFileName = paste(name, 'deseq2.sig.FDR', thresh_p,
+                                   'LFC', thresh_LFC, 'xlsx', sep = '.'),
+             row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+
+# 
+#     # Corrlelation of Length and LFC for Niraj
+#     resdata.sig.cor <- cor.test(resdata.sig$Length, 
+#                            abs(resdata.sig$log2FoldChange_shrinked), 
+#                            method = "spearman")
+#     title <- paste("Spearman Cor:", format(resdata.sig.cor$estimate, digits=2, nsmall=2),
+#                    "p-value:", format(resdata.sig.cor$p.value, digits=3, nsmall=3),
+#                    sep = " ")
+#     
+#     resdata.sig$density <- get_density(resdata.sig$Length, resdata.sig$log2FoldChange_shrinked, n = 100)
+#     ggplot(resdata.sig) + 
+#         geom_point(aes(Length, abs(log2FoldChange_shrinked), color = density)) +
+#         scale_color_viridis() +
+#         ggtitle(paste(paste("Sig-DEG for", name), 
+#                       title, sep = "\n") )
+}
+```
+
+
+# Print Cut-offs
+```{r}
+paste("FDR cut-off:", thresh_p)
+paste("Log2FC cut-off:", thresh_LFC)
+```
+
+
+# Read Data
+```{r}
+df1 <- read.table('../featureCount/counts.gene_id.run1.pe.txt', 
+                 sep="\t", header=TRUE, 
+                 row.names = 1) # row.name in cts(matrix)
+colnames(df1)
+dim(df1)
+
+df2 <- read.table('../featureCount/counts.gene_id.run1.se.txt', 
+                 sep="\t", header=TRUE, 
+                 row.names = 1) # row.name in cts(matrix)
+colnames(df2)
+dim(df2)
+
+df <- merge(df1, df2, by=c(1,2,3,4,5))
+row.names(df) <- df$Chr
+head(df)
+
+colnames(df)
+dim(df)
+```
+
+## Clean Up Data
+```{r}
+# clean names
+colnames(df) <- gsub("\\.\\.\\.bam.run2_local.", "", colnames(df))
+colnames(df) <- gsub(".run2.bam", "", colnames(df))
+colnames(df) <- gsub("sorted_reads.", "", colnames(df))
+# colname_formatted <- c(
+#     "KO_D0_3", "WT_D0_3", "KO_D2_3", "WT_D2_3", "KO_D8_3", "WT_D8_3",
+#     "KO_D0_1", "KO_D0_2", "KO_D2_1", "KO_D2_2", "KO_D8_1", "KO_D8_2", 
+#     "WT_D0_1", "WT_D0_2", "WT_D2_1", "WT_D2_2", "WT_D8_1", "WT_D8_2")
+# paste(colnames(df), colname_formatted, sep = "->")
+# colnames(df) <- colname_formatted
+df<-df[,c( "Chr","Start","End","Strand","Length",
+           "W1118.CTRL.PE","W1118.CTRL.SE",
+          "FRT19A.CTRL.PE", "FRT19A.CTRL.SE",
+          "DelMut.PE", "DelMut.SE",
+          "PointMut.PE"   , "PointMut.SE" )]
+colnames(df)
+head(df)
+dim(df)
+```
+
+
+
+## Create cts
+```{r}
+cts <- df[, 6:ncol(df)]
+cts <- as.matrix(cts)
+colnames(cts)
+head(cts)
+paste("lib-size:")
+colSums(cts)
+```
+
+## Filter Based on Expression
+```{r}
+expression_filter <- rowSums(cts) >= 1  # default 10
+cts <- cts[expression_filter, ]
+df <- df[expression_filter, ]
+dim(cts)
+dim(df)
+```
+
+# Read Anno
+```{r}
+anno <- read.table(
+"../../TEdata/Drosophila_melanogaster.BDGP6.22.96.CombineWith.dm6.transposon.anno.txt.gz",
+    header=T)
+colnames(anno)
+#anno <- anno[, c("peak_id", "seqnames", "start", "end", "width",  "geneBiotype", "geneID", "geneName" )]
+dim(anno)
+head(anno)
+```
+
+<!-- ## Sum up Histone genes -->
+<!-- - goal: change cts, df, anno -->
+
+<!-- ### change cts and df -->
+<!-- ```{r} -->
+<!-- aggregate_multi_loci_genes <- function(cts, anno, pattern="^HIS1:", new_name="HIS1"){ -->
+<!--     # sumup length and counts in cts -->
+<!--     # return updated cts -->
+<!--     # update anno object sliently (forcely) -->
+<!--     cts_anno <- merge(anno, cts, by.x=1, by.y=0, all.y=T) -->
+<!--     idx_his <- grep(pattern, cts_anno$Name) -->
+<!--     print(cts_anno$Name[idx_his]) -->
+<!--     print(paste("Aggregated into", new_name)) -->
+<!--     his_row <- colSums(cts[idx_his, ]) -->
+<!--     cts <- rbind(cts[-idx_his,], his_row) -->
+<!--     row.names(cts)[dim(cts)[1]] <- new_name -->
+
+<!--     anno_row <- data.frame(Gene=new_name, Name=new_name, Type="aggregated_multi-loci_gene") -->
+<!--     if (!new_name %in% anno$Gene){ -->
+<!--         anno <<- rbind(anno, anno_row) # change gloabally -->
+<!--     } -->
+
+<!--     return(cts) -->
+<!-- } -->
+
+<!-- cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS1:", new_name = "HIS1") -->
+<!-- cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS2A:", new_name = "HIS2A") -->
+<!-- cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS2B:", new_name = "HIS2B") -->
+<!-- cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS3:", new_name = "HIS3") -->
+<!-- cts<-aggregate_multi_loci_genes(cts, anno, pattern = "^HIS4:", new_name = "HIS4") -->
+<!-- df <- data.frame(cts) -->
+<!-- cts <- cts[, 2:ncol(cts)] -->
+
+<!-- head(df) -->
+<!-- head(cts) -->
+<!-- ``` -->
+
+<!-- ### New anno after aggregation -->
+<!-- ```{r} -->
+<!-- new_anno <- merge(anno, df, by.x=1, by.y=0, all.y=T, all.x=F) -->
+<!-- anno <- new_anno[, 1:4] -->
+<!-- head(anno) -->
+<!-- tail(anno) -->
+
+<!-- ``` -->
+
+# COUNT.TE output
+```{r}
+count <- data.frame(cts)
+colnames(count) <- paste(colnames(count),"COUNT", sep = ":")
+count_out <- merge(anno, count, by.x=1, by.y=0, all.y=T, sort=F)
+head(count_out)
+WriteXLS(x = count_out, 
+         ExcelFileName = 'COUNT.TE.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+# Merge with RNAseq results
+```{r}
+df3_rnaseq <- readxl::read_xlsx('../../../RNAseq_201906/post_snakemake/Mac200/liberal/COUNT.xlsx', na="-") # row.name in cts(matrix)
+colnames(df3_rnaseq) <- gsub(":COUNT", "", colnames(df3_rnaseq))
+df3_rnaseq <- df3_rnaseq[, c("Gene","Name","Type","Length", 
+                             "W1118.CTRL.PE", "W1118.CTRL.SE",
+                             "FRT19A.CTRL.PE", "FRT19A.CTRL.SE",
+                             "DelMut.PE", "DelMut.SE",
+                             "PointMut.PE","PointMut.SE")]
+colnames(df3_rnaseq)
+anno_his <- subset(df3_rnaseq, Type == 'aggregated_multi-loci_gene', select=c(1,2,3,4))
+
+
+df_TE <- readxl::read_xlsx('COUNT.TE.xlsx', na="-") # row.name in cts(matrix)
+colnames(df_TE) <- gsub(":COUNT", "", colnames(df_TE))
+colnames(df_TE)
+
+colnames(df3_rnaseq) == colnames(df_TE)
+
+df <- rbind(df_TE, df3_rnaseq)
+head(df)
+tail(df)
+```
+
+
+
+## get cts again
+```{r}
+cts <- df[, 5:ncol(df)]
+cts <- as.matrix(cts)
+row.names(cts) <- df$Gene
+colnames(cts)
+head(cts)
+paste("lib-size:")
+colSums(cts)
+```
+
+
+# COUNT output
+```{r}
+count <- data.frame(cts)
+colnames(count) <- paste(colnames(count),"COUNT", sep = ":")
+count_out <- merge(anno, count, by.x=1, by.y=0, all.y=T, sort=F)
+head(count_out)
+WriteXLS(x = count_out, 
+         ExcelFileName = 'COUNT.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+# TPM calculation
+```{r}
+tpm <- calculateTPM(cts, df$Length)
+tpm <- data.frame(tpm)
+colnames(tpm) <- paste(colnames(tpm),"TPM",  sep = ":")
+tpm_out <- merge(anno, tpm, by.x=1, by.y=0, all.y=T, sort=F)
+head(tpm_out)
+tail(tpm_out)
+WriteXLS(x = tpm_out, 
+         ExcelFileName = 'TPM.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+# FPKKM calculation
+```{r}
+fpkm <- calculateFPKM(cts, df$Length)
+fpkm <- data.frame(fpkm)
+colnames(fpkm) <- paste(colnames(fpkm), "FPKM", sep = ":")
+fpkm_out <- merge(anno, fpkm, by.x=1, by.y=0, all.y=T, sort=F)
+head(fpkm_out)
+tail(fpkm_out)
+WriteXLS(x = fpkm_out, 
+         ExcelFileName = 'FPKM.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+```
+
+# DESeq Experiment Design (One Big Model)
+- for QC and comparison with seperated model only
+```{r design}
+sample <- factor(rep(c("W1118", "FRT19A", "DelMut","PointMut"), each=2))
+sample
+
+batch <- factor(rep(c("PE", "SE"), 4))
+batch
+
+type <- factor(paste(sample, batch, sep = "_"))
+type
+
+#mouse <- factor(rep(c("Mouse1", "Mouse2", "Mouse3"), 6))
+coldata <- data.frame(row.names=colnames(cts), 
+                      sample
+                      , batch 
+                      , type
+                      )
+coldata
+```
+
+## Model fitting
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts, 
+                              colData = coldata, 
+                              design = ~  batch + sample
+                              )  # converted to alph-order
+# dds$type <- relevel(dds$type, 
+#                     ref = "DMSO_2D"
+#                     )
+# dds$mouse <- relevel(dds$mouse, 
+#                      ref = "Mouse1"
+#                      )
+
+dds
+dds <-DESeq(dds)
+resultsNames(dds)
+saveRDS(dds, file = 'dds.oneBigModel.rds')
+```
+
+# QC Plots
+
+## Data transformation
+```{r}
+vsd <- vst(dds, blind=FALSE)
+
+#rld <- rlog(dds, blind=FALSE)
+counts <- counts(dds, normalized=0)
+logCounts <- log10(counts +1 )
+
+normed <- counts(dds, normalized=1)
+logNormed <- log10(normed+1)
+```
+
+## Histogram of Log10(Counts)
+```{r}
+hist(logCounts, main='log10(count+1)')
+```
+
+## Dispersion plot
+```{r}
+plotDispEsts(dds, main="Dispersion plot")
+```
+
+
+
+## PCA plots
+```{r}
+pcaData <- plotPCA(vsd, intgroup=c("sample", "batch"), returnData=TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+
+ggplot(pcaData, aes(PC1, PC2, color=batch, shape=sample)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
+```
+
+
+### With label
+```{r}
+library(ggplot2)
+library(ggrepel)
+
+pcaplot <- ggplot(pcaData, aes(PC1, PC2, color=batch, shape=sample)) +
+    geom_point(size=3) +
+    #geom_text(aes(label=type),hjust=1, vjust=0) +
+    xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+    ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+    coord_fixed() +
+    coord_fixed(ratio = percentVar[1]/percentVar[2]/2, 
+                xlim = NULL, ylim = NULL, expand = T,
+                clip = "off")
+
+### geom_label_repel
+pcaplot + 
+  geom_label_repel(aes(label = type),
+                  box.padding   = 0.35, 
+                  point.padding = 0.5,
+                  segment.color = 'grey50') +
+  theme_classic()
+```
+
+
+
+## Sample Heatmap
+```{r}
+library("RColorBrewer")
+library('pheatmap')
+library("PoiClaClu")
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+poisd <- PoissonDistance(t(counts(dds)))
+samplePoisDistMatrix <- as.matrix( poisd$dd ) 
+rownames(samplePoisDistMatrix) <- paste( coldata$type, sep="-" ) 
+colnames(samplePoisDistMatrix) <- NULL 
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(samplePoisDistMatrix,
+         clustering_distance_rows=poisd$dd,
+         clustering_distance_cols=poisd$dd,
+         col=colors, 
+         clustering_method='complete'
+        )
+
+```
+
+# Results from different contrasts
+
+## One Big Model (DelMut_vs_FRT19A)
+```{r}
+#resultsNames(dds)
+name <- "DelMut_vs_FRT19A"
+contrast <- c('sample', 'DelMut', 'FRT19A')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+## One Big Model (PointMut_vs_FRT19A)
+```{r}
+#resultsNames(dds)
+name <- "PointMut_vs_FRT19A"
+contrast <- c('sample', 'PointMut', 'FRT19A')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+## One Big Model (DelMut_vs_W1118)
+```{r}
+#resultsNames(dds)
+name <- "DelMut_vs_W1118"
+contrast <- c('sample', 'DelMut', 'W1118')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+## One Big Model (PointMut_vs_W1118)
+```{r}
+#resultsNames(dds)
+name <- "PointMut_vs_W1118"
+contrast <- c('sample', 'PointMut', 'W1118')
+res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
+res2 <- results(dds, contrast = contrast)
+process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
+```
+
+
+
+<!-- ## Seperated Model (DM-G_vs_DM4) less DEG, discarded -->
+<!-- ```{r} -->
+<!-- #resultsNames(dds) -->
+<!-- #idx <- grep('D7', coldata$type) -->
+<!-- idx <- c(1, 2, 3,  7, 8, 9) -->
+<!-- head(cts[, idx]) -->
+<!-- coldata[idx,] -->
+<!-- dds <- DESeqDataSetFromMatrix(countData = cts[, idx],  -->
+<!--                               colData = coldata[idx,],  -->
+<!--                               design =  ~ type)  # converted to alph-order -->
+<!-- dds -->
+<!-- dds <-DESeq(dds) -->
+<!-- dds -->
+<!-- resultsNames(dds) -->
+
+<!-- name <- "DM-G_vs_DM4" -->
+<!-- contrast <- c('type', 'DM_G', 'DM4') -->
+<!-- res <- lfcShrink(dds, contrast = contrast, type = 'ashr') -->
+<!-- res2 <- results(dds, contrast = contrast) -->
+<!-- process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm) -->
+<!-- ``` -->
