@@ -1,0 +1,43 @@
+#BSUB -J "gsea"  # n jobs in array, batch size
+#BSUB -R rusage[mem=16000]  # for each cpu, 16 GB for each GSEA
+#BSUB -n 3  # n cpu, also n of pointers
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -o gsea_cli.%J.%I.log
+#BSUB -W 72:00
+#BSUB -q long
+#BSUB -N
+#BSUB -B
+i=$(($LSB_JOBINDEX- 1))
+
+module purge
+module load  openjdk/11+28  # java 11
+
+# gloabal parameters
+path=/project/umw_mccb/Rui/tools/GSEA_4.0.1
+nplots=1000  # 1000
+nperm=1000  # 1000
+
+# modify
+rnk_file=K2N_vs_AT.rnk
+
+# Specific
+db=$path/database/c2.all.v7.0.symbols.gmt.pointer
+label=K2N_vs_AT.c2
+
+$path/gsea-cli.sh GSEAPreranked \
+-gmx $db -rnk $rnk_file -rpt_label $label \
+-norm meandiv -nperm $nperm  -scoring_scheme classic \
+-create_svgs false -make_sets true  -rnd_seed timestamp -set_max 500 -set_min 15 -zip_report false \
+-plot_top_x $nplots -out ./output &
+
+# Specific
+db=$path/database/all.pointer
+label=K2N_vs_AT.all_h_c1_to_c7
+
+$path/gsea-cli.sh GSEAPreranked \
+-gmx $db -rnk $rnk_file -rpt_label $label \
+-norm meandiv -nperm $nperm  -scoring_scheme classic \
+-create_svgs false -make_sets true  -rnd_seed timestamp -set_max 500 -set_min 15 -zip_report false \
+-plot_top_x $nplots -out ./output &
+
+wait
