@@ -1,11 +1,11 @@
 ---
 title: "cBioportal Boxplot: GE ~ Clinical TCGA"
+author: "RuiLi"
+date: "09/2019"
 output:
   html_document:
-    toc: yes
-  html_notebook:
     code_folding: hide
-    toc: yes
+    toc: yes  # table of content
     toc_float: yes
 ---
 
