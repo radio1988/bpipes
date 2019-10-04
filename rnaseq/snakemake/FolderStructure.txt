@@ -1,0 +1,9 @@
+- postsnakemake:
+	- DESeq2: Differential Expression results
+	- Heatmap: Heatmap visualization of DEG (Differentially Expressed Genes)
+	- GSEA: GSEA results
+- snakemake: 
+	- fastqc: FastQC report for raw read files
+	- bam_qc: information on mapping rate and other alignment quality control. 'samstat' is most helpful
+	- bigWig: read coverage tracks to help visualize read coverage for individual genes. Can be viewed by IGV (https://software.broadinstitute.org/software/igv/) or UCSC genome browser
+	- config.yaml: can find information about genome, annotation here
