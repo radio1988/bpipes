@@ -7,7 +7,7 @@ GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
 GTF: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
 
 
-BIN_SIZE: 500 # For plotFingerprint, multiBamSummary 
+BIN_SIZE: 500 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
 MQ_MIN: 0 # multiBamSummary, plotFingerprint
 
 # Filters for bamCoverage, plotFingerprint, multiBamSummary
