@@ -1,6 +1,0 @@
-TypeError in line 19 of /home/rl44w/github/bpipes/snakemake/rnaseq/test_pe_se/Snakefile:
-unhashable type: 'slice'
-  File "/home/rl44w/github/bpipes/snakemake/rnaseq/test_pe_se/Snakefile", line 19, in <module>
-  File "/home/rl44w/.local/lib/python3.5/site-packages/pandas/core/frame.py", line 2688, in __getitem__
-  File "/home/rl44w/.local/lib/python3.5/site-packages/pandas/core/frame.py", line 2695, in _getitem_column
-  File "/home/rl44w/.local/lib/python3.5/site-packages/pandas/core/generic.py", line 2487, in _get_item_cache

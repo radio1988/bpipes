@@ -1,6 +1,0 @@
-Sample	per_base_sequence_quality	per_base_n_content	sequence_length_distribution	avg_sequence_length	%GC	overrepresented_sequences	per_base_sequence_content	Encoding	Filename	kmer_content	per_sequence_quality_scores	Total Sequences	Sequence length	per_sequence_gc_content	sequence_duplication_levels	per_tile_sequence_quality	File type	total_deduplicated_percentage	basic_statistics	adapter_content	Sequences flagged as poor quality
-B	pass	pass	pass	50.0	50.0	pass	fail	Sanger / Illumina 1.9	B.fastq.gz	fail	pass	14694061.0	50.0	pass	fail	pass	Conventional base calls	43.101914561728314	pass	pass	0.0
-S1	pass	pass	pass	100.0	49.0	pass	fail	Sanger / Illumina 1.9	S1.fastq.gz	warn	pass	10000.0	100.0	warn	pass	pass	Conventional base calls	97.74000000000001	pass	pass	0.0
-S1.R1	pass	pass	pass	100.0	49.0	pass	fail	Sanger / Illumina 1.9	S1.R1.fastq.gz	warn	pass	10000.0	100.0	warn	pass	pass	Conventional base calls	97.74000000000001	pass	pass	0.0
-S1.R2	pass	pass	pass	100.0	48.0	pass	fail	Sanger / Illumina 1.9	S1.R2.fastq.gz	warn	pass	10000.0	100.0	pass	pass	pass	Conventional base calls	98.1	pass	pass	0.0
-S2	pass	pass	pass	100.0	48.0	pass	fail	Sanger / Illumina 1.9	S2.fastq.gz	warn	pass	10000.0	100.0	pass	pass	pass	Conventional base calls	98.1	pass	pass	0.0

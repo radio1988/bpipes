@@ -3,10 +3,10 @@
 - [x] feed wildcards (sample/strand) by rule all, input; and config, using expand, but not expand in rule feature_count, output
 - [x] log
 - [] auto R1/R2
+- [] auto strand 0,1,2 selection
 - [x] LSF smart
 - [x] params
 - [x] bamCoverage
 - [] FPKM/TPM
 - [] Robust LSF MEM request for STAR: incase not enough CPU were given, 36GB RAM not reached as a result
-
 - []MODE: strict and liberal that works for featureCount
