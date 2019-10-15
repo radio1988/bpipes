@@ -1,0 +1,27 @@
+#BSUB -J "mkfq"  # n jobs in array, batch size
+#BSUB -R rusage[mem=4000]  # for each cpu
+#BSUB -n 16  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/mkfastq.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+#BSUB -N
+##BSUB -B
+i=$(($LSB_JOBINDEX- 1))
+
+module load cellranger/3.1.0 bcl2fastq2/2.20.0
+
+cellranger mkfastq --id fastq \
+--run Xing_Single_Cell \
+--csv sample.csv \
+--localcores=16 \
+--localmem=63
+
+# samples.csv
+# Lane,Sample,Index
+# 2,Control,SI-GA-A1
+# 2,B1347,SI-GA-A2
+# 2,WP13,SI-GA-A3
+# 2,WP17,SI-GA-A4
+# Lane: * all; 2 lane2; careful
