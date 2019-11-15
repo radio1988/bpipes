@@ -1,7 +1,7 @@
 ---
 title: "DEseq2"
 author: "RuiLi"
-date: "08/05/2019"
+date: "11/15/2019"
 output:
   html_document:
     toc: yes
@@ -10,8 +10,7 @@ output:
 ---
 
 # Communication
-- For Mingggang
-- Drug vs CT
+
 
 # Notes:
 
@@ -113,7 +112,7 @@ volcanoplot <- function(res, anno,
                     cutoffLineWidth = 0.8,
                     transcriptPointSize = 1.0,
                     transcriptLabSize = 2.0,
-                    DrawConnectors = F,
+                    # DrawConnectors = F,
                     colAlpha = 0.5,
                     legend=c("Negative",
                              paste("FDR<",sigthresh,sep=""),
@@ -183,9 +182,9 @@ process_deseq_res <- function(res="lfcshrink.res", res2="results.res", name='nam
     maplot(res, main=paste("MAplot", paste(name, "LFC_shrinked"), sep="\n"))
     maplot(res2, main=paste("MAplot", paste(name, "LFC_raw"), sep="\n"))
     
-    volcanoplot(res,lfcthresh=thresh_LFC, sigthresh=thresh_p, 
+    volcanoplot(res, anno, lfcthresh=thresh_LFC, sigthresh=thresh_p, 
                 textcx=.8,  name= paste(name, "LFC_shrinked"))
-    volcanoplot(res2, lfcthresh=thresh_LFC, sigthresh=thresh_p, 
+    volcanoplot(res2, anno, lfcthresh=thresh_LFC, sigthresh=thresh_p, 
                 textcx=.8,name= paste(name, "LFC_raw"))
     
     res.df <- as.data.frame(res)
@@ -252,7 +251,7 @@ paste("Log2FC cut-off:", thresh_LFC)
 
 # Read Data
 ```{r}
-df <- read.table('../../snakemake/feature_count/counts.gene_id.s0.strict.txt', 
+df <- read.table('../../../IVF/feature_count/counts.gene_id.s0.strict.txt', 
                  sep="\t", header=TRUE, 
                  row.names = 1) # row.name in cts(matrix)
 colnames(df)
@@ -298,7 +297,7 @@ dim(df)
 # Read Anno
 ```{r}
 anno <- read.table(
-"~/github/bpipes/rnaseq/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz",
+"~/github/bpipes/rnaseq/annotations/gencode.mm10.vM21/gencode.vM21.annotation.txt.gz",
     header=T)
 colnames(anno)
 #anno <- anno[, c("peak_id", "seqnames", "start", "end", "width",  "geneBiotype", "geneID", "geneName" )]
@@ -389,8 +388,10 @@ WriteXLS(x = fpkm_out,
 # DESeq Experiment Design (One Big Model)
 - for QC and comparison with seperated model only
 ```{r design}
-sample <- factor(rep(c("DMSO", "Fasudil", "KD025"), each=2))
+sample <- factor(rep(c("esiGFP", "Nr2f2"), each=8))
 sample
+
+name <- factor(colnames(cts))
 # 
 # batch <- factor(rep(c("1", "2"), 3))
 # batch
@@ -399,7 +400,8 @@ sample
 # type
 #mouse <- factor(rep(c("Mouse1", "Mouse2", "Mouse3"), 6))
 coldata <- data.frame(row.names=colnames(cts), 
-                      sample
+                      sample, 
+                      name
                       #, batch 
                       #, type
                       )
@@ -441,7 +443,7 @@ logNormed <- log10(normed+1)
 
 ## Histogram of Log10(Counts)
 ```{r}
-hist(logCounts, main='log10(count+1)')
+hist(logCounts, main='log10(count+1)', 100)
 ```
 
 ## Dispersion plot
@@ -473,15 +475,11 @@ pcaplot <- ggplot(pcaData, aes(PC1, PC2, color=sample, shape=sample)) +
     geom_point(size=3) +
     #geom_text(aes(label=type),hjust=1, vjust=0) +
     xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-    ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-    coord_fixed() +
-    coord_fixed(ratio = percentVar[1]/percentVar[2]/4, 
-                xlim = NULL, ylim = NULL, expand = T,
-                clip = "off")
+    ylab(paste0("PC2: ",percentVar[2],"% variance"))
 
 ### geom_label_repel
 pcaplot + 
-  geom_label_repel(aes(label = sample),
+  geom_label_repel(aes(label = name),
                   box.padding   = 0.35, 
                   point.padding = 0.5,
                   segment.color = 'grey50') +
@@ -498,7 +496,7 @@ library("PoiClaClu")
 colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
 poisd <- PoissonDistance(t(counts(dds)))
 samplePoisDistMatrix <- as.matrix( poisd$dd ) 
-rownames(samplePoisDistMatrix) <- paste( coldata$sample, sep="-" ) 
+rownames(samplePoisDistMatrix) <- paste( coldata$name, sep="-" ) 
 colnames(samplePoisDistMatrix) <- NULL 
 colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
 pheatmap(samplePoisDistMatrix,
@@ -512,21 +510,11 @@ pheatmap(samplePoisDistMatrix,
 
 # Results from different contrasts
 
-## One Big Model (Fasudil_vs_DMSO)
+## One Big Model: Nr2f2_vs_esiGFP
 ```{r}
 #resultsNames(dds)
-name <- "Fasudil_vs_DMSO"
-contrast <- c('sample', 'Fasudil', 'DMSO')
-res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
-res2 <- results(dds, contrast = contrast)
-process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
-```
-
-## One Big Model (KD025_vs_DMSO)
-```{r}
-#resultsNames(dds)
-name <- "KD025_vs_DMSO"
-contrast <- c('sample', 'KD025', 'DMSO')
+name <- "Nr2f2_vs_esiGFP"
+contrast <- c('sample', 'Nr2f2', 'esiGFP')
 res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
 res2 <- results(dds, contrast = contrast)
 process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
