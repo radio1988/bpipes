@@ -559,5 +559,5 @@ mkdir -p forMachine
 mv *deseq2.csv forMachine
 
 mkdir -p rnk
-mv *rnk rnk
+mv *.rnk rnk
 ```
