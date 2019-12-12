@@ -1,7 +1,7 @@
 ---
 title: "DEseq2"
 author: "RuiLi"
-date: "11/15/2019"
+date: "12/13/2019"
 output:
   html_document:
     toc: yes
@@ -42,6 +42,8 @@ output:
 - fixed sig.xlsx index bug
 - Enhanced VolcanoPlot
 - Move csv to subfolder 'forMachine'
+- fixed Volcano-plot color
+- output rnk file for GSEA
 
 
 ```{r setup, include=FALSE}
@@ -204,8 +206,17 @@ process_deseq_res <- function(res="lfcshrink.res", res2="results.res", name='nam
     sig_idx[is.na(sig_idx)] <- FALSE
     resdata.sig <- resdata[sig_idx,]
     head(resdata.sig)
-    
 
+        
+    # For GSEA
+    rnk <- subset(resdata, select = c("Name","log2FoldChange_shrinked"))
+    colnames(rnk) <- c("# Name","log2FoldChange_shrinked")
+    rnk <- rnk[order(rnk$log2FoldChange_shrinked), ]
+    #head(rnk)
+    write.table(rnk, 
+                paste(name, 'rnk', sep = '.'), 
+                row.names = F, quote = F, sep='\t')
+    
     ## Write results
     write.csv(resdata, row.names = FALSE,
               file=paste(name, 'deseq2.csv', sep = '.'))  # for later analysis
@@ -217,6 +228,7 @@ process_deseq_res <- function(res="lfcshrink.res", res2="results.res", name='nam
              ExcelFileName = paste(name, 'deseq2.sig.FDR', thresh_p,
                                    'LFC', thresh_LFC, 'xlsx', sep = '.'),
              row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+
 
     # # Corrlelation of Length and LFC for Niraj (only after write excel, alters resdata)
     # resdata.sig.cor <- cor.test(resdata.sig$Length, 
@@ -251,7 +263,7 @@ paste("Log2FC cut-off:", thresh_LFC)
 
 # Read Data
 ```{r}
-df <- read.table('../../../IVF/feature_count/counts.gene_id.s0.strict.txt', 
+df <- read.table('../../snakemake/feature_count/counts.gene_id.s0.strict.txt', 
                  sep="\t", header=TRUE, 
                  row.names = 1) # row.name in cts(matrix)
 colnames(df)
@@ -297,7 +309,7 @@ dim(df)
 # Read Anno
 ```{r}
 anno <- read.table(
-"~/github/bpipes/rnaseq/annotations/gencode.mm10.vM21/gencode.vM21.annotation.txt.gz",
+"~/github/bpipes/rnaseq/annotations/gencode.hu.v29/gencode.v29.primary_assembly.anno.txt.gz",
     header=T)
 colnames(anno)
 #anno <- anno[, c("peak_id", "seqnames", "start", "end", "width",  "geneBiotype", "geneID", "geneName" )]
@@ -388,7 +400,7 @@ WriteXLS(x = fpkm_out,
 # DESeq Experiment Design (One Big Model)
 - for QC and comparison with seperated model only
 ```{r design}
-sample <- factor(rep(c("esiGFP", "Nr2f2"), each=8))
+sample <- factor(rep(c("AT", "KIN"), each=2))
 sample
 
 name <- factor(colnames(cts))
@@ -510,11 +522,11 @@ pheatmap(samplePoisDistMatrix,
 
 # Results from different contrasts
 
-## One Big Model: Nr2f2_vs_esiGFP
+## One Big Model: KIN_vs_AT
 ```{r}
 #resultsNames(dds)
-name <- "Nr2f2_vs_esiGFP"
-contrast <- c('sample', 'Nr2f2', 'esiGFP')
+name <- "KIN_vs_AT"
+contrast <- c('sample', 'KIN', 'AT')
 res <- lfcShrink(dds, contrast = contrast, type = 'ashr')
 res2 <- results(dds, contrast = contrast)
 process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm)
@@ -545,4 +557,7 @@ process_deseq_res(res = res, res2=res2, name = name, anno = anno, norm_exp = tpm
 ```{bash}
 mkdir -p forMachine
 mv *deseq2.csv forMachine
+
+mkdir -p rnk
+mv *rnk rnk
 ```
