@@ -17,6 +17,7 @@ shell.prefix("""
             module load java/1.8.0_77
             module load star/2.5.3a
             samstat="singularity exec $HOME/singularity/hand_sandbox samstat" # alias in .bash_profile not working in snakemake
+            samtools="singularity exec ~/singularity/hand_sandbox/ samtools"
             """)
 
 # Requirements
