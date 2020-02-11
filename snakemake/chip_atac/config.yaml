@@ -17,6 +17,8 @@ SAMPLES:
 
 GENOME: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/mm10.ucsc.fa
 GTF: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM21.annotation.gtf
+GSIZE: "mm"  # MACS2 gsize param, hs, mm, ce, dm, 2.7e8
+SizeFile: "~/mccb/genome/Mus_musculus_UCSC_mm10/mm10.chrom.sizes.txt" # for bedGraphToBigWig
 
 
 BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
@@ -27,3 +29,4 @@ minFragmentLength: 50  # 100 for mono-nucleosome
 maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
 atac: TRUE  # TRUE: ATACseq, FALSE: ChIPseq
 chrM: chrM  # Name of mitochondria in genome.fa, have to be exact match
+

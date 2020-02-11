@@ -3,16 +3,20 @@ SAMPLES=config["SAMPLES"]
 GENOME=config["GENOME"]
 INDEX=GENOME+".sa"
 MQ_MIN=config["MQ_MIN"]
-BIN_SIZE=config['BIN_SIZE']
+BIN_SIZE=config["BIN_SIZE"]
+chrM=config["chrM"]
+GSIZE=config["GSIZE"]
+SizeFile=config["SizeFile"]
 
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
 shell.prefix("""
             #source /home/rl44w/.bash_profile
-            #echo '## snake.prefix'
+            #echo "## snake.prefix"
             HOME=/home/rl44w/
             samtools="singularity exec $HOME/singularity/hand_sandbox/ samtools"
             samstat="singularity exec $HOME/singularity/hand_sandbox samstat" # alias in .bash_profile not working in snakemake
+            bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox bedGraphToBigWig"
             """)
 
 # Requirements
@@ -27,7 +31,7 @@ rule all:
         # 2. feed {sample}
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         markDup=expand("markDup/{sample}.bam", sample=SAMPLES),
-        Genrich=expand("Genrich/{sample}.narrowPeak", sample=SAMPLES) if config["atac"] else "Workflow_DAG.all.svg",
+        Genrich=expand("Genrich/{sample}.bw", sample=SAMPLES) if config["atac"] else "Workflow_DAG.all.svg",
         MACS=expand("macs2/{sample}_peaks.narrowPeak", sample=SAMPLES),
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}, ensure aligment 
         bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
@@ -71,6 +75,35 @@ rule bwa_index:
         """
         bwa index -a bwtsw {input} &> {log}
         """
+
+# rule trimmomatic:
+#     input:
+#         r1="fastq/{sample}.R1.fastq.gz",
+#         r2="fastq/{sample}.R2.fastq.gz", 
+#     output:
+#         o1="fastq/{sample}.trim.R1.fastq.gz"
+#         o2="fastq/{sample}.trim.R2.fastq.gz"
+#         t1="fastq/trash/{sample}.trash.R1.fastq.gz"
+#         t2="fastq/trash/{sample}.trash.R2.fastq.gz"
+#     params:
+#         mem="8000"
+#     threads:
+#         2
+#     conda:
+#         "envs/trimmomatic.yaml"
+#     log:
+#         "log/trimmomatic/{sample}.trim.log"
+#     benchmark:
+#         "log/trimmomatic/{sample}.trim.benchmark.txt"
+#     shell:
+#         """
+#         trimmomatic PE -threads {threads} {input.r1} {input.r2} \
+#         {output.o1}  {output.t1} {output.o2}{output.t2} \
+#         ILLUMINACLIP:$adaptor:2:30:10 \
+#         LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 \
+#         TOPHRED33
+#         """
+
 
 
 rule bwa_map:
@@ -170,7 +203,6 @@ rule markDup:
         2
     params:
         mem="16000",  # Used Max of 24G before
-        chrM=config['chrM']
     run:
         print("Removing duplicates")
         shell("""
@@ -190,7 +222,7 @@ rule markDup:
         if config["atac"]:
             print("ATACseq mode")
             print("Remove chrM")
-            shell("$samtools view -h {output.temp} | perl -lane 'print unless ($F[2] eq {params.chrM} and $_ != /\@/)' | $samtools sort -@ 2 -m 4G -o {output.bam}")
+            shell("$samtools view -h {output.temp} | perl -lane 'print unless ($F[2] eq {chrM} and $_ != /\@/)' | $samtools sort -@ 2 -m 4G -o {output.bam}")
         else:
             print("ChIPSeq mode: No chrM filter")
             shell("mv {output.temp} {output.bam}")
@@ -217,20 +249,44 @@ rule Genrich:
     input:
         "markDupSortByName/{sample}.bam"
     output:
-        "Genrich/{sample}.narrowPeak"
+        peak="Genrich/{sample}.narrowPeak",
+        bedGraph="Genrich/{sample}.bedgraph_ish"
     threads:
         1
     params:
         mem="16000"  # not sure yet
+    log:
+        "log/Genrich/{sample}.log"
     run:
-        if config['atac']:
+        if config["atac"]:
             print("Genrich ATACseq mode")
             # todo: merge reps
-            shell("Genrich -t {input} -o {output} -j -e config[chrM] -m 20")
+            shell("Genrich -t {input} -o {output.peak} -k {output.bedGraph} -j -y -e {chrM} -m {MQ_MIN} -v &>{log}")
         else:
             # should not exist by setting in rule 'all'
             print("Genrich ChIP mode")
-            shell("Genrich -t {input} -o {output} -m 20")
+            shell("Genrich -t {input} -o {output.peak} -x -m {MQ_MIN} &> {log}")
+
+rule genrich_bdgToBigWig:
+    input:
+        "Genrich/{sample}.bedgraph_ish"
+    output:
+        "Genrich/{sample}.bw"
+    threads:
+        1
+    params:
+        mem="8000"
+    log:
+        "log/genrich_bdgToBigWig/{sample}.log"
+    benchmark:
+        "log/genrich_bdgToBigWig/{sample}.benchmark.txt"
+    shell:
+        """
+        tail -n +3 {input} | cut -f 1,2,3,6 | sort -k1,1 -k2,2n > Genrich/{wildcards.sample}.bdg
+        $bedGraphToBigWig Genrich/{wildcards.sample}.bdg {SizeFile} {output} && \
+        rm -f Genrich/{wildcards.sample}.bdg
+        """
+
 
 rule macs2:
     input:
@@ -241,11 +297,13 @@ rule macs2:
         1
     params:
         mem="12000"
+    log:
+        "log/macs/{sample}.log"
     shell:
-        '''
+        """
         source activate py27
-        macs2 callpeak -t {input} -q 0.05 --keep-dup all -n {wildcards.sample} --outdir macs2
-        '''
+        macs2 callpeak -t {input} -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all -n {wildcards.sample} --outdir macs2 -B 
+        """
 
 
 rule bamCoverage:
@@ -453,10 +511,10 @@ rule create_dag:
 
 rule reset:
     shell:
-        '''
+        """
         rm -rf fastqc bam_qc/ mapped_reads/ sorted_reads/ bigWig/ 
         rm -rf lsf.log *svg *html log nohup.out chip_qc/
         rm -rf genrich/ Genrich/ macs2/ 
         rm -rf markDupSortByName/ markDup/
         snakemake --unlock
-        '''
+        """
