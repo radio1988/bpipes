@@ -1,18 +1,29 @@
 # Analysis Params
 SAMPLES:
-    - A
-    - B
+    - liver.d0.a
+    - liver.d0.b
+    - liver.d11.5.a
+    - liver.d11.5.b
+    - liver.d12.5.a
+    - liver.d12.5.b
+    - liver.d13.5.a
+    - liver.d13.5.b
+    - liver.d14.5.a
+    - liver.d14.5.b
+    - liver.d15.5.a
+    - liver.d15.5.b
+    - liver.d16.5.a
+    - liver.d16.5.b
 
-GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
-GTF: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+GENOME: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/mm10.ucsc.fa
+GTF: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM21.annotation.gtf
 
 
-BIN_SIZE: 500 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
+BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
 MQ_MIN: 0 # multiBamSummary, plotFingerprint
 
 # Filters for bamCoverage, plotFingerprint, multiBamSummary
 minFragmentLength: 50  # 100 for mono-nucleosome
 maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
-
-
-
+atac: TRUE  # TRUE: ATACseq, FALSE: ChIPseq
+chrM: chrM  # Name of mitochondria in genome.fa, have to be exact match

@@ -8,11 +8,10 @@ BIN_SIZE=config['BIN_SIZE']
 # load modules (have to use """, to keep in one block)
 # - alias does not work, have to use $samstat
 shell.prefix("""
-            source /home/rl44w/.bash_profile
-            echo '## snake.prefix'
-            module load picard/2.17.8
-            module load fastqc/0.11.5
-            PICARD=/share/pkg/picard/2.17.8/picard.jar
+            #source /home/rl44w/.bash_profile
+            #echo '## snake.prefix'
+            HOME=/home/rl44w/
+            samtools="singularity exec $HOME/singularity/hand_sandbox/ samtools"
             samstat="singularity exec $HOME/singularity/hand_sandbox samstat" # alias in .bash_profile not working in snakemake
             """)
 
@@ -27,13 +26,16 @@ rule all:
         # 1. everything listed here will be produced by the pipeline
         # 2. feed {sample}
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
+        markDup=expand("markDup/{sample}.bam", sample=SAMPLES),
+        Genrich=expand("Genrich/{sample}.narrowPeak", sample=SAMPLES) if config["atac"] else "Workflow_DAG.all.svg",
+        MACS=expand("macs2/{sample}_peaks.narrowPeak", sample=SAMPLES),
         bam_qc=expand("bam_qc/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}, ensure aligment 
-        insert_size=expand("bam_qc/{sample}.insert_size.pdf", sample=SAMPLES),
         bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
+        bamPEFragmentSize="chip_qc/fragment_size.pdf",
+        insert_size=expand("bam_qc/{sample}.insert_size.pdf", sample=SAMPLES),
         plotFingerprint="chip_qc/fingerprint.pdf",
         plotCorrelation="chip_qc/multiBamSummary.heatmap.pdf",
         plotPCA="chip_qc/multiBamSummary.pca.pdf",
-        bamPEFragmentSize="chip_qc/fragment_size.pdf",
         dag="Workflow_DAG.all.svg", # create DAG
 
 
@@ -52,6 +54,7 @@ rule fastqc:
         # {input/output} don't have to be in command
         # have to load module in one block
         """
+        module load fastqc/0.11.5
         mkdir -p fastqc
         mkdir -p fastqc/details
         fastqc -t {threads} fastq/*q.gz -o fastqc/details &> {log}
@@ -80,15 +83,19 @@ rule bwa_map:
         temp("mapped_reads/{sample}.bam")
     params:
         mem="1500"  # todo auto adjust based on {threads}, for human need 18G+ 
+    conda:
+        "envs/samtools.yaml"
     threads:
         16
     log:
         "log/bwa_map/{sample}.bwa.log"
+    benchmark:
+        "log/bwa_map/{sample}.bwa.benchmark.txt"
     shell:
         """
         bwa mem -t {threads} {GENOME} \
         {input.r1} {input.r2} \
-        | samtools view -Sb -1 -@ 2 - -o {output} &> {log}
+        2> {log}| samtools view -Sb -1 -@ 2 - -o {output} &>> {log}
         """
 
 
@@ -100,22 +107,32 @@ rule samtools_sort_index:
         "sorted_reads/{sample}.bam"
     params:
         mem="1200"
+    conda:
+        "envs/samtools.yaml"
     threads:
         4
     log:
         "log/samtools_sort/{sample}.sort.log"
-    run:
-        shell("samtools sort -@ {threads} -m 1G {input} -o {output} &> {log}")
-        shell("samtools index {output} &> {log}")
+    shell:
+        """
+        samtools --version &> {log}
+        samtools sort -@ {threads} -m 1G {input} -o {output} &>> {log}
+        samtools index {output} &>> {log}
+        """
 
 
 rule bam_qc:
     input:
-        bam="sorted_reads/{sample}.bam"
+        bam="markDup/{sample}.bam"
     output:
-        "bam_qc/samstat/{sample}.bam.samstat.html"
+        samstat="bam_qc/samstat/{sample}.bam.samstat.html",
+        idxstats="bam_qc/idxstats/{sample}.idxstats.txt",
+        flagstat="bam_qc/flagstat/{sample}.flagsat.txt",
+        stats="bam_qc/stats/{sample}.stats.txt"
     params:
         mem="2000"
+    conda:
+        "envs/samtools.yaml"
     threads:
         6
     log:
@@ -125,15 +142,16 @@ rule bam_qc:
         samstat="log/bam_qc/samstat/{sample}.samstat.log",
     shell:
         """
-        mkdir -p bam_qc 
-        mkdir -p bam_qc/idxstats
-        mkdir -p bam_qc/flagstat
-        mkdir -p bam_qc/stats
-        mkdir -p bam_qc/samstat
-        samtools idxstats {input.bam} > bam_qc/idxstats/{wildcards.sample}.idxstats.txt 2> {log.idxstats} &
-        samtools flagstat {input.bam} > bam_qc/flagstat/{wildcards.sample}.flagsat.txt 2> {log.flagstat} &
-        samtools stats {input.bam} > bam_qc/stats/{wildcards.sample}.stats.txt 2> {log.stats} &
-        $samstat {input.bam} && mv sorted_reads/{wildcards.sample}*.samstat.html bam_qc/samstat > {log.samstat} 2>&1 
+      #  mkdir -p bam_qc 
+      #  mkdir -p bam_qc/idxstats
+      #  mkdir -p bam_qc/flagstat
+      #  mkdir -p bam_qc/stats
+      #  mkdir -p bam_qc/samstat
+        samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} &
+        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat} &
+        samtools stats {input.bam} > {output.stats} 2> {log.stats} &
+        $samstat {input.bam} && mv markDup/{wildcards.sample}.bam.samstat.html bam_qc/samstat > {log.samstat} 2>&1 &
+        wait
         """
 
 rule markDup:
@@ -141,27 +159,94 @@ rule markDup:
     input:
         "sorted_reads/{sample}.bam"
     output:
+        # todo: rename output so that sort_by_name does not interfere with others
         bam="markDup/{sample}.bam",
+        temp="markDup/{sample}.temp.bam",
         metrics="markDup/{sample}.markDup_metrics.txt",
-        bai="markDup/{sample}.bam.bai"
+        bai="markDup/{sample}.bam.bai",
     log:
         "log/markDup/{sample}.markDup.log"
     threads:
         2
     params:
-        mem="16000"
-    shell:
-        """
-        java -Xmx30g -jar $PICARD MarkDuplicates \
-        I={input} \
-        O={output.bam} \
-        M={output.metrics} \
-       	REMOVE_DUPLICATES=true \
-        ASSUME_SORTED=true \
-        &> {log}
+        mem="16000",  # Used Max of 24G before
+        chrM=config['chrM']
+    run:
+        print("Removing duplicates")
+        shell("""
+            module load picard/2.17.8
+            PICARD=/share/pkg/picard/2.17.8/picard.jar
+            
+            java -Xmx30g -jar $PICARD MarkDuplicates \
+            I={input} \
+            O={output.temp} \
+            M={output.metrics} \
+            REMOVE_DUPLICATES=true \
+            ASSUME_SORTED=true \
+            &> {log}
+            """)
 
-        samtools index {output.bam} &>> {log}
-        """
+        # ATAC or ChIP
+        if config["atac"]:
+            print("ATACseq mode")
+            print("Remove chrM")
+            shell("$samtools view -h {output.temp} | perl -lane 'print unless ($F[2] eq {params.chrM} and $_ != /\@/)' | $samtools sort -@ 2 -m 4G -o {output.bam}")
+        else:
+            print("ChIPSeq mode: No chrM filter")
+            shell("mv {output.temp} {output.bam}")
+
+        shell("$samtools index {output.bam} &>> {log}")
+
+
+rule SortBamByNameForGenrich:
+    input:
+        "markDup/{sample}.bam"
+    output:
+        temp("markDupSortByName/{sample}.bam")
+    conda:
+      "envs/samtools.yaml"
+    threads:
+        2
+    params:
+        mem="2500"
+    shell:
+        "samtools sort -n -@ 2 -m 2G {input} -o {output}"
+
+
+rule Genrich:
+    input:
+        "markDupSortByName/{sample}.bam"
+    output:
+        "Genrich/{sample}.narrowPeak"
+    threads:
+        1
+    params:
+        mem="16000"  # not sure yet
+    run:
+        if config['atac']:
+            print("Genrich ATACseq mode")
+            # todo: merge reps
+            shell("Genrich -t {input} -o {output} -j -e config[chrM] -m 20")
+        else:
+            # should not exist by setting in rule 'all'
+            print("Genrich ChIP mode")
+            shell("Genrich -t {input} -o {output} -m 20")
+
+rule macs2:
+    input:
+        "markDup/{sample}.bam"
+    output:
+        "macs2/{sample}_peaks.narrowPeak"
+    threads:
+        1
+    params:
+        mem="12000"
+    shell:
+        '''
+        source activate py27
+        macs2 callpeak -t {input} -q 0.05 --keep-dup all -n {wildcards.sample} --outdir macs2
+        '''
+
 
 rule bamCoverage:
     # for ChIP
@@ -315,7 +400,7 @@ rule plotPCA:
 
 rule CollectInsertSizeMetrics:
     input:
-        "sorted_reads/{sample}.bam"
+        "markDup/{sample}.bam"
     output:
         txt="bam_qc/{sample}.insert_size.txt",
         pdf="bam_qc/{sample}.insert_size.pdf"
@@ -325,11 +410,17 @@ rule CollectInsertSizeMetrics:
         mem="16000"
     shell:
         """
+        module load picard/2.17.8
+        PICARD=/share/pkg/picard/2.17.8/picard.jar
+
         java -Xmx15g -jar $PICARD CollectInsertSizeMetrics \
         I={input} \
         O={output.txt} \
         H={output.pdf}
         """ 
+
+
+
 
 rule epic2:
     input:
@@ -358,3 +449,14 @@ rule create_dag:
         "log/create_dag/Workflow_DAG.all.svg.log"
     shell:
         "snakemake --dag all | dot -Tsvg > {output} 2> {log}"
+
+
+rule reset:
+    shell:
+        '''
+        rm -rf fastqc bam_qc/ mapped_reads/ sorted_reads/ bigWig/ 
+        rm -rf lsf.log *svg *html log nohup.out chip_qc/
+        rm -rf genrich/ Genrich/ macs2/ 
+        rm -rf markDupSortByName/ markDup/
+        snakemake --unlock
+        '''
