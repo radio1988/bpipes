@@ -1,7 +1,7 @@
 ---
-title: "ChIPPeakAnno for ChIP-seq"
+title: "ChIPPeakAnno for Tessa"
 author: "RuiLi"
-date: "11/13/2019"
+date: "03/10/2019"
 output:
   html_document:
     code_folding: hide
@@ -15,9 +15,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library("ChIPpeakAnno")
 library(WriteXLS)
 require(dplyr)
+library("GenomicFeatures")
 ```
 
-# Notes:
+## Notes:
 1. peaks.narrowPeak: visualize peaks
 2. anno.dup.xlsx: all peaks annotated, if multiple annotation for the same peak, multiple annotation lines are generated ???
 3. anno.dup.protein_coding.xlsx: same as 2, but only protein_coding genes included in annotation. 
@@ -33,29 +34,37 @@ require(dplyr)
 - 2019/11/13
 - added NarrowPeak output
 - added xslx output
+- 2020/03
+- filter FDR
+- Read GTF as TxDb
+- Rui's precedence: moved intron after Immideate downstream
+- Removed comma in peak info columns, lead to correct full_anno.xslx
 
-# Parameters
+## Parameters
 ```{r}
-prefix <- 'H3K27me3.DB'
-peakFile <- "DBA_H3K27me3.csv"
+prefix <- 'SrcRepsBroad.Q0.05'
+peakFile <- "../macs2_broad/SrcRepsBroad_peaks.broadPeak"
 gtf_file <- "/project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf"
+max_fdr <- 0.05
 ```
 
-
-
-# Prep AnnoData
-
-## TxDb (Use)
+## Prep AnnoData
+### TxDb
 - did not find an easy way to convert, also gencode29 used here
 ```{r}
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-#library(TxDb.Mmusculus.UCSC.mm10.knownGene)
-TxDb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+# library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+# #library(TxDb.Mmusculus.UCSC.mm10.knownGene)
+# TxDb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+# TxDb.gr <- toGRanges(TxDb)
+
+library(rtracklayer)  # for the import() function
+gtfgr <- import(gtf_file)
+TxDb <- makeTxDbFromGRanges(gtfgr)
 TxDb.gr <- toGRanges(TxDb)
+TxDb
 ```
 
-
-## genecode gene/transcript granges from GenCode.v29
+### genecode gene/transcript granges from GenCode.v29
 ```{r}
 # install.packages("remotes")
 # remotes::install_github("acidgenomics/freerange")
@@ -71,89 +80,48 @@ TxDb.gr <- toGRanges(TxDb)
 # saveRDS(geneCode.tr.gr, "../geneCode.tr.gr.RDS")
 # saveRDS(geneCode.gene.gr, "../geneCode.gene.gr.RDS")
 
-geneCode.gene.gr <- readRDS("../geneCode.gene.gr.RDS")  # skipped loading
-geneCode.tr.gr <- readRDS("../geneCode.tr.gr.RDS")
+geneCode.gene.gr <- readRDS("/home/rl44w/github/bpipes/snakemake/chip_atac/postSnakemake/db/geneCode.gene.gr.RDS")  # skipped loading
+geneCode.tr.gr <- readRDS("/home/rl44w/github/bpipes/snakemake/chip_atac/postSnakemake/db/geneCode.tr.gr.RDS")
 
-head(geneCode.tr.gr)
+#head(geneCode.tr.gr)
 ```
 
-<!-- ## EnsDb (ignored) -->
-<!-- ```{r} -->
-<!-- # BiocManager::install("EnsDb.Hsapiens.v86") -->
-<!-- library(EnsDb.Hsapiens.v86) # Mag's RNAseq v89 -->
-<!-- #library(EnsDb.Mmusculus.v79) -->
-<!-- EnsDb.gr <- toGRanges(EnsDb.Hsapiens.v86  , feature="transcript") # EnsDb or TxDb -->
-<!-- head(EnsDb.gr) -->
-<!-- ``` -->
-
-<!-- ## biomaRt (ignored, replaced by geneCode.tr.gr) -->
-<!-- ```{r} -->
-<!-- library(biomaRt) -->
-<!-- data(TSS.human.GRCh38) -->
-<!-- #data("TSS.mouse.GRCm38") -->
-<!-- TSS.gr <- TSS.human.GRCh38 -->
-<!-- head(TSS.gr)  # gene le -->
-<!-- ``` -->
-
-
-
-# Read peaks
+## Read peaks
 ```{r}
-peaks.df <- read.csv(peakFile, header = T)
-# peaks.df <- peaks.df[peaks.df$p.value<0.01, ]
-#peaks.df <- peaks.df[,1:6]
-#peaks.df$Strand <- '*'
-head(peaks.df)
-#peaks.ir <- readRDS()
-peaks.ir <- toGRanges(peaks.df)
-```
-
-## Peaks to df and gr
-```{r}
-peaks.df <- data.frame(peaks.ir)
-#colnames(peaks.df) <- c("seqnames", "start", "end")
-#peaks.df$peak_id <- paste("peak", row.names(peaks.df), sep="_")
-peaks.df$peak_id <- paste("peak_", row.names(peaks.df), sep = "")
-#peaks.df <- peaks.df[, c(-6)]
-head(peaks.df)
+peaks.df <- read.table(peakFile, header = F)
+dim(peaks.df)
+colnames(peaks.df) <- c("seqnames", "start", "end", "peak_id", "score", "strand", "signalValue", "pValue", "qValue" )
+peaks.df <- subset(peaks.df, qValue> -log10(max_fdr))
+dim(peaks.df)
 peaks.gr <- makeGRangesFromDataFrame(peaks.df, keep.extra.columns = T)
 ```
 
-## Peaks to NarrowPeak format
+## Export Peaks to NarrowPeak format
 ```{r}
-df <- peaks.df
-bed <- data.frame(
-  seqnames=df$seqnames,
-  start=df$start,
-  end=df$end,
-  name=df$peak_id,
-  score=-log10(df$p.value)*10,
-  strand=df$strand, 
-  signalValue=df$Fold,
-  pValue=df$p.value,
-  qValue=df$FDR,
-  peak=-1
-)
-
-head(bed)
-
-write.table(bed, 
-            paste(prefix, 'DB.narrowPeak', sep = "."),
-            sep = "\t", quote = F, row.names = F, col.names = F)
+# df <- peaks.df
+# bed <- data.frame(
+#   seqnames=df$seqnames,
+#   start=df$start,
+#   end=df$end,
+#   name=df$peak_id,
+#   score=-log10(df$p.value)*10,
+#   strand=df$strand, 
+#   signalValue=df$Fold,
+#   pValue=df$p.value,
+#   qValue=df$FDR,
+#   peak=-1
+# )
+# 
+# head(bed)
+# 
+# write.table(bed, 
+#             paste(prefix, 'DB.narrowPeak', sep = "."),
+#             sep = "\t", quote = F, row.names = F, col.names = F)
 ```
 
 
-# Visualize Around TSS
-```{r}
-binOverFeature(peaks.gr, annotationData=geneCode.tr.gr,
-               # select = "nearest",
-               # PeakLocForDistance="middle",
-               # featureSite="FeatureStart",
-               radius=20000, nbins=500, FUN=length, 
-               errFun=0,
-               ylab="count", 
-               main="Distribution of aggregated peak numbers around TSS")
-
+## Visualize Around TSS
+```{r, warning=FALSE}
 binOverFeature(peaks.gr, annotationData=geneCode.tr.gr,
                # select = "nearest",
                # PeakLocForDistance="middle",
@@ -162,22 +130,29 @@ binOverFeature(peaks.gr, annotationData=geneCode.tr.gr,
                errFun=0,
                ylab="count", 
                main="Distribution of aggregated peak numbers around TSS")
+
+binOverFeature(peaks.gr, annotationData=geneCode.tr.gr,
+               # select = "nearest",
+               # PeakLocForDistance="middle",
+               # featureSite="FeatureStart",
+               radius=5000, nbins=500, FUN=length, 
+               errFun=0,
+               ylab="count", 
+               main="Distribution of aggregated peak numbers around TSS")
 ```
 
-# barplot (TxDb.Mmusculus.UCSC.mm10.knownGene)
+## Annotation Summary
 - Peak centric view
 
-```{r}
-TxDb
-```
-
-## double count
 ```{r, warning=F}
 aCR<-assignChromosomeRegion(peaks.gr, 
                             nucleotideLevel=F, # peak centric view
-                            # precedence=c("Promoters", "immediateDownstream", 
-                            #              "fiveUTRs", "threeUTRs", 
-                            #              "Exons", "Introns"), # double count
+                            precedence=c("Promoters", 
+                                         "fiveUTRs", 
+                                         "threeUTRs", 
+                                         "Exons", 
+                                         "immediateDownstream",  
+                                         "Introns"), # Rui's precedence
                             proximal.promoter.cutoff	<- 3000,
                             immediate.downstream.cutoff	<- 1000, 
                             TxDb=TxDb)
@@ -188,55 +163,10 @@ rm(op)
 ```
 
 
-
-
-<!-- ## Ordered -->
-<!-- ```{r, warning=F} -->
-<!-- aCR<-assignChromosomeRegion(peaks.gr,  -->
-<!--                             nucleotideLevel=F, # peak centric view -->
-<!--                             precedence=c("Promoters", "fiveUTRs", "threeUTRs", "immediateDownstream", "Exons", "Introns" ), # Rui's precedence -->
-<!--                             proximal.promoter.cutoff	<- 3000, -->
-<!--                             immediate.downstream.cutoff	<- 1000,  -->
-<!--                             TxDb=TxDb) -->
-<!-- op <- par(mar=c(11,4,4,2)) # allows the names.arg below the barplot -->
-<!-- barplot(aCR$percentage, las=3) -->
-<!-- rm(op) -->
-<!-- ``` -->
-
-## Ordered
-```{r, warning=F}
-aCR<-assignChromosomeRegion(peaks.gr, 
-                            nucleotideLevel=F, # peak centric view
-                            precedence=c("Promoters", "fiveUTRs", "threeUTRs", "immediateDownstream", "Exons", "Introns" ), # Rui's precedence
-                            proximal.promoter.cutoff	<- 3000,
-                            immediate.downstream.cutoff	<- 1000, 
-                            TxDb=TxDb)
-op <- par(mar=c(11,4,4,2)) # allows the names.arg below the barplot
-barplot(aCR$percentage, las=3)
-rm(op)
-```
-
-<!-- ## Default order -->
-<!-- ```{r, warning=F} -->
-<!-- aCR<-assignChromosomeRegion(peaks.gr,  -->
-<!--                             nucleotideLevel=F, # peak centric view -->
-<!--                             precedence=c("Promoters", "immediateDownstream",  -->
-<!--                                          "fiveUTRs", "threeUTRs",  -->
-<!--                                          "Exons", "Introns"), # default -->
-<!--                             proximal.promoter.cutoff	<- 3000, -->
-<!--                             immediate.downstream.cutoff	<- 1000,  -->
-
-<!--                             TxDb=TxDb) -->
-<!-- op <- par(mar=c(11,4,4,2)) # allows the names.arg below the barplot -->
-<!-- barplot(aCR$percentage, las=3) -->
-<!-- rm(op) -->
-<!-- ``` -->
-
-
-# Finally, Annotate to TSS (geneCode.tr.gr)
+## Annotate to TSS (at transcript level, geneCode.tr.gr)
 - EnsDb.gr Works, but Peak1 anno wrong
 - use geneCode.tr.gr
-```{r}
+```{r, warning=F}
 # Pie about annotation
 # seqlevelsStyle(peaks.gr) <- seqlevelsStyle(TxDb.gr)
 # seqlevelsStyle(peaks.gr) <- seqlevelsStyle(EnsDb.gr)
@@ -251,18 +181,16 @@ gr.anno <- annotatePeakInBatch(myPeakList = peaks.gr,
 )
 #table(gr.anno$insideFeature)
 barplot(table(gr.anno$insideFeature))
-
-head(data.frame(gr.anno))
-
+#head(data.frame(gr.anno))
 ```
 
-## Output full duplicated annotation (unannotated skipped)
+## Output full duplicated annotation (unannotated skipped, same gene name considered same)
 ```{r}
 gr.anno.df <- data.frame(gr.anno)
 head(gr.anno.df)
 # select columns
-# gr.anno.df <- gr.anno.df[, c("peak_id", "seqnames", "start", "end", "width", "strand", "feature",  "feature.strand", "insideFeature", "distanceToSite", 
-#                              "geneBiotype", "geneID", "geneName")]
+gr.anno.df <- gr.anno.df[, c("seqnames", "start", "end", "peak_id", "score", "strand", "signalValue", "pValue", "qValue", "width",
+                             "geneName", "geneID", "geneBiotype")] # affects function collapse_anno
 
 # Delete duplicated rows (same peak, same gene)
 gr.anno.df$dedup_id <- paste(gr.anno.df$peak_id,gr.anno.df$geneName)
@@ -282,41 +210,44 @@ WriteXLS(x = gr.anno.df.protein_coding,
          ExcelFileName = paste(prefix, 'anno.WithDup.protein_coding.xlsx', sep = "."),
          row.names = F, SheetNames = 'sheet1', na = '-')  # for user
 ```
-
-
 # Collapse by peak_id
 ```{r}
+RM <- function(x) gsub(",.*", "", x)
+
 collapse_anno <- function(gr.anno.df, outname){
   # collapse rows by peak_id
   gr.anno.df.collapsed <- gr.anno.df %>%
     group_by(peak_id) %>%
     summarise_each(funs(toString))
   
-  # todo: not collapse seqnames, start, end, width, strand, conc ...
+  # not collapse seqnames, start, end, width, strand, conc ...
+  gr.anno.df.collapsed <- data.frame(apply(gr.anno.df.collapsed[,1:10], 2, RM), 
+                                     gr.anno.df.collapsed[,11:14])  # number of columns matters
+  
   print(outname)
   print(dim(gr.anno.df.collapsed))
   #write.csv(gr.anno.df.collapsed, outname, row.names = F)
   WriteXLS(x = gr.anno.df.collapsed,
            ExcelFileName = outname,
            row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+  
+  return(gr.anno.df.collapsed)
 }
 
 
-collapse_anno(gr.anno.df, 
+gr.anno.df.collapsed <- collapse_anno(gr.anno.df, 
                paste(prefix, "anno.collapsed.xlsx", sep = "."))
-collapse_anno(gr.anno.df.protein_coding, 
+
+gr.anno.df.protein_coding.collapsed <- collapse_anno(gr.anno.df.protein_coding, 
               paste(prefix, "anno.protein_coding.collapsed.xlsx", sep = "."))
 ```
 
 # Full talbe including unannotated
-- not good because multiple annotated peaks not annotated here
 ```{r}
-
-gr.anno.df.collapsed <- readxl::read_xlsx(paste(prefix, "anno.collapsed.xlsx", sep = "."), na='-')  # na term important
-gr.anno.df.collapsed <- data.frame(gr.anno.df.collapsed)  #important
-full.collapsed.df <- merge(peaks.df, gr.anno.df.collapsed, 
-                           by= c("peak_id", "seqnames", "start", "end", "width", "strand"), all.x=T)
+full.collapsed.df <- merge(peaks.df, gr.anno.df.collapsed[, c(1, 11:14)], 
+                           by= "peak_id", all.x=T)
 #full.collapsed.df <- full.collapsed.df[order(nchar(full.collapsed.df$peak_id)),]
+print(dim(full.collapsed.df))
 head(full.collapsed.df)
 #write.csv(full.collapsed.df, "full_anno.csv", row.names = F)
 WriteXLS(x = full.collapsed.df,
