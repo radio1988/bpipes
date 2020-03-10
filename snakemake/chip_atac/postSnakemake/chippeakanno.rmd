@@ -98,25 +98,25 @@ peaks.gr <- makeGRangesFromDataFrame(peaks.df, keep.extra.columns = T)
 
 ## Export Peaks to NarrowPeak format
 ```{r}
-# df <- peaks.df
-# bed <- data.frame(
-#   seqnames=df$seqnames,
-#   start=df$start,
-#   end=df$end,
-#   name=df$peak_id,
-#   score=-log10(df$p.value)*10,
-#   strand=df$strand, 
-#   signalValue=df$Fold,
-#   pValue=df$p.value,
-#   qValue=df$FDR,
-#   peak=-1
-# )
-# 
-# head(bed)
-# 
-# write.table(bed, 
-#             paste(prefix, 'DB.narrowPeak', sep = "."),
-#             sep = "\t", quote = F, row.names = F, col.names = F)
+df <- peaks.df
+bed <- data.frame(
+  seqnames=df$seqnames,
+  start=df$start,
+  end=df$end,
+  name=df$peak_id,
+  score=-log10(df$p.value)*10,
+  strand=df$strand,
+  signalValue=df$Fold,
+  pValue=df$p.value,
+  qValue=df$FDR,
+  peak=-1
+)
+
+head(bed)
+
+write.table(bed,
+            paste(prefix, 'DB.narrowPeak', sep = "."),
+            sep = "\t", quote = F, row.names = F, col.names = F)
 ```
 
 
@@ -187,7 +187,7 @@ barplot(table(gr.anno$insideFeature))
 ## Output full duplicated annotation (unannotated skipped, same gene name considered same)
 ```{r}
 gr.anno.df <- data.frame(gr.anno)
-head(gr.anno.df)
+
 # select columns
 gr.anno.df <- gr.anno.df[, c("seqnames", "start", "end", "peak_id", "score", "strand", "signalValue", "pValue", "qValue", "width",
                              "geneName", "geneID", "geneBiotype")] # affects function collapse_anno
