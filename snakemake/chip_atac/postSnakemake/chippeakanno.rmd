@@ -19,10 +19,12 @@ library("GenomicFeatures")
 ```
 
 ## Notes:
-1. peaks.narrowPeak: visualize peaks
-2. anno.dup.xlsx: all peaks annotated, if multiple annotation for the same peak, multiple annotation lines are generated ???
-3. anno.dup.protein_coding.xlsx: same as 2, but only protein_coding genes included in annotation. 
-4. anno.collapsed.xlsx: same as 2, but each peak has only one line * (recommended)
+1. **name.narrowPeak**: visualize peaks
+2. name.anno.WithDup.xlsx: all peaks annotated, if multiple annotation for the same peak, multiple annotation lines are generated
+3. name.anno.WithDup.protein_coding.xlsx: same as 2, but only protein_coding genes included in annotation. 
+4. name.anno.collapsed.xlsx: same as 2, but each peak has only one line 
+5. name.anno.protein_coding.collapsed.xlsx: same as 4, but only protein_coding genes included
+5. **full_anno.xlsx**: same as 4, plus all unannotated peaks * (recommended)
 
 
 ## Code Log:
@@ -39,6 +41,7 @@ library("GenomicFeatures")
 - Read GTF as TxDb
 - Rui's precedence: moved intron after Immideate downstream
 - Removed comma in peak info columns, lead to correct full_anno.xslx
+- Added GO Enrichment and GO visualization with word cloud
 
 ## Parameters
 ```{r}
@@ -98,24 +101,24 @@ peaks.gr <- makeGRangesFromDataFrame(peaks.df, keep.extra.columns = T)
 
 ## Export Peaks to NarrowPeak format
 ```{r}
-df <- peaks.df
-bed <- data.frame(
-  seqnames=df$seqnames,
-  start=df$start,
-  end=df$end,
-  name=df$peak_id,
-  score=-log10(df$p.value)*10,
-  strand=df$strand,
-  signalValue=df$Fold,
-  pValue=df$p.value,
-  qValue=df$FDR,
-  peak=-1
-)
+# df <- peaks.df
+# bed <- data.frame(
+#   seqnames=df$seqnames,
+#   start=df$start,
+#   end=df$end,
+#   name=df$peak_id,
+#   score=df$score,
+#   strand=df$strand,
+#   signalValue=df$Fold,
+#   pValue=df$p.value,
+#   qValue=df$FDR,
+#   peak=-1
+# )
+# 
+# head(bed)
 
-head(bed)
-
-write.table(bed,
-            paste(prefix, 'DB.narrowPeak', sep = "."),
+write.table(peaks.df,
+            paste(prefix, 'narrowPeak', sep = "."),
             sep = "\t", quote = F, row.names = F, col.names = F)
 ```
 
@@ -253,4 +256,155 @@ head(full.collapsed.df)
 WriteXLS(x = full.collapsed.df,
          ExcelFileName = paste(prefix, "full_anno.xlsx", sep = "."), 
          row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+```
+
+
+## Enrichment
+### Parameters
+```{r}
+library("org.Hs.eg.db")
+#library("org.Mm.eg.db")
+library('reactome.db')
+library("KEGG.db")
+org_eg_eb <- "org.Hs.eg.db"
+max_BH = 0.1
+```
+
+```{r}
+keys <- unique(gr.anno.df$geneName)
+```
+
+### GO
+```{r}
+paste(org_eg_eb)
+
+enriched.GO.both.condense <- getEnrichedGO(
+    keys, 
+    orgAnn=org_eg_eb, 
+    feature_id_type = "gene_symbol", 
+    maxP=max_BH,
+    minGOterm=10,
+    multiAdjMethod= "BH", 
+    condense = T  # all genes in one line
+)
+
+```
+
+### KEGG
+```{r}
+kegg <- getEnrichedPATH(
+    keys, 
+    orgAnn=org_eg_eb, 
+    pathAnn = "KEGG.db",
+    feature_id_type = "gene_symbol", 
+    maxP=max_BH,
+    minPATHterm=10,
+    multiAdjMethod= "BH"
+)
+
+kegg <- condenseMatrixByColnames(as.matrix(kegg), "path.id")
+
+#head(kegg)
+
+```
+
+
+### Output
+```{r}
+paste("enriched.GO.both.condense$bp", dim(enriched.GO.both.condense$bp)[1])
+WriteXLS(x = enriched.GO.both.condense$bp,
+        ExcelFileName = paste('GO_biological_process', max_BH, 'xlsx', sep = '.'), 
+        row.names = F, SheetNames = 'sheet1', na = '-')
+
+paste("enriched.GO.both.condense$cc", dim(enriched.GO.both.condense$cc)[1])
+WriteXLS(x = enriched.GO.both.condense$cc,
+        ExcelFileName = paste('GO_cellular_component', max_BH, 'xlsx', sep = '.'),
+        row.names = F, SheetNames = 'sheet1', na = '-')
+
+paste("enriched.GO.both.condense$mf", dim(enriched.GO.both.condense$mf)[1])
+WriteXLS(x = enriched.GO.both.condense$mf,
+        ExcelFileName = paste('GO_mulecular_function', max_BH, 'xlsx', sep = '.'),
+        row.names = F, SheetNames = 'sheet1', na = '-')
+
+# WriteXLS(x = enriched.PATH.both.condense,
+#         ExcelFileName = 'reactome.db.FDR0.05.FC1.5.xlsx', row.names = F, SheetNames = 'sheet1', na = '-')
+
+paste("kegg", dim(kegg)[1])
+WriteXLS(x = kegg,
+        ExcelFileName = paste('KEGG', max_BH, 'xlsx', sep = '.'),
+        row.names = F, SheetNames = 'sheet1', na = '-')
+
+```
+
+
+
+### GO wordCloud plot
+```{r fig.width=20, fig.height=20}
+# install.packages("wordcloud")
+library("wordcloud")
+wordcloudPlot <- function(enrich.df, max.words = 20){
+  word0 = as.character.factor(enrich.df$go.term)
+  word = unlist(lapply(word0, RM))  # remove comma and after
+  pvalue = enrich.df$pvalue
+
+  df <- data.frame(word0, word, pvalue)
+  df <- df[order(df$pvalue), ]
+  if (max.words < dim(df)[1]) df <- df[1:max.words, ]
+  
+  df$num <- rank(-df$pvalue) # small pvalue to large number
+  
+  wordcloud(df$word, df$num, 
+        # max.words = max.words, 
+         scale=c(4,1) ,
+        #colors = rainbow(max.words),
+         #colors = brewer.pal(n=11,name="dark")
+        colors = c("Red", "orange", "gold", "green", "turquoise1", "blue", "purple" ), 
+         #random.order = F, random.color = F,
+         )
+  
+  return(df)
+}
+```
+
+### Biological Process
+```{r fig.width=20, fig.height=20}
+wordCloud <- wordcloudPlot(enriched.GO.both.condense$bp, max.words = 30)
+```
+
+### Molecular Function
+```{r fig.width=20, fig.height=20}
+wordCloud <- wordcloudPlot(enriched.GO.both.condense$mf, max.words = 30)
+```
+
+### Cellular Component
+```{r fig.width=20, fig.height=20}
+wordCloud <- wordcloudPlot(enriched.GO.both.condense$cc, max.words = 30)
+```
+
+### KEGG
+```{r fig.width=20, fig.height=20}
+colnames(kegg)[9] <- "go.term"
+wordCloud <- wordcloudPlot(kegg, max.words = 30)
+```
+
+
+
+
+
+
+
+<!-- ```{r} -->
+<!-- #install.packages("GOplot") -->
+<!-- library(GOplot) -->
+<!-- GOBar(subset(circ, category == 'BP')) -->
+<!-- GOBubble(circ, labels = 4) -->
+
+<!-- ``` -->
+
+
+
+
+## print versions
+```{r}
+sessionInfo()
 ```
