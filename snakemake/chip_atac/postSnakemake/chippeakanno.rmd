@@ -264,7 +264,7 @@ WriteXLS(x = full.collapsed.df,
 ```{r}
 library("org.Hs.eg.db")
 #library("org.Mm.eg.db")
-library('reactome.db')
+#library('reactome.db')
 library("KEGG.db")
 org_eg_eb <- "org.Hs.eg.db"
 max_BH = 0.1
