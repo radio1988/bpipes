@@ -1,5 +1,5 @@
 #BSUB -J "gsea[1-8]"  # n jobs in array, batch size
-#BSUB -R rusage[mem=16000]  # for each cpu, 16 GB for each GSEA
+#BSUB -R rusage[mem=20000]  # for each cpu, 16 GB for each GSEA, 64GB for c5,c7
 #BSUB -n 1  # n cpu, also n of pointers
 #BSUB -R "span[hosts=1]" # All hosts on the same chassis"
 mkdir -p log
@@ -25,7 +25,8 @@ dbs=(c1.all.v7.0.symbols.gmt.pointer c2.all.v7.0.symbols.gmt.pointer c3.all.v7.0
 
 # Automatic
 db=${dbs[$i]}
-label=${rnk_file/rnk/}${db/\.pointer/}
+label=`basename $rnk_file`
+label=${label/rnk/}${db/\.pointer/}
 db=$path/database/$db
 echo rnk $rnk_file
 echo label $label
@@ -34,6 +35,6 @@ echo db $db
 $path/gsea-cli.sh GSEAPreranked \
 -gmx $db -rnk $rnk_file -rpt_label $label \
 -norm meandiv -nperm $nperm  -scoring_scheme classic \
--create_svgs false -make_sets true  -rnd_seed timestamp -zip_report false \
+-create_svgs true -make_sets true  -rnd_seed timestamp -zip_report false \
 -set_max $set_max -set_min $set_min \
 -plot_top_x $nplots -out ./output 
