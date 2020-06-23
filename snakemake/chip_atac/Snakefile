@@ -31,10 +31,19 @@ rule all:
         # 2. feed {sample}
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         cleanBam=expand("cleanBam/{sample}.bam", sample=SAMPLES),
-        Genrich=expand("Genrich/{sample}.bw", sample=SAMPLES) if config["atac"] else "Workflow_DAG.all.svg",
-        MACS=expand("macs2/{sample}_peaks.narrowPeak", sample=SAMPLES),
+        genrich=expand("genrich/{sample}.bw", sample=SAMPLES) if config["atac"] else "Workflow_DAG.all.svg",
+        genrich_10bp=expand("genrich_10bp/{sample}.bw", sample=SAMPLES) if config["atac"] else "Workflow_DAG.all.svg",
+        genrich_1bp=expand("genrich_1bp/{sample}.bw", sample=SAMPLES) if config["atac"] else "Workflow_DAG.all.svg",
+        MACS_bampe=expand("macs2_bampe/{sample}_peaks.narrowPeak", sample=SAMPLES),
+        MACS_site=expand("macs2_site/{sample}_peaks.narrowPeak", sample=SAMPLES),
+        hmmratac=expand("hmmratac/{sample}_peaks.gappedPeak", sample=SAMPLES),
+        site_count=expand("macs2_site/{sample}.count.txt", sample=SAMPLES),
+        bampe_count=expand("macs2_bampe/{sample}.count.txt", sample=SAMPLES),
+        hmmratac_count=expand("hmmratac/{sample}.count.txt", sample=SAMPLES),
+        genrich_count=expand("genrich/{sample}.count.txt", sample=SAMPLES),
         bam_qc_cleanBam=expand("bam_qc_cleanBam/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}, ensure aligment 
         bam_qc_markDup=expand("bam_qc_markDup/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}, ensure aligment 
+        bam_qc_sorted=expand("bam_qc_sorted_reads/samstat/{sample}.bam.samstat.html", sample=SAMPLES), # feed {samples}, ensure aligment 
         bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
         bamPEFragmentSize="chip_qc/fragment_size.pdf",
         insert_size=expand("bam_qc/{sample}.insert_size.pdf", sample=SAMPLES),
@@ -223,6 +232,35 @@ rule cleanBam:
         samtools index {output} &> {log}
         """
 
+
+rule bam_qc_sorted:
+    input:
+        bam="sorted_reads/{sample}.bam"
+    output:
+        samstat="bam_qc_sorted_reads/samstat/{sample}.bam.samstat.html",
+        idxstats="bam_qc_sorted_reads/idxstats/{sample}.idxstats.txt",
+        flagstat="bam_qc_sorted_reads/flagstat/{sample}.flagsat.txt",
+        stats="bam_qc_sorted_reads/stats/{sample}.stats.txt"
+    params:
+        mem="3000"
+    conda:
+        "envs/samtools.yaml"
+    threads:
+        4
+    log:
+        idxstats="log/bam_qc_sorted_reads/idxstats/{sample}.idxstats.log",
+        flagstat="log/bam_qc_sorted_reads/flagstat/{sample}.flagstat.log",
+        stats="log/bam_qc_sorted_reads/stats/{sample}.stats.log",
+        samstat="log/bam_qc_sorted_reads/samstat/{sample}.samstat.log",
+    shell:
+        """
+        samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} &
+        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat} &
+        samtools stats {input.bam} > {output.stats} 2> {log.stats} &
+        $samstat {input.bam} && mv sorted_reads/{wildcards.sample}.bam.samstat.html bam_qc_sorted_reads/samstat > {log.samstat} 2>&1 &
+        wait
+        """
+
 rule bam_qc_markDup:
     input:
         bam="markDup/{sample}.bam"
@@ -296,21 +334,21 @@ rule SortBamByNameForGenrich:
         "samtools sort -n -@ 2 -m 2G {input} -o {output}"
 
 
-rule Genrich:
+rule genrich:
     input:
         "cleanSortByName/{sample}.bam"
     output:
-        peak="Genrich/{sample}.narrowPeak",
-        bedGraph="Genrich/{sample}.bedgraph_ish"
+        peak="genrich/{sample}.narrowPeak",
+        bedGraph="genrich/{sample}.bedgraph_ish"
     threads:
         1
     params:
         mem="16000"  # not sure yet
     log:
-        "log/Genrich/{sample}.log"
+        "log/genrich/{sample}.log"
     run:
         if config["atac"]:
-            print("Genrich ATACseq mode")
+            print("genrich ATACseq mode")
             # todo: merge reps
             shell("Genrich -t {input} -o {output.peak} -k {output.bedGraph} -j -y -e {chrM} -m {MQ_MIN} -v &>{log}")
         else:
@@ -318,11 +356,47 @@ rule Genrich:
             print("Genrich ChIP mode")
             shell("Genrich -t {input} -o {output.peak} -x -m {MQ_MIN} &> {log}")
 
+
+rule genrich_peak2gtf:
+    input:
+        "genrich/{sample}.narrowPeak"
+    output:
+        "genrich/{sample}.gtf"
+    threads:
+        1
+    params:
+        mem="2000"
+    log:
+        "log/genrich/peak2gtf/{sample}.log"
+    shell:
+        """
+        perl scripts/peak2gtf.pl {input} > {output} 
+        """
+
+rule genrich_count:
+    input:
+        bam="cleanBam/{sample}.bam",
+        gtf="genrich/{sample}.gtf"
+    output:
+        "genrich/{sample}.count.txt"
+    threads:
+        4
+    params:
+        mem="4000"
+    shell:
+        """
+        featureCounts -a {input.gtf} -o {output} \
+        -T {threads} -g gene_id -t peak -s 0 -p -B -C -d 38 -D 2000 \
+        -Q 20 --minOverlap 1 --fracOverlap 0 \
+        {input.bam}
+        """
+
+
 rule genrich_bdgToBigWig:
     input:
-        "Genrich/{sample}.bedgraph_ish"
+        "genrich/{sample}.bedgraph_ish"
     output:
-        "Genrich/{sample}.bw"
+        "genrich/{sample}.bw"
     threads:
         1
     params:
@@ -333,28 +407,201 @@ rule genrich_bdgToBigWig:
         "log/genrich_bdgToBigWig/{sample}.benchmark.txt"
     shell:
         """
-        tail -n +3 {input} | cut -f 1,2,3,6 | sort -k1,1 -k2,2n > Genrich/{wildcards.sample}.bdg
-        $bedGraphToBigWig Genrich/{wildcards.sample}.bdg {SizeFile} {output} && \
-        rm -f Genrich/{wildcards.sample}.bdg
+        tail -n +3 {input} | cut -f 1,2,3,6 | sort -k1,1 -k2,2n > genrich/{wildcards.sample}.bdg
+        $bedGraphToBigWig genrich/{wildcards.sample}.bdg {SizeFile} {output} && \
+        rm -f genrich/{wildcards.sample}.bdg
         """
 
 
-rule macs2:
+rule genrich_10bp:
+    input:
+        "cleanSortByName/{sample}.bam"
+    output:
+        peak="genrich_10bp/{sample}.narrowPeak",
+        bedGraph="genrich_10bp/{sample}.bedgraph_ish"
+    threads:
+        1
+    params:
+        mem="16000"  # not sure yet
+    log:
+        "log/genrich_10bp/{sample}.log"
+    run:
+        if config["atac"]:
+            print("genrich ATACseq mode")
+            # todo: merge reps
+            shell("Genrich -t {input} -o {output.peak} -k {output.bedGraph} -j -y -e {chrM} -d 10 -m {MQ_MIN} -v &>{log}")
+        else:
+            # should not exist by setting in rule 'all'
+            print("Genrich ChIP mode")
+            shell("Genrich -t {input} -o {output.peak} -x -m {MQ_MIN} &> {log}")
+
+rule genrich_bdgToBigWig_10bp:
+    input:
+        "genrich_10bp/{sample}.bedgraph_ish"
+    output:
+        "genrich_10bp/{sample}.bw"
+    threads:
+        1
+    params:
+        mem="8000"
+    log:
+        "log/genrich_bdgToBigWig_10bp/{sample}.log"
+    benchmark:
+        "log/genrich_bdgToBigWig_10bp/{sample}.benchmark.txt"
+    shell:
+        """
+        tail -n +3 {input} | cut -f 1,2,3,6 | sort -k1,1 -k2,2n > genrich_10bp/{wildcards.sample}.bdg
+        $bedGraphToBigWig genrich_10bp/{wildcards.sample}.bdg {SizeFile} {output} && \
+        rm -f genrich_10bp/{wildcards.sample}.bdg
+        """
+
+rule genrich_1bp:
+    input:
+        "cleanSortByName/{sample}.bam"
+    output:
+        peak="genrich_1bp/{sample}.narrowPeak",
+        bedGraph="genrich_1bp/{sample}.bedgraph_ish"
+    threads:
+        1
+    params:
+        mem="16000"  # not sure yet
+    log:
+        "log/genrich_1bp/{sample}.log"
+    run:
+        if config["atac"]:
+            print("genrich ATACseq mode")
+            # todo: merge reps
+            shell("Genrich -t {input} -o {output.peak} -k {output.bedGraph} -j -y -e {chrM} -d 10 -m {MQ_MIN} -v &>{log}")
+        else:
+            # should not exist by setting in rule 'all'
+            print("Genrich ChIP mode")
+            shell("Genrich -t {input} -o {output.peak} -x -m {MQ_MIN} &> {log}")
+
+rule genrich_bdgToBigWig_1bp:
+    input:
+        "genrich_1bp/{sample}.bedgraph_ish"
+    output:
+        "genrich_1bp/{sample}.bw"
+    threads:
+        1
+    params:
+        mem="8000"
+    log:
+        "log/genrich_bdgToBigWig_1bp/{sample}.log"
+    benchmark:
+        "log/genrich_bdgToBigWig_1bp/{sample}.benchmark.txt"
+    shell:
+        """
+        tail -n +3 {input} | cut -f 1,2,3,6 | sort -k1,1 -k2,2n > genrich_1bp/{wildcards.sample}.bdg
+        $bedGraphToBigWig genrich_1bp/{wildcards.sample}.bdg {SizeFile} {output} && \
+        rm -f genrich_1bp/{wildcards.sample}.bdg
+        """
+
+
+rule macs2_bampe:
     input:
         "cleanBam/{sample}.bam"
     output:
-        "macs2/{sample}_peaks.narrowPeak"
+        "macs2_bampe/{sample}_peaks.narrowPeak"
     threads:
         1
     params:
         mem="12000"
     log:
-        "log/macs/{sample}.log"
+        "log/macs_bampe/{sample}.log"
     shell:
         """
         source activate py27
-        macs2 callpeak -t {input} -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all -n {wildcards.sample} --outdir macs2 -B 
+        macs2 callpeak -t {input} -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all -n {wildcards.sample} --outdir macs2_bampe -B 
         """
+
+rule macs2_bampe_peak2gtf:
+    input:
+        "macs2_bampe/{sample}_peaks.narrowPeak"
+    output:
+        "macs2_bampe/{sample}_peaks.gtf"
+    threads:
+        1
+    params:
+        mem="2000"
+    log:
+        "log/macs2_bampe/peak2gtf/{sample}.log"
+    shell:
+        """
+        perl scripts/peak2gtf.pl {input} > {output} 
+        """
+
+rule macs_bampe_count:
+    input:
+        bam="cleanBam/{sample}.bam",
+        gtf="macs2_bampe/{sample}_peaks.gtf"
+    output:
+        "macs2_bampe/{sample}.count.txt"
+    threads:
+        4
+    params:
+        mem="4000"
+    shell:
+        """
+        featureCounts -a {input.gtf} -o {output} \
+        -T {threads} -g gene_id -t peak -s 0 -p -B -C -d 38 -D 2000 \
+        -Q 20 --minOverlap 1 --fracOverlap 0 \
+        {input.bam}
+        """
+
+
+rule macs2_site:
+    input:
+        "cleanBam/{sample}.bam"
+    output:
+        "macs2_site/{sample}_peaks.narrowPeak"
+    threads:
+        1
+    params:
+        mem="12000"
+    log:
+        "log/macs_site/{sample}.log"
+    shell:
+        """
+        source activate py27
+        macs2 callpeak -t {input} -f BAM -g {GSIZE} --nomodel --shift -100 --extsize 200 -q 0.05 --keep-dup all -n {wildcards.sample} --outdir macs2_site -B 
+        """
+
+rule macs2_site_peak2gtf:
+    input:
+        "macs2_site/{sample}_peaks.narrowPeak"
+    output:
+        "macs2_site/{sample}_peaks.gtf"
+    threads:
+        1
+    params:
+        mem="2000"
+    log:
+        "log/macs2_site/peak2gtf/{sample}.log"
+    shell:
+        """
+        perl scripts/peak2gtf.pl {input} > {output} 
+        """
+
+rule macs_site_count:
+    input:
+        bam="cleanBam/{sample}.bam",
+        gtf="macs2_site/{sample}_peaks.gtf"
+    output:
+        "macs2_site/{sample}.count.txt"
+    threads:
+        4
+    params:
+        mem="4000"
+    shell:
+        """
+        featureCounts -a {input.gtf} -o {output} \
+        -T {threads} -g gene_id -t peak -s 0 -p -B -C -d 38 -D 2000 \
+        -Q 20 --minOverlap 1 --fracOverlap 0 \
+        {input.bam}
+        """
+
+    
 
 rule bamCoverage:
     # for ChIP
@@ -429,11 +676,12 @@ rule bamPEFragmentSize:
         "log/chip_qc/fragment_size.log"
     shell:
         """
+        source activate py27
         bamPEFragmentSize \
         -hist {output.plot} \
         --outRawFragmentLengths {output.txt} \
         -T "Fragment Size Distribution" \
-        --maxFragmentLength 1500 \
+        --maxFragmentLength 2000 \
         -b {input} \
         -p {threads} &> {log}
         """
@@ -564,7 +812,58 @@ rule reset:
         """
         rm -rf fastqc bam_qc/ bigWig/ 
         rm -rf lsf.log *svg *html log nohup.out chip_qc/
-        rm -rf genrich/ Genrich/ macs2/ 
+        rm -rf genrich/ genrich/ macs2/ 
         echo "awk \'{config[filter]}\' "
         snakemake --unlock
+        """
+
+rule hmmratac:
+    input:
+        bam="markDup/{sample}.bam",
+        bai="markDup/{sample}.bam.bai",
+    output:
+        "hmmratac/{sample}_peaks.gappedPeak"
+    threads:
+        1
+    params:
+        mem="32000"
+    shell:
+        """
+        module load java/1.8.0_171
+        java -jar ~/bin/HMMRATAC/HMMRATAC_V1.2.9_exe.jar -b {input.bam} -i {input.bai} -g {SizeFile} -o hmmratac/{wildcards.sample} -q 20
+        """
+
+
+rule hmmratac_peak2gtf:
+    input:
+        "hmmratac/{sample}_peaks.gappedPeak"
+    output:
+        "hmmratac/{sample}.gtf"
+    threads:
+        1
+    params:
+        mem="2000"
+    log:
+        "log/hmmratac/peak2gtf/{sample}.log"
+    shell:
+        """
+        perl scripts/peak2gtf.pl {input} > {output} 
+        """
+
+rule hmmratac_count:
+    input:
+        bam="cleanBam/{sample}.bam",
+        gtf="hmmratac/{sample}.gtf"
+    output:
+        "hmmratac/{sample}.count.txt"
+    threads:
+        4
+    params:
+        mem="4000"
+    shell:
+        """
+        featureCounts -a {input.gtf} -o {output} \
+        -T {threads} -g gene_id -t peak -s 0 -p -B -C -d 38 -D 2000 \
+        -Q 20 --minOverlap 1 --fracOverlap 0 \
+        {input.bam}
         """

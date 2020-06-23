@@ -1,20 +1,26 @@
 # Analysis Params
 SAMPLES:
-    - test
-    - test2
+    - FourReps
+    - SRR891268
+    - SRR891269
+    - SRR891270
+    - SRR891271
+    - SRR891272
+    - SRR891273
+    - SRR891274
 
-GENOME: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/mm10.ucsc.fa
-GTF: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM21.annotation.gtf
-GSIZE: "mm"
-SizeFile: "~/mccb/genome/Mus_musculus_UCSC_mm10/mm10.chrom.sizes.txt"
+GENOME: /project/umw_mccb/genome/Homo_sapiens/hg19/hg19.chr.fa
+GTF: /project/umw_mccb/genome/Homo_sapiens/hg19/ucsc.hg19.gtf
+GSIZE: "hs"  # MACS2 gsize param, hs, mm, ce, dm, 2.7e8
+SizeFile: "/project/umw_mccb/genome/Homo_sapiens/hg19/star_idx/chrNameLength.txt" # for bedGraphToBigWig
 
 
 BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
 MQ_MIN: 0 # multiBamSummary, plotFingerprint
 
 # Filters for bamCoverage, plotFingerprint, multiBamSummary
-minFragmentLength: 50  # 100 for mono-nucleosome, 38 for ATACseq, 50 for ChIPseq
-maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments, 2000 for ATACseq, 1000 for ChIPseq
+minFragmentLength: 50  # 100 for mono-nucleosome
+maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
 atac: TRUE  # TRUE: ATACseq, FALSE: ChIPseq
 chrM: chrM  # Name of mitochondria in genome.fa, have to be exact match
 filter: 'BEGIN{FS=OFS="\t"} function abs(v) {return v < 0 ? -v : v}; /^@/ || ($7 == "="  && ($2 == 81 || $2 == 161|| $2 == 97 || $2 == 145 || $2 ==99 || $2 == 147 || $2 == 83 || $2 ==163) && abs($9) <= 2000 && abs($9) >= 38 && $5 >=20 ) {print}' # need update from config, for cleanBam
