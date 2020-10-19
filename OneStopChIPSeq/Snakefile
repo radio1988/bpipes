@@ -1,0 +1,174 @@
+configfile: 'config.yaml'
+
+rule targets:
+    input:
+        FastQC = fastqc/multiqc_report.html,
+        bigWig = expand('bigWig/{s}.bw', s=config['SAMPLES'])
+
+
+rule FastQC:
+    input:
+        r1='fastq/{s}.R1.fastq.gz' if config['PAIR_END'] else 'fastq/{s}.fastq.gz',
+        r2='fastq/{s}.R2.fastq.gz' if config['PAIR_END'] else 'fastq/{s}.fastq.gz'
+    output:
+        'fastqc/details/{s}_fastqc.html'
+    threads:
+        1
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1500
+    envmodules:
+        'fastqc/0.11.5'
+    params:
+        reads="fastq/{s}.R1.fastq.gz fastq/{s}.R2.fastq.gz" if config['PAIR_END'] else 'fastq/{s}.fastq.gz'
+    log:
+        'fastqc/details/{s}.log'
+    benchmark:
+        'fastqc/details/{s}.tsv'
+    shell:
+        """
+        #mkdir -p fastqc && mkdir -p fastqc/details
+        which fastqc &> {log}
+        fastqc -t {threads} {input} -o fastqc/details &>> {log}
+        """
+
+
+rule MultiQC:
+    input:
+        expand('fastqc/details/{s}_fastqc.html', s=config['SAMPLES'])
+    output:
+        'fastqc/multiqc_report.html'
+    threads:
+        1
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1500
+    envmodules:
+        'fastqc/0.11.5'
+    log:
+        'fastqc/multiqc.log'
+    benchmark:
+        'fastqc/multiqc.tsv'
+    shell:
+        """
+        which multiqc &> {log}
+        rm -rf fastqc/multiqc_data && multiqc fastqc/details -o fastqc &>> {log}
+        """
+
+# rule ALIGN
+if config['ALIGNER'] == 'bwa':
+    rule bwa_index:
+        input: config['GENOME']
+        output: config['GENOME'] + '.sa'
+        threads:
+            1
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 8000
+        envmodules:
+            'bwa/0.7.17'
+        log:
+            config['GENOME'] + '.bwa.log'
+        benchmark:
+            config['GENOME'] + '.bwa.tsv'
+        shell:
+            '''
+            bwa index -a bwtsw {input}
+            '''
+    rule bwa:
+        input: 
+            genome=config['GENOME'],
+            index=config['GENOME'] + '.sa',
+            r1='fastq/{s}.R1.fastq.gz' if config['PAIR_END'] else 'fastq/{s}.fastq.gz',
+            r2='fastq/{s}.R2.fastq.gz' if config['PAIR_END'] else 'fastq/{s}.fastq.gz'
+        output:
+            bam='sorted_bam/{s}.bam',
+            bai='sorted_bam/{s}.bam.bai'
+        threads:
+            16
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 1500
+        envmodules:
+            'bwa/0.7.17 samtools/1.9'
+        params:
+            reads="fastq/{s}.R1.fastq.gz fastq/{s}.R2.fastq.gz" if config['PAIR_END'] else 'fastq/{s}.fastq.gz'
+        log:
+            'sorted_bam/{s}.bwa.log'
+        benchmark:
+            'sorted_bam/{s}.bwa.tsv'
+        shell:
+            """
+            which bwa > {log}
+            bwa mem -t {threads} {input.genome} {params.reads} 2>> {log} \
+            | samtools sort -@ 2 -m 1G -O BAM -o {output.bam} &>> {log}
+            samtools index {output.bam} &>> {log}
+            """
+elif config['ALIGNER'] == 'bowtie2':
+    rule bowtie2_index:
+        input: 
+            config['GENOME']
+        output: 
+            config['GENOME'] + '.1.bt2'
+        threads:
+            1
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 8000
+        envmodules:
+            'bowtie2/2.4.1'
+        log:
+            config['GENOME'] + '.bowtie2.log'
+        benchmark:
+            config['GENOME'] + '.bowtie2.tsv'
+        shell:
+            '''
+            bowtie2-build --version > {log}
+            bowtie2-build --threads {threads} {input} {input} &>> {log}
+            '''
+    rule bowtie2:
+        input:
+            genome=config['GENOME'],
+            index=config['GENOME'] + '.1.bt2',
+            r1='fastq/{s}.R1.fastq.gz' if config['PAIR_END'] else 'fastq/{s}.fastq.gz',
+            r2='fastq/{s}.R2.fastq.gz' if config['PAIR_END'] else 'fastq/{s}.fastq.gz'
+        output:
+            bam='sorted_bam/{s}.bam',
+            bai='sorted_bam/{s}.bam.bai'
+        threads:
+            16
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 1500
+        envmodules:
+            'bowtie2/2.4.1'
+        params:
+            reads="-1 fastq/{s}.R1.fastq.gz -2 fastq/{s}.R2.fastq.gz" if config['PAIR_END'] else '-U fastq/{s}.fastq.gz'
+        log:
+            'sorted_bam/{s}.bowtie2.log'
+        benchmark:
+            'sorted_bam/{s}.bowtie2.tsv'
+        shell:
+            """
+            bowtie2 --version &> {log}
+            bowtie2 -x {input.genome} {params.reads} \
+            | samtools sort -@ 2 -m 1G -O BAM -o {output.bam} &>> {log}
+            samtools index {output.bam} &>> {log}
+            """
+
+
+rule bam_coverage:
+    input:
+        'sorted_bam/{s}.bam'
+    output:
+        'bigWig/{s}.bw'
+    threads:
+        8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1500
+    log:
+        'bigWig/{s}.bw.log'
+    benchmark:
+        'bigWig/{s}.bw.tsv'
+    shell:
+        """
+        which bamCoverage &> {log}
+        bamCoverage --bam {input} \
+        -o  {output} \
+        --numberOfProcessors {threads} \
+        --outFileFormat bigwig --normalizeUsing CPM --binSize 20  &>> {log}
+        """

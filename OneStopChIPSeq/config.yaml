@@ -1,0 +1,22 @@
+# SAMPLE INFO
+SAMPLES:
+    - SRR2071651
+    - SRR2071652
+    - SRR2071653
+    - SRR2071654
+
+PAIR_END:
+    False
+
+
+# ALIGNER INPUT
+ALIGNER: 
+    bowtie2  # bwa, bowtie2
+GENOME: 
+    /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa
+
+# PARAMS
+BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
+MQ_MIN: 0 # multiBamSummary, plotFingerprint
+minFragmentLength: 50  # 100 for mono-nucleosome
+maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
