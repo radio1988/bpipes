@@ -1,0 +1,27 @@
+# Analysis Params
+SAMPLES:
+    - 1-2_S1
+    - 2-1_S2
+    - 2-2_S3
+    - 2-3_S4
+    - 3-1_S5
+    - 3-2_S6
+    - 3-3_S7
+
+GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa 
+
+GTF: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+
+GSIZE: "hs"  
+# MACS2 gsize param, hs, mm, ce, dm, 2.7e8
+
+SizeFile: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx/chrNameLength.txt
+# for bedGraphToBigWig, and hmmratac
+
+
+BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
+MQ_MIN: 0 # multiBamSummary, plotFingerprint
+
+# Filters for bamCoverage, plotFingerprint, multiBamSummary
+minFragmentLength: 50  # 100 for mono-nucleosome
+maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments

@@ -1,0 +1,21 @@
+#BSUB -J "count_atac"  # n jobs in array, batch size
+#BSUB -R rusage[mem=4000]  # for each cpu
+#BSUB -n 4  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+mkdir -p ./log
+#BSUB -o ./log/feature_count.%J.%I.log
+#BSUB -W 4:00
+#BSUB -q short
+##BSUB -N
+##BSUB -B
+
+#GTFs=(`ls `)
+gtf="liver.d16.5.MACS2_BAMPE.gtf"
+
+featureCounts -a $gtf \
+-o ${gtf/gtf/count.txt} \
+-T 4 \
+-g gene_id -t peak \
+-s 0 -p -B -C -d 38 -D 2000 \
+-Q 20 --minOverlap 1 --fracOverlap 0 \
+../cleanBam/*.bam
