@@ -52,12 +52,8 @@ ruleorder: macs2_DamID_contrast_treat_pileup_bw > macs2_DamID_sample_treat_pileu
 #     macs2_DamID_sample_treat_pileup_bw: macs2_DamID_sample/1-2_S1_treat_pileup.bw
 
 shell.prefix("""
-            #source /home/rl44w/.bash_profile
-            #echo "## snake.prefix"
             HOME=/home/rl44w/
             samtools="singularity exec $HOME/singularity/hand_sandbox.simg samtools"
-            samstat="singularity exec $HOME/singularity/hand_sandbox.simg samstat" 
-            # alias in .bash_profile not working in snakemake
             bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
             """)
 
@@ -409,7 +405,8 @@ rule macs2_DamID_sample_treat_pileup_bw:
     input:
         "macs2_DamID_sample/{sample}_treat_pileup.bdg"
     output:
-        "macs2_DamID_sample/{sample}_treat_pileup.bw"
+        bw="macs2_DamID_sample/{sample}_treat_pileup.bw",
+        sbdg=temp("macs2_DamID_sample/{sample}_treat_pileup.s.bdg")
     params:
         mem="16000"
     threads:
@@ -422,10 +419,9 @@ rule macs2_DamID_sample_treat_pileup_bw:
         100
     shell:
         """
-        sort -k1,1 -k2,2n {input} > macs2_DamID_sample/{wildcards.sample}_treat_pileup.s.bdg 2> {log}
+        sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
         bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
-        $bedGraphToBigWig macs2_DamID_sample/{wildcards.sample}_treat_pileup.s.bdg {SizeFile} {output} && \
-        rm -f macs2_DamID_sample/{wildcards.sample}_treat_pileup.s.bdg &>> {log}
+        $bedGraphToBigWig macs2_DamID_sample/{wildcards.sample}_treat_pileup.s.bdg {SizeFile} {output.bw} &>> {log}
         """
 
 # rule macs2_site_peak2gtf:
@@ -526,12 +522,13 @@ rule macs2_DamID_contrast:
         -n {params.contrast_name} --outdir macs2_DamID_contrast/{wildcards.contrast} -B &> {log}
         """
 
+
 rule macs2_DamID_contrast_treat_pileup_bw:
     input:
         "macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.bdg"
     output:
-        "macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.bw",
-        temp("macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.s.bdg")
+        bw="macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.bw",
+        sbdg=temp("macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.s.bdg")
     params:
         mem="16000"
     threads:
@@ -544,12 +541,10 @@ rule macs2_DamID_contrast_treat_pileup_bw:
         "macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.bw.tsv"
     shell:
         """
-        echo macs2_DamID_contrast/{wildcards.contrast}/{wildcards.contrast_name}_treat_pileup.s.bdg > {log}
-        sort -k1,1 -k2,2n {input} > \
-            macs2_DamID_contrast/{wildcards.contrast}/{wildcards.contrast_name}_treat_pileup.s.bdg 2>> {log}
+        sort -k1,1 -k2,2n {input} > macs2_DamID_contrast/{wildcards.contrast}/{wildcards.contrast_name}_treat_pileup.s.bdg 2>> {log}
         bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
         $bedGraphToBigWig macs2_DamID_contrast/{wildcards.contrast}/{wildcards.contrast_name}_treat_pileup.s.bdg \
-            {SizeFile} {output} &>> {log}
+            {SizeFile} {output.bw} &>> {log}
         """
 
 rule create_dag:
