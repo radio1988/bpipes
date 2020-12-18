@@ -1,12 +1,13 @@
 import pandas as pd
 from functools import reduce
-# todo: put this part to damit_module.py (for rule macs2_DamID_contrast)
+
 class parse_meta_contrast_class:
   def __init__(self, y0, y1, y2, y3):
    self.contrast2contrast_name = y0
    self.contrast2treatmentSamples = y1
    self.contrast2controlSamples = y2
    self.contrasts = y3
+
 def parse_meta_contrast (fmeta="meta.csv", fcontrast="contrast.csv"):
     """
     designed to get output dictionaries
@@ -106,7 +107,6 @@ def parse_meta_contrast (fmeta="meta.csv", fcontrast="contrast.csv"):
     return parse_meta_contrast_class(contrast2contrast_name, 
                 contrast2treatmentSamples, contrast2controlSamples, contrasts) # dictionaries in class
 
-
 def get_treatment_bams_from_contrast(contrast="contrast1", root="DamID_reads/", o = "parse_meta_contrast_obj"):
     treatment_samples = o.contrast2treatmentSamples[contrast]
     treatment_bams = list(map(lambda x:  root + str(x) + ".bam", treatment_samples))
@@ -114,10 +114,12 @@ def get_treatment_bams_from_contrast(contrast="contrast1", root="DamID_reads/", 
     # treatment_bams now: ['DamID_reads/2-1_S2.bam', 'DamID_reads/2-2_S3.bam', 'DamID_reads/2-3_S4.bam', 'DamID_reads/3-1_S5.bam', 'DamID_reads/3-2_S6.bam', 'DamID_reads/3-3_S7.bam']
     #treatment_bams = reduce(lambda x, y: x+" "+y , treatment_bams)
     return treatment_bams
+
 def get_control_bams_from_contrast(contrast="contrast1", root="DamID_reads/", o = "parse_meta_contrast_obj"):
     control_samples = o.contrast2controlSamples[contrast]
     control_bams = list(map(lambda x:  root + str(x) + ".bam", control_samples))
     return control_bams
+
 def get_contrast_name_from_contrast(contrast="contrast1", o = "parse_meta_contrast_obj"):
     # print("name", contrast, o.contrast2contrast_name[contrast])
     return o.contrast2contrast_name[contrast]
@@ -137,7 +139,20 @@ def get_treat_pileup_bdg_names_from_contrasts(contrasts=["contrast1", "contrast2
         treat_pileup_bdg_names.append("macs2_DamID_contrast/"+contrast+"/"+name+"_treat_pileup.bdg")
     return treat_pileup_bdg_names
 
+def get_treat_pileup_bw_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
+    """
+    Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
+    output example:
+    [macs2_DamID_contrast/contrast1/G1_vs_ctrl_treat_pileup.bdg, 
+    macs2_DamID_contrast/contrast2/G2_vs_ctrl_treat_pileup.bdg, 
+    macs2_DamID_contrast/contrast3/G1_G2_vs_ctrl_treat_pileup.bdg]
+    """
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    treat_pileup_bdg_names = []
+    for contrast,name in zip(contrasts, contrast_names):
+        treat_pileup_bdg_names.append("macs2_DamID_contrast/"+contrast+"/"+name+"_treat_pileup.bw")
+    return treat_pileup_bdg_names
 
 
 # todo: end of this part
