@@ -204,8 +204,8 @@ rule sorted_reads_bam_qc:
     shell:
         """
         samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} 
-        samtools flagstat {input.bam} > {output.flagstat} 2>> {log.flagstat} 
-        samtools stats {input.bam} > {output.stats} 2>> {log.stats} 
+        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat} 
+        samtools stats {input.bam} > {output.stats} 2> {log.stats} 
         """
 
 rule multiQC_sorted_reads:
@@ -225,9 +225,9 @@ rule multiQC_sorted_reads:
         "sorted_reads_bam_qc/multiqc.log"
     shell:
         """
-        multiqc {input.stats} &> {log}
-        multiqc {input.idxstats}   &>> {log}
-        multiqc {input.flagstat} &>> {log}
+        multiqc -f {input.stats} -o sorted_reads_bam_qc/stats/ &> {log}
+        multiqc -f {input.idxstats} -o sorted_reads_bam_qc/idxstats   &>> {log}
+        multiqc -f {input.flagstat} -o sorted_reads_bam_qc/flagstat/ &>> {log}
         """
 
 rule DamID_reads_bam_qc:
@@ -248,8 +248,8 @@ rule DamID_reads_bam_qc:
     shell:
         """
         samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} 
-        samtools flagstat {input.bam} > {output.flagstat} 2>> {log.flagstat} 
-        samtools stats {input.bam} > {output.stats} 2>> {log.stats} 
+        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat} 
+        samtools stats {input.bam} > {output.stats} 2> {log.stats} 
         """
 
 rule multiQC_DamID_reads:
@@ -266,12 +266,12 @@ rule multiQC_DamID_reads:
     threads:
         1
     log:
-        "sorted_reads_bam_qc/multiqc.log"
+        "DamID_reads_bam_qc/multiqc.log"
     shell:
         """
-        multiqc {input.stats} &> {log}
-        multiqc {input.idxstats}   &>> {log}
-        multiqc {input.flagstat} &>> {log}
+        multiqc -f {input.stats} -o DamID_reads_bam_qc/stats/ &> {log}
+        multiqc -f {input.idxstats} -o DamID_reads_bam_qc/idxstats   &>> {log}
+        multiqc -f {input.flagstat} -o DamID_reads_bam_qc/flagstat/ &>> {log}
         """
 
 rule plotFingerprint:
