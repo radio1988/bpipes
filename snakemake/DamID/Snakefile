@@ -70,6 +70,8 @@ rule targets:
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         sorted_reads_bam_qc=expand("sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=SAMPLES),
+        multiqc_sorted_reads="sorted_reads_bam_qc/stats/multiqc_report.html",
+        multiqc_DamID_reads="DamID_reads_bam_qc/stats/multiqc_report.html",
         DamID_reads_bam_qc=expand("DamID_reads_bam_qc/stats/{sample}.stats.txt", sample=SAMPLES),
 
         qc1="DamID_reads_bam_qc/fingerprint.pdf",
@@ -189,31 +191,51 @@ rule sorted_reads_bam_qc:
         bam="sorted_reads/{sample}.bam"
     output:
         idxstats="sorted_reads_bam_qc/idxstats/{sample}.idxstats.txt",
-        flagstat="sorted_reads_bam_qc/flagstat/{sample}.flagsat.txt",
+        flagstat="sorted_reads_bam_qc/flagstat/{sample}.flagstat.txt",
         stats="sorted_reads_bam_qc/stats/{sample}.stats.txt"
     params:
         mem="3000"
     threads:
-        4
+        1
     log:
         idxstats="sorted_reads_bam_qc/idxstats/{sample}.idxstats.log",
-        flagstat="sorted_reads_bam_qc/flagstat/{sample}.flagsat.log",
+        flagstat="sorted_reads_bam_qc/flagstat/{sample}.flagstat.log",
         stats="sorted_reads_bam_qc/stats/{sample}.stats.log"
     shell:
         """
-        samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} &
-        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat} &
-        samtools stats {input.bam} > {output.stats} 2> {log.stats} &
-        wait
+        samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} 
+        samtools flagstat {input.bam} > {output.flagstat} 2>> {log.flagstat} 
+        samtools stats {input.bam} > {output.stats} 2>> {log.stats} 
         """
 
+rule multiQC_sorted_reads:
+    input:
+        stats=expand("sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=SAMPLES),
+        idxstats=expand("sorted_reads_bam_qc/idxstats/{sample}.idxstats.txt", sample=SAMPLES),
+        flagstat=expand("sorted_reads_bam_qc/flagstat/{sample}.flagstat.txt", sample=SAMPLES),
+    output:
+        "sorted_reads_bam_qc/stats/multiqc_report.html",
+        "sorted_reads_bam_qc/idxstats/multiqc_report.html",
+        "sorted_reads_bam_qc/flagstat/multiqc_report.html",
+    params:
+        mem="3000"
+    threads:
+        1
+    log:
+        "sorted_reads_bam_qc/multiqc.log"
+    shell:
+        """
+        multiqc {input.stats} &> {log}
+        multiqc {input.idxstats}   &>> {log}
+        multiqc {input.flagstat} &>> {log}
+        """
 
 rule DamID_reads_bam_qc:
     input:
         bam="DamID_reads/{sample}.bam"
     output:
         idxstats="DamID_reads_bam_qc/idxstats/{sample}.idxstats.txt",
-        flagstat="DamID_reads_bam_qc/flagstat/{sample}.flagsat.txt",
+        flagstat="DamID_reads_bam_qc/flagstat/{sample}.flagstat.txt",
         stats="DamID_reads_bam_qc/stats/{sample}.stats.txt"
     params:
         mem="2000"
@@ -221,15 +243,36 @@ rule DamID_reads_bam_qc:
         1
     log:
         idxstats="DamID_reads_bam_qc/idxstats/{sample}.idxstats.log",
-        flagstat="DamID_reads_bam_qc/flagstat/{sample}.flagsat.log",
+        flagstat="DamID_reads_bam_qc/flagstat/{sample}.flagstat.log",
         stats="DamID_reads_bam_qc/stats/{sample}.stats.log"
     shell:
         """
         samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} 
-        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat} 
-        samtools stats {input.bam} > {output.stats} 2> {log.stats} 
+        samtools flagstat {input.bam} > {output.flagstat} 2>> {log.flagstat} 
+        samtools stats {input.bam} > {output.stats} 2>> {log.stats} 
         """
 
+rule multiQC_DamID_reads:
+    input:
+        stats=expand("DamID_reads_bam_qc/stats/{sample}.stats.txt", sample=SAMPLES),
+        idxstats=expand("DamID_reads_bam_qc/idxstats/{sample}.idxstats.txt", sample=SAMPLES),
+        flagstat=expand("DamID_reads_bam_qc/flagstat/{sample}.flagstat.txt", sample=SAMPLES),
+    output:
+        "DamID_reads_bam_qc/stats/multiqc_report.html",
+        "DamID_reads_bam_qc/idxstats/multiqc_report.html",
+        "DamID_reads_bam_qc/flagstat/multiqc_report.html",
+    params:
+        mem="3000"
+    threads:
+        1
+    log:
+        "sorted_reads_bam_qc/multiqc.log"
+    shell:
+        """
+        multiqc {input.stats} &> {log}
+        multiqc {input.idxstats}   &>> {log}
+        multiqc {input.flagstat} &>> {log}
+        """
 
 rule plotFingerprint:
     input:
