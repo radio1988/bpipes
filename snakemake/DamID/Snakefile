@@ -18,6 +18,7 @@ from snakemake.utils import min_version
 from damid_modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_control_bams_from_contrast, get_contrast_name_from_contrast, \
     get_treat_pileup_bdg_names_from_contrasts, get_treat_pileup_bw_names_from_contrasts
+from damid_modules import *
 
 
 ### parse and prepare
@@ -67,6 +68,7 @@ rule targets:
         macs2_DamID_sample_treat_pileup_bw=expand("macs2_DamID_sample/{sample}_treat_pileup.bw", sample=SAMPLES),
         macs2_DamID_contrast=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
         macs2_DamID_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
+        macs2_DamID_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         sorted_reads_bam_qc=expand("sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=SAMPLES),
@@ -565,6 +567,29 @@ rule macs2_DamID_contrast:
         -n {params.contrast_name} --outdir macs2_DamID_contrast/{wildcards.contrast} -B &> {log}
         """
 
+rule macs2_DamID_contrast_control_lambda_bw:
+    input:
+        "macs2_DamID_contrast/{contrast}/{contrast_name}_control_lambda.bdg"
+    output:
+        bw="macs2_DamID_contrast/{contrast}/{contrast_name}_control_lambda.bw",
+        sbdg=temp("macs2_DamID_contrast/{contrast}/{contrast_name}_control_lambda.s.bdg")
+    params:
+        mem="16000"
+    threads:
+        1
+    priority:
+        100
+    log:
+        "macs2_DamID_contrast/{contrast}/log/{contrast_name}_control_lambda.bw.log"
+    benchmark:
+        "macs2_DamID_contrast/{contrast}/log/{contrast_name}_control_lambda.bw.tsv"
+    shell:
+        """
+        sort -k1,1 -k2,2n {input} > macs2_DamID_contrast/{wildcards.contrast}/{wildcards.contrast_name}_control_lambda.s.bdg 2>> {log}
+        bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
+        $bedGraphToBigWig macs2_DamID_contrast/{wildcards.contrast}/{wildcards.contrast_name}_control_lambda.s.bdg \
+            {SizeFile} {output.bw} &>> {log}
+        """
 
 rule macs2_DamID_contrast_treat_pileup_bw:
     input:
