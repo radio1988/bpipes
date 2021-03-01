@@ -46,7 +46,7 @@ rule targets:
         align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
         markDup=expand("results/markDup/{sample}.bam", sample=SAMPLES),
         cleanBam=expand("results/cleanBam/{sample}.bam", sample=SAMPLES),
-        bam_qc=expand("results/{bam_folder}/bam_qc/stats/multiqc_report.html", bam_folder=BAM_FOLDERS),
+        bam_qc=expand("results/{bam_folder}/bam_qc/stats_multiqc_report.html", bam_folder=BAM_FOLDERS),
         markDup_multiqc="results/markDup/multiqc/markDup_metrics_multiqc_report.html",
 
         # bam_qc="{bam_folder}/stats/multiqc_report.html",
@@ -145,7 +145,7 @@ rule markDup:
         bai=temp("results/markDup/{sample}.bam.bai"),
         metrics="results/markDup/details/{sample}.markDup_metrics.txt",
     threads:
-        2
+        1
     params:
         mem="16000",  # Used Max of 24G before
     log:
@@ -220,7 +220,6 @@ rule cleanBam:
         samtools index {output} &> {log}
         """
 
-
 rule bam_qc:
     input:
         bam="results/{bam_folder}/{sample}.bam"
@@ -229,9 +228,9 @@ rule bam_qc:
         flagstat="results/{bam_folder}/bam_qc/flagsat/{sample}.flagsat.txt",
         stats="results/{bam_folder}/bam_qc/stats/{sample}.stats.txt"
     threads:
-        2
+        1
     params:
-        mem="3000"
+        mem="4000"
     log:
         idxstats="results/{bam_folder}/bam_qc/idxstats/{sample}.idxstats.txt.log",
         flagstat="results/{bam_folder}/bam_qc/flagsat/{sample}.flagsat.txt.log",
@@ -240,10 +239,9 @@ rule bam_qc:
         "results/{bam_folder}/bam_qc/benchmark/{sample}.bam_qc.benchmark",
     shell:
         """
-        samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} &
-        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat} &
-        samtools stats {input.bam} > {output.stats} 2> {log.stats} &
-        wait
+        samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats}
+        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat}
+        samtools stats {input.bam} > {output.stats} 2> {log.stats}
         """
 
 rule bam_multiqc:
@@ -255,9 +253,9 @@ rule bam_multiqc:
         stats=expand("results/{bam_folder}/bam_qc/stats/{sample}.stats.txt", 
             bam_folder=BAM_FOLDERS, sample=SAMPLES),
     output:
-        "results/{bam_folder}/bam_qc/idxstats/idxstats_multiqc_report.html",
-        "results/{bam_folder}/bam_qc/flagstat/flagstat_multiqc_report.html",
-        "results/{bam_folder}/bam_qc/stats/stats_multiqc_report.html",
+        "results/{bam_folder}/bam_qc/idxstats_multiqc_report.html",
+        "results/{bam_folder}/bam_qc/flagstat_multiqc_report.html",
+        "results/{bam_folder}/bam_qc/stats_multiqc_report.html",
     threads:
         1
     params:
@@ -271,18 +269,23 @@ rule bam_multiqc:
         multiqc -f {input.stats} -o results/{wildcards.bam_folder}/bam_qc -i stats  &> {log}
         """
 
+# ChIPQC
+
 rule plotFingerprint:
     input:
-        expand("DamID_reads/{sample}.bam", sample=SAMPLES)
+        expand("results/{bam_folder}/bam_qc/idxstats/{sample}.idxstats.txt", 
+            bam_folder=['cleanBam', 'sorted_reads'], sample=SAMPLES)  # todo: move to config
     output:
-        plot="DamID_reads_bam_qc/fingerprint.pdf",
-        txt="DamID_reads_bam_qc/fingerprint.txt",
+        plot="results/{bam_folder}/fingerprint.pdf",
+        txt="results/{bam_folder}/fingerprint.txt",
     params:
         mem="2000"
     threads:
         6
     log:
-        "DamID_reads_bam_qc/fingerprint.log"
+        "results/{bam_folder}/fingerprint.log",
+    benchmark:
+        "results/{bam_folder}/fingerprint.benchmark",
     shell:
         """
         plotFingerprint -b {input} \
