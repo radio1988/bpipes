@@ -1,24 +1,34 @@
 # Analysis Params
 SAMPLES:
-    - 1-2_S1
-    - 2-1_S2
-    - 2-2_S3
-    - 2-3_S4
-    - 3-1_S5
-    - 3-2_S6
-    - 3-3_S7
-    - L6_S25
+    - DQ1-Ac_S43
+    - DQ1-Me3_S44
+    - DQ1-noAb_S41
+    - DQ1-RX1_S42
+    - DQ2-Ac_S59
+    - DQ2-Me3_S60
+    - DQ2-noAB_S57
+    - DQ2-RX1_S58
+    - PM1-Ac_S39
+    - PM1-Me3_S40
+    - PM1-noAb_S37
+    - PM1-RX1_S38
+    - PM3-Ac_S55
+    - PM3-Me3_S56
+    - PM3-noAb_S53
+    - PM3-RX1_S54
+    - Q3-Ac_S51
+    - Q3-Me3_S52
+    - Q3-noAB_S49
+    - Q3-RX1_S50
+    - WT3-Ac_S47
+    - WT3-Me3_S48
+    - WT3-noAb_S45
+    - WT3-RX1_S46
 
-GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa 
-
-GTF: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
-
-GSIZE: "hs"  
-# MACS2 gsize param, hs, mm, ce, dm, 2.7e8
-
-SizeFile: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx/chrNameLength.txt
-# for bedGraphToBigWig, and hmmratac
-
+GENOME: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/mm10.ucsc.fa
+GTF: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM25.primary_assembly.annotation.gtf
+GSIZE: "mm"  # MACS2 gsize param, hs, mm, ce, dm, 2.7e8
+SizeFile: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/star_idx_vM25/chrNameLength.txt # for bedGraphToBigWig
 
 BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
 MQ_MIN: 0 # multiBamSummary, plotFingerprint
@@ -26,3 +36,12 @@ MQ_MIN: 0 # multiBamSummary, plotFingerprint
 # Filters for bamCoverage, plotFingerprint, multiBamSummary
 minFragmentLength: 50  # 100 for mono-nucleosome
 maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
+TYPE: chip  # chip, atac, damid
+BAM_FOLDERS: 
+    - sorted_reads
+    - markDup
+    - cleanBam
+
+
+chrM: chrM  # Name of mitochondria in genome.fa, have to be exact match
+filter: 'BEGIN{FS=OFS="\t"} function abs(v) {return v < 0 ? -v : v}; /^@/ || ($7 == "="  && ($2 == 81 || $2 == 161|| $2 == 97 || $2 == 145 || $2 ==99 || $2 == 147 || $2 == 83 || $2 ==163) && abs($9) <= 2000 && abs($9) >= 38 && $5 >=20 ) {print}' # need update from config, for cleanBam
