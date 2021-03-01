@@ -2,7 +2,7 @@
 # Modified from DamID pipeline
 # Functions: 
     # fastqc
-    # map, filter, bam_qc
+    # map, filter, bamqc
 # Env: 
     # source activate damid
 # Requirements
@@ -29,6 +29,8 @@ SizeFile=config["SizeFile"]
 chrM=config["chrM"]
 TYPE=config['TYPE'] 
 BAM_FOLDERS=config['BAM_FOLDERS']
+minFragmentLength=config['minFragmentLength']
+maxFragmentLength=config['maxFragmentLength']
 
 
 shell.prefix("""
@@ -46,17 +48,15 @@ rule targets:
         align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
         markDup=expand("results/markDup/{sample}.bam", sample=SAMPLES),
         cleanBam=expand("results/cleanBam/{sample}.bam", sample=SAMPLES),
-        bam_qc=expand("results/{bam_folder}/bam_qc/stats_multiqc_report.html", bam_folder=BAM_FOLDERS),
+        bamqc=expand("results/{bam_folder}/bamqc/stats_multiqc_report.html", bam_folder=BAM_FOLDERS),
         markDup_multiqc="results/markDup/multiqc/markDup_metrics_multiqc_report.html",
-
-        # bam_qc="{bam_folder}/stats/multiqc_report.html",
-
-        # qc1="DamID_reads_bam_qc/fingerprint.pdf",
-        # #qc2="DamID_reads_bam_qc/fragment_size.pdf",
-        # qc3="DamID_reads_bam_qc/multiBamSummary.heatmap.pdf",
-        # qc4="DamID_reads_bam_qc/multiBamSummary.pca.pdf",
-        # qc5=expand("DamID_reads_bam_qc/{sample}.insert_size.pdf", sample=SAMPLES),
-        # dag="Workflow_DAG.all.svg"
+        chipqc1=expand("results/{bam_folder}/chipqc/fingerprint.pdf", bam_folder=BAM_FOLDERS),
+        chipqc2=expand("results/{bam_folder}/chipqc/fragment_size.pdf", bam_folder=BAM_FOLDERS),
+        chipqc3=expand("results/{bam_folder}/chipqc/multiBamSummary.heatmap.pdf", bam_folder=BAM_FOLDERS),
+        chipqc4=expand("results/{bam_folder}/chipqc/multiBamSummary.pca.pdf", bam_folder=BAM_FOLDERS),
+        chipqc5=expand("results/{bam_folder}/chipqc/details/{sample}.insert_size.pdf", 
+            bam_folder=BAM_FOLDERS, sample=SAMPLES),
+        dag="Workflow_DAG.all.svg"
 
 
 rule fastqc:
@@ -107,9 +107,9 @@ rule bwa:
     params:
         mem="1500"  # todo auto adjust based on {threads}, for human need 18G+ 
     log:
-        "results/mapped_reads/{sample}.bam.log"
+        "results/mapped_reads/log/{sample}.bam.log"
     benchmark:
-        "results/mapped_reads/{sample}.bam.benchmark"
+        "results/mapped_reads/log/{sample}.bam.benchmark"
     shell:
         """
         bwa mem -t {threads} {GENOME} \
@@ -128,7 +128,7 @@ rule sort_index:
     params:
         mem="1200"
     log:
-        "results/sorted_reads/{sample}.bam.log"
+        "results/sorted_reads/log/{sample}.bam.log"
     shell:
         """
         samtools --version &> {log}
@@ -149,9 +149,9 @@ rule markDup:
     params:
         mem="16000",  # Used Max of 24G before
     log:
-        "results/markDup/{sample}.bam.log"
+        "results/markDup/log/{sample}.bam.log"
     benchmark:
-        "results/markDup/{sample}.bam.benchmark"
+        "results/markDup/log/{sample}.bam.benchmark"
     shell:
         """        
         picard MarkDuplicates \
@@ -176,9 +176,9 @@ rule markDup_multiqc:
     params:
         mem="6000",  # Used Max of 24G before
     log:
-        "results/markDup/multiqc/markDup_metrics_multiqc_report.log"
+        "results/markDup/multiqc/log/markDup_metrics_multiqc_report.log"
     benchmark:
-        "results/markDup/multiqc/markDup_metrics_multiqc_report.benchmark"
+        "results/markDup/multiqc/log/markDup_metrics_multiqc_report.benchmark"
     shell:
         """        
         multiqc -f {input} -o results/markDup/multiqc -i markDup_metrics &> {log}
@@ -197,9 +197,9 @@ rule cleanBam:
     params:
         mem="8000"
     log:
-        "results/cleanBam/{sample}.bam.log"
+        "results/cleanBam/log/{sample}.bam.log"
     benchmark:
-        "results/cleanBam/{sample}.bam.benchmark"
+        "results/cleanBam/log/{sample}.bam.benchmark"
     shell:
         """
         if [ {config[TYPE]} = 'atac' ]; then
@@ -220,23 +220,23 @@ rule cleanBam:
         samtools index {output} &> {log}
         """
 
-rule bam_qc:
+rule bamqc:
     input:
         bam="results/{bam_folder}/{sample}.bam"
     output:
-        idxstats="results/{bam_folder}/bam_qc/idxstats/{sample}.idxstats.txt",
-        flagstat="results/{bam_folder}/bam_qc/flagsat/{sample}.flagsat.txt",
-        stats="results/{bam_folder}/bam_qc/stats/{sample}.stats.txt"
+        idxstats="results/{bam_folder}/bamqc/idxstats/{sample}.idxstats.txt",
+        flagstat="results/{bam_folder}/bamqc/flagstat/{sample}.flagstat.txt",
+        stats="results/{bam_folder}/bamqc/stats/{sample}.stats.txt"
     threads:
         1
     params:
         mem="4000"
     log:
-        idxstats="results/{bam_folder}/bam_qc/idxstats/{sample}.idxstats.txt.log",
-        flagstat="results/{bam_folder}/bam_qc/flagsat/{sample}.flagsat.txt.log",
-        stats="results/{bam_folder}/bam_qc/stats/{sample}.stats.txt.log"
+        idxstats="results/{bam_folder}/bamqc/idxstats/log/{sample}.idxstats.txt.log",
+        flagstat="results/{bam_folder}/bamqc/flagstat/log/{sample}.flagstat.txt.log",
+        stats="results/{bam_folder}/bamqc/stats/log/{sample}.stats.txt.log"
     benchmark:
-        "results/{bam_folder}/bam_qc/benchmark/{sample}.bam_qc.benchmark",
+        "results/{bam_folder}/bamqc/benchmark/{sample}.bamqc.benchmark",
     shell:
         """
         samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats}
@@ -246,46 +246,42 @@ rule bam_qc:
 
 rule bam_multiqc:
     input:
-        idxstats=expand("results/{bam_folder}/bam_qc/idxstats/{sample}.idxstats.txt", 
-            bam_folder=BAM_FOLDERS, sample=SAMPLES),
-        flagstat=expand("results/{bam_folder}/bam_qc/flagsat/{sample}.flagsat.txt", 
-            bam_folder=BAM_FOLDERS, sample=SAMPLES),
-        stats=expand("results/{bam_folder}/bam_qc/stats/{sample}.stats.txt", 
-            bam_folder=BAM_FOLDERS, sample=SAMPLES),
+        idxstats=[("results/{bam_folder}/bamqc/idxstats/" + s + ".idxstats.txt") for s in SAMPLES],
+        flagstat=[("results/{bam_folder}/bamqc/flagstat/" + s + ".flagstat.txt") for s in SAMPLES],
+        stats=[("results/{bam_folder}/bamqc/stats/" + s + ".stats.txt") for s in SAMPLES]
     output:
-        "results/{bam_folder}/bam_qc/idxstats_multiqc_report.html",
-        "results/{bam_folder}/bam_qc/flagstat_multiqc_report.html",
-        "results/{bam_folder}/bam_qc/stats_multiqc_report.html",
+        "results/{bam_folder}/bamqc/idxstats_multiqc_report.html",
+        "results/{bam_folder}/bamqc/flagstat_multiqc_report.html",
+        "results/{bam_folder}/bamqc/stats_multiqc_report.html",
     threads:
         1
     params:
         mem="3000"
     log:
-        "results/{bam_folder}/bam_qc/bam_qc.log",
+        "results/{bam_folder}/bamqc/bamqc.log",
     shell:
         """
-        multiqc -f {input.idxstats} -o results/{wildcards.bam_folder}/bam_qc -i  idxstats &> {log}
-        multiqc -f {input.flagstat} -o results/{wildcards.bam_folder}/bam_qc -i  flagstat &> {log}
-        multiqc -f {input.stats} -o results/{wildcards.bam_folder}/bam_qc -i stats  &> {log}
+        multiqc -f {input.idxstats} -o results/{wildcards.bam_folder}/bamqc -i  idxstats &> {log}
+        multiqc -f {input.flagstat} -o results/{wildcards.bam_folder}/bamqc -i  flagstat &>> {log}
+        multiqc -f {input.stats} -o results/{wildcards.bam_folder}/bamqc -i stats  &>> {log}
         """
 
 # ChIPQC
 
 rule plotFingerprint:
     input:
-        expand("results/{bam_folder}/bam_qc/idxstats/{sample}.idxstats.txt", 
-            bam_folder=['cleanBam', 'sorted_reads'], sample=SAMPLES)  # todo: move to config
+        [("results/{bam_folder}/" + s + ".bam") for s in SAMPLES],
     output:
-        plot="results/{bam_folder}/fingerprint.pdf",
-        txt="results/{bam_folder}/fingerprint.txt",
-    params:
-        mem="2000"
+        plot="results/{bam_folder}/chipqc/fingerprint.pdf",
+        txt="results/{bam_folder}/chipqc/fingerprint.txt",
     threads:
         6
+    params:
+        mem="2000"
     log:
-        "results/{bam_folder}/fingerprint.log",
+        "results/{bam_folder}/chipqc/log/fingerprint.log",
     benchmark:
-        "results/{bam_folder}/fingerprint.benchmark",
+        "results/{bam_folder}/chipqc/log/fingerprint.benchmark",
     shell:
         """
         plotFingerprint -b {input} \
@@ -303,21 +299,23 @@ rule plotFingerprint:
             -p {threads} &> {log}
         """
         # --samFlagInclude 2: mate properly paired only
-        # --extendReads: use mate into
+        # --extendReads: use mate into  #todo: diff mode for chip, atac
 
 
 rule bamPEFragmentSize:
     input:
-        expand("DamID_reads/{sample}.bam", sample=SAMPLES)
+        [("results/{bam_folder}/" + s + ".bam") for s in SAMPLES],
     output:
-        plot="DamID_reads_bam_qc/fragment_size.pdf",
-        txt="DamID_reads_bam_qc/fragment_size.txt"
-    params:
-        mem="4000"
+        plot="results/{bam_folder}/chipqc/fragment_size.pdf",
+        txt="results/{bam_folder}/chipqc/fragment_size.txt"
     threads:
         4
+    params:
+        mem="4000"
     log:
-        "DamID_reads_bam_qc/fragment_size.log"
+        "results/{bam_folder}/chipqc/log/fragment_size.log",
+    benchmark:
+         "results/{bam_folder}/chipqc/log/fragment_size.benchmark",
     shell:
         """
         bamPEFragmentSize \
@@ -332,15 +330,17 @@ rule bamPEFragmentSize:
 
 rule multiBamSummary:
     input:
-        expand("DamID_reads/{sample}.bam", sample=SAMPLES)
+        [("results/{bam_folder}/" + s + ".bam") for s in SAMPLES],
     output:
-        "DamID_reads_bam_qc/multiBamSummary.npz",
-    params:
-        mem="3500"
+        "results/{bam_folder}/chipqc/multiBamSummary.npz",
     threads:
         8
+    params:
+        mem="3500"
     log:
-        "DamID_reads_bam_qc/multiBamSummary.log"
+        "results/{bam_folder}/chipqc/log/multiBamSummary.npz.log"
+    benchmark:
+        "results/{bam_folder}/chipqc/log/multiBamSummary.npz.benchmark"
     shell:
         """
         multiBamSummary bins \
@@ -350,8 +350,8 @@ rule multiBamSummary:
         --smartLabels \
         -p {threads} \
         --minMappingQuality {MQ_MIN} \
-        --minFragmentLength {config[minFragmentLength]} \
-        --maxFragmentLength {config[maxFragmentLength]} \
+        --minFragmentLength {minFragmentLength} \
+        --maxFragmentLength {maxFragmentLength} \
         -e \
         --samFlagInclude 2 &> {log}
         """
@@ -359,15 +359,17 @@ rule multiBamSummary:
 
 rule plotCorrelation:
     input:
-        "DamID_reads_bam_qc/multiBamSummary.npz",
+        "results/{bam_folder}/chipqc/multiBamSummary.npz",
     output:
-        "DamID_reads_bam_qc/multiBamSummary.heatmap.pdf"
-    params:
-        mem="20000"
+        "results/{bam_folder}/chipqc/multiBamSummary.heatmap.pdf"
     threads:
         1
+    params:
+        mem="20000"
     log:
-        "DamID_reads_bam_qc/plotCorrelation.log"
+        "results/{bam_folder}/chipqc/log/multiBamSummary.heatmap.log"
+    benchmark:
+        "results/{bam_folder}/chipqc/log/multiBamSummary.heatmap.benchmark"
     shell:
         """
         plotCorrelation \
@@ -381,15 +383,17 @@ rule plotCorrelation:
 
 rule plotPCA:
     input:
-        "DamID_reads_bam_qc/multiBamSummary.npz",
+        "results/{bam_folder}/chipqc/multiBamSummary.npz",
     output:
-        "DamID_reads_bam_qc/multiBamSummary.pca.pdf"
-    params:
-        mem="20000"
+        "results/{bam_folder}/chipqc/multiBamSummary.pca.pdf"
     threads:
         1
+    params:
+        mem="20000"
     log:
-        "DamID_reads_bam_qc/plotPCA.log"
+        "results/{bam_folder}/chipqc/log/multiBamSummary.pca.log"
+    benchmark:
+        "results/{bam_folder}/chipqc/log/multiBamSummary.pca.benchmark"
     shell:
         """
         plotPCA \
@@ -399,14 +403,18 @@ rule plotPCA:
 
 rule CollectInsertSizeMetrics:
     input:
-        "DamID_reads/{sample}.bam"
+        "results/{bam_folder}/{sample}.bam"
     output:
-        txt="DamID_reads_bam_qc/{sample}.insert_size.txt",
-        pdf="DamID_reads_bam_qc/{sample}.insert_size.pdf"
-    params:
-            mem="16000"
+        txt="results/{bam_folder}/chipqc/details/{sample}.insert_size.txt",
+        pdf="results/{bam_folder}/chipqc/details/{sample}.insert_size.pdf"
     threads:
         1
+    params:
+        mem="16000"
+    log:
+        "results/{bam_folder}/chipqc/details/log/{sample}.insert_size.pdf.log"
+    benchmark:
+        "results/{bam_folder}/chipqc/details/log/{sample}.insert_size.pdf.benchmark"
     shell:
         """
         module load picard/2.17.8
