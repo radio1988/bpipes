@@ -46,7 +46,9 @@ rule targets:
         align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
         markDup=expand("results/markDup/{sample}.bam", sample=SAMPLES),
         cleanBam=expand("results/cleanBam/{sample}.bam", sample=SAMPLES),
-        bam_qc=expand("results/{bam_folder}/bam_qc/stats/multiqc_report.html", bam_folder=BAM_FOLDERS)
+        bam_qc=expand("results/{bam_folder}/bam_qc/stats/multiqc_report.html", bam_folder=BAM_FOLDERS),
+        markDup_multiqc="results/markDup/multiqc/markDup_metrics_multiqc_report.html",
+
         # bam_qc="{bam_folder}/stats/multiqc_report.html",
 
         # qc1="DamID_reads_bam_qc/fingerprint.pdf",
@@ -141,7 +143,7 @@ rule markDup:
     output:
         bam=temp("results/markDup/{sample}.bam"),
         bai=temp("results/markDup/{sample}.bam.bai"),
-        metrics="results/markDup/{sample}.markDup_metrics.txt",
+        metrics="results/markDup/details/{sample}.markDup_metrics.txt",
     threads:
         2
     params:
@@ -161,6 +163,25 @@ rule markDup:
         &> {log}
 
         samtools index {output.bam} &>> {log}
+        """
+
+rule markDup_multiqc:
+    # same speed as bwa_map, slow
+    input:
+        expand("results/markDup/details/{sample}.markDup_metrics.txt", sample=SAMPLES)
+    output:
+        "results/markDup/multiqc/markDup_metrics_multiqc_report.html"
+    threads:
+        1
+    params:
+        mem="6000",  # Used Max of 24G before
+    log:
+        "results/markDup/multiqc/markDup_metrics_multiqc_report.log"
+    benchmark:
+        "results/markDup/multiqc/markDup_metrics_multiqc_report.benchmark"
+    shell:
+        """        
+        multiqc -f {input} -o results/markDup/multiqc -i markDup_metrics &> {log}
         """
 
 rule cleanBam:
@@ -234,9 +255,9 @@ rule bam_multiqc:
         stats=expand("results/{bam_folder}/bam_qc/stats/{sample}.stats.txt", 
             bam_folder=BAM_FOLDERS, sample=SAMPLES),
     output:
-        "results/{bam_folder}/bam_qc/idxstats/multiqc_report.html",
-        "results/{bam_folder}/bam_qc/flagstat/multiqc_report.html",
-        "results/{bam_folder}/bam_qc/stats/multiqc_report.html",
+        "results/{bam_folder}/bam_qc/idxstats/idxstats_multiqc_report.html",
+        "results/{bam_folder}/bam_qc/flagstat/flagstat_multiqc_report.html",
+        "results/{bam_folder}/bam_qc/stats/stats_multiqc_report.html",
     threads:
         1
     params:
@@ -245,9 +266,9 @@ rule bam_multiqc:
         "results/{bam_folder}/bam_qc/bam_qc.log",
     shell:
         """
-        multiqc -f {input.idxstats} -o results/{wildcards.bam_folder}/bam_qc/idxstats   &> {log}
-        multiqc -f {input.flagstat} -o results/{wildcards.bam_folder}/bam_qc/flagstat   &> {log}
-        multiqc -f {input.stats} -o results/{wildcards.bam_folder}/bam_qc/stats   &> {log}
+        multiqc -f {input.idxstats} -o results/{wildcards.bam_folder}/bam_qc -i  idxstats &> {log}
+        multiqc -f {input.flagstat} -o results/{wildcards.bam_folder}/bam_qc -i  flagstat &> {log}
+        multiqc -f {input.stats} -o results/{wildcards.bam_folder}/bam_qc -i stats  &> {log}
         """
 
 rule plotFingerprint:
