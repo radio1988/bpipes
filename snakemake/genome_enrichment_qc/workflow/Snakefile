@@ -1,0 +1,408 @@
+# Feb 28, 2021
+# Modified from DamID pipeline
+# Functions: 
+    # fastqc
+    # map, filter, bam_qc
+# Env: 
+    # source activate damid
+# Requirements
+    # inputs in ./fastq/
+    # named as {sample}.{R1,R2}.{fastq,fq}.gz
+    # e.g. A.R1.fastq.gz A.R2.fastq.gz B...
+    # good format of meta.csv and contrast.csv, matching SAMPLES in config.yaml
+
+
+### parse and prepare
+from snakemake.utils import min_version
+
+# min_version("6.0")
+
+configfile: "config/config.yaml"
+
+SAMPLES=config["SAMPLES"]
+GENOME=config["GENOME"]
+INDEX=GENOME+".sa"
+MQ_MIN=config["MQ_MIN"]
+BIN_SIZE=config["BIN_SIZE"]
+GSIZE=config["GSIZE"]
+SizeFile=config["SizeFile"]
+
+
+shell.prefix("""
+            HOME=/home/rl44w/
+            #bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
+            """)
+
+### Workflow
+rule targets:
+    input:
+        # 1. everything listed here will be produced by the pipeline
+        # 2. feed {sample}
+        # Learn: Good trick to use tagets input to do contrast2contrast_name and more
+        fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
+        align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
+        # bam_qc="{bam_folder}/stats/multiqc_report.html",
+
+        # qc1="DamID_reads_bam_qc/fingerprint.pdf",
+        # #qc2="DamID_reads_bam_qc/fragment_size.pdf",
+        # qc3="DamID_reads_bam_qc/multiBamSummary.heatmap.pdf",
+        # qc4="DamID_reads_bam_qc/multiBamSummary.pca.pdf",
+        # qc5=expand("DamID_reads_bam_qc/{sample}.insert_size.pdf", sample=SAMPLES),
+        # dag="Workflow_DAG.all.svg"
+
+
+rule fastqc:
+    # don't need input, if you agree on not checking them
+    # without output, output will not be created
+    output:
+        "results/fastqc/multiqc_report.html"
+    threads:
+        8
+    params:
+        mem="1000"
+    log:
+        "results/fastqc/fastqc.log"
+    shell:
+        # {input/output} don't have to be in command
+        """
+        mkdir -p results/fastqc results/fastqc/details
+        fastqc -t {threads} fastq/*q.gz -o results/fastqc/details &> {log}
+        multiqc results/fastqc/details -o results/fastqc &>> {log}
+        """
+
+rule bwa_index:
+    input:
+        GENOME
+    output:
+        INDEX
+    threads:
+        2
+    params:
+        mem="8000"
+    log:
+        INDEX + '.log'
+    shell:
+        """
+        bwa index -a bwtsw {input} &> {log}
+        """
+
+rule bwa:
+    # 1min/1M reads with 16 cores
+    input:
+        index=INDEX,
+        r1="fastq/{sample}.R1.fastq.gz",
+        r2="fastq/{sample}.R2.fastq.gz",
+    output:
+        temp("results/mapped_reads/{sample}.bam")
+    threads:
+        16
+    params:
+        mem="1500"  # todo auto adjust based on {threads}, for human need 18G+ 
+    log:
+        "results/mapped_reads/{sample}.bam.log"
+    benchmark:
+        "results/mapped_reads/{sample}.bam.benchmark"
+    shell:
+        """
+        bwa mem -t {threads} {GENOME} \
+        {input.r1} {input.r2} \
+        2> {log}| samtools view -Sb -1 -@ 2 - -o {output} &>> {log}
+        """
+
+rule sort_index:
+    # 2M/min
+    input:
+        "results/mapped_reads/{sample}.bam"
+    output:
+        "results/sorted_reads/{sample}.bam"
+    threads:
+        4
+    params:
+        mem="1200"
+    log:
+        "results/sorted_reads/{sample}.bam.log"
+    shell:
+        """
+        samtools --version &> {log}
+        samtools sort -@ {threads} -m 1G {input} -o {output} &>> {log}
+        samtools index {output} &>> {log}
+        """
+
+rule markDup:
+    # same speed as bwa_map, slow
+    input:
+        "sorted_reads/sorted_reads/{sample}.bam"
+    output:
+        #temp(
+        bam="sorted_reads/markDup/{sample}.bam",
+        metrics="sorted_reads/markDup/{sample}.markDup_metrics.txt",
+        bai="sorted_reads/markDup/{sample}.bam.bai",
+        #)  # make temp and save storage
+    threads:
+        2
+    params:
+        mem="16000",  # Used Max of 24G before
+    log:
+        "markDup/{sample}.bam.log"
+    benchmark:
+        "markDup/{sample}.bam.benchmark"
+    shell:
+        """
+        module load picard/2.17.8
+        PICARD=/share/pkg/picard/2.17.8/picard.jar
+        
+        java -Xmx30g -XX:ParallelGCThreads=2 -jar $PICARD MarkDuplicates \
+        I={input} \
+        O={output.bam} \
+        M={output.metrics} \
+        REMOVE_DUPLICATES=true \
+        ASSUME_SORTED=true \
+        &> {log}
+
+        samtools index {output.bam} &>> {log}
+        """
+
+rule cleanBam:
+    '''
+    Tag: Different in ChIPseq and ATACSeq
+    '''
+    input:
+        "markDup/{sample}.bam"
+    output:
+        "cleanBam/{sample}.bam"
+    threads:
+        2
+    params:
+        mem="8000"
+    log:
+        "log/cleanBam/{sample}.log"
+    benchmark:
+        "log/cleanBam/{sample}.benchmark.txt"
+    shell:
+        """
+        if [ {config[atac]} ]; then
+            echo 'ATACseq mode'
+            echo {input}
+            echo 'remove mito reads; keep paired reads with MQ>20 and 38-2000nt fragment size only'
+            samtools view -h {input} 2>{log}| perl -lane 'print unless ($F[2] eq {chrM} and $_ != /\@/)' 2>>{log}| awk \'{config[filter]}\' 2>>{log}| $samtools sort -m 8G -o {output}  2>> {log}
+        else
+            echo 'ChIPseq mode'
+            echo 'No filtering'
+            cp {input} {output}
+        fi
+
+        samtools index {output} &> {log}
+        """
+
+
+rule bam_qc:
+    input:
+        bam="{bam_folder}/{sample}.bam"
+    output:
+        idxstats="results/{bam_folder}/idxstats/{sample}.idxstats.txt",
+        flagstat="results/{bam_folder}/flagstat/{sample}.flagsat.txt",
+        stats="results/{bam_folder}/stats/{sample}.stats.txt"
+    threads:
+        4
+    params:
+        mem="3000"
+    log:
+        idxstats="results/{bam_folder}/idxstats/{sample}.idxstats.txt.log",
+        flagstat="results/{bam_folder}/flagstat/{sample}.flagsat.txt.log",
+        stats="results/{bam_folder}/stats/{sample}.stats.txt.log"
+    shell:
+        """
+        samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} &
+        samtools flagstat {input.bam} > {output.flagstat} 2> {log.flagstat} &
+        samtools stats {input.bam} > {output.stats} 2> {log.stats} &
+        wait
+        """
+
+rule bam_multiqc:
+    input:
+        stats=expand("sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=SAMPLES),
+        idxstats=expand("sorted_reads_bam_qc/idxstats/{sample}.idxstats.txt", sample=SAMPLES),
+        flagstat=expand("sorted_reads_bam_qc/flagstat/{sample}.flagstat.txt", sample=SAMPLES),
+    output:
+        "sorted_reads_bam_qc/stats/multiqc_report.html",
+        "sorted_reads_bam_qc/idxstats/multiqc_report.html",
+        "sorted_reads_bam_qc/flagstat/multiqc_report.html",
+    params:
+        mem="3000"
+    threads:
+        1
+    log:
+        "sorted_reads_bam_qc/multiqc.log"
+    shell:
+        """
+        multiqc -f {input.stats} -o sorted_reads_bam_qc/stats/ &> {log}
+        multiqc -f {input.idxstats} -o sorted_reads_bam_qc/idxstats   &>> {log}
+        multiqc -f {input.flagstat} -o sorted_reads_bam_qc/flagstat/ &>> {log}
+        """
+
+rule plotFingerprint:
+    input:
+        expand("DamID_reads/{sample}.bam", sample=SAMPLES)
+    output:
+        plot="DamID_reads_bam_qc/fingerprint.pdf",
+        txt="DamID_reads_bam_qc/fingerprint.txt",
+    params:
+        mem="2000"
+    threads:
+        6
+    log:
+        "DamID_reads_bam_qc/fingerprint.log"
+    shell:
+        """
+        plotFingerprint -b {input} \
+            --plotFile {output.plot} \
+            --outRawCounts {output.txt} \
+            --plotTitle "Fingerprint Plot" \
+            --smartLabels \
+            --minMappingQuality {MQ_MIN} \
+            --binSize {BIN_SIZE} \
+            --minFragmentLength {config[minFragmentLength]} \
+            --maxFragmentLength {config[maxFragmentLength]} \
+            --extendReads \
+            --centerReads \
+            --samFlagInclude 2 \
+            -p {threads} &> {log}
+        """
+        # --samFlagInclude 2: mate properly paired only
+        # --extendReads: use mate into
+
+
+rule bamPEFragmentSize:
+    input:
+        expand("DamID_reads/{sample}.bam", sample=SAMPLES)
+    output:
+        plot="DamID_reads_bam_qc/fragment_size.pdf",
+        txt="DamID_reads_bam_qc/fragment_size.txt"
+    params:
+        mem="4000"
+    threads:
+        4
+    log:
+        "DamID_reads_bam_qc/fragment_size.log"
+    shell:
+        """
+        bamPEFragmentSize \
+        -hist {output.plot} \
+        --outRawFragmentLengths {output.txt} \
+        -T "Fragment Size Distribution" \
+        --maxFragmentLength 2000 \
+        -b {input} \
+        -p {threads} &> {log}
+        """
+
+
+rule multiBamSummary:
+    input:
+        expand("DamID_reads/{sample}.bam", sample=SAMPLES)
+    output:
+        "DamID_reads_bam_qc/multiBamSummary.npz",
+    params:
+        mem="3500"
+    threads:
+        8
+    log:
+        "DamID_reads_bam_qc/multiBamSummary.log"
+    shell:
+        """
+        multiBamSummary bins \
+        -b {input} \
+        -o {output} \
+        --binSize {BIN_SIZE} \
+        --smartLabels \
+        -p {threads} \
+        --minMappingQuality {MQ_MIN} \
+        --minFragmentLength {config[minFragmentLength]} \
+        --maxFragmentLength {config[maxFragmentLength]} \
+        -e \
+        --samFlagInclude 2 &> {log}
+        """
+        
+
+rule plotCorrelation:
+    input:
+        "DamID_reads_bam_qc/multiBamSummary.npz",
+    output:
+        "DamID_reads_bam_qc/multiBamSummary.heatmap.pdf"
+    params:
+        mem="20000"
+    threads:
+        1
+    log:
+        "DamID_reads_bam_qc/plotCorrelation.log"
+    shell:
+        """
+        plotCorrelation \
+        -in {input} \
+        --corMethod pearson --skipZeros \
+        --whatToPlot heatmap \
+        -T 'Pearson Corr Between Bins' \
+        --removeOutliers \
+        -o {output} &> {log}
+        """
+
+rule plotPCA:
+    input:
+        "DamID_reads_bam_qc/multiBamSummary.npz",
+    output:
+        "DamID_reads_bam_qc/multiBamSummary.pca.pdf"
+    params:
+        mem="20000"
+    threads:
+        1
+    log:
+        "DamID_reads_bam_qc/plotPCA.log"
+    shell:
+        """
+        plotPCA \
+        --corData {input} \
+        --plotFile {output} &> {log}
+        """
+
+rule CollectInsertSizeMetrics:
+    input:
+        "DamID_reads/{sample}.bam"
+    output:
+        txt="DamID_reads_bam_qc/{sample}.insert_size.txt",
+        pdf="DamID_reads_bam_qc/{sample}.insert_size.pdf"
+    params:
+            mem="16000"
+    threads:
+        1
+    shell:
+        """
+        module load picard/2.17.8
+        PICARD=/share/pkg/picard/2.17.8/picard.jar
+
+        java -Xmx15g -jar $PICARD CollectInsertSizeMetrics \
+        I={input} \
+        O={output.txt} \
+        H={output.pdf}
+        """ 
+
+rule create_dag:
+    params:
+        mem="1000"  
+        # every job has to have this defined 
+        # to use snakemake --cluster 'bsub -q short -R "rusage[mem={params.mem}]" -n {threads}'
+    threads:
+        1
+    output:
+        "Workflow_DAG.all.svg"
+    log:
+        "log/create_dag/Workflow_DAG.all.svg.log"
+    shell:
+        "snakemake --dag all | dot -Tsvg > {output} 2> {log}"
+
+
+rule reset:
+    shell:
+        """
+        rm -rf fastqc 
+        snakemake --unlock
+        """
+
