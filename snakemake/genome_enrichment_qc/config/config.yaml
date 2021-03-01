@@ -36,7 +36,7 @@ MQ_MIN: 0 # multiBamSummary, plotFingerprint
 # Filters for bamCoverage, plotFingerprint, multiBamSummary
 minFragmentLength: 50  # 100 for mono-nucleosome
 maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
-TYPE: chip  # chip, atac, damid
+TYPE: chip  # chip, atac
 BAM_FOLDERS: 
     - sorted_reads
     - markDup
