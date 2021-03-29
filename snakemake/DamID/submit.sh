@@ -3,6 +3,7 @@
 source activate damid
 snakemake -k -p \
 --use-conda  --conda-prefix "~/anaconda3/envs/" \
+--use-envmodules \
 --jobs 99  --latency-wait 20 \
 --cluster 'bsub -q long -o lsf.log -R "rusage[mem={params.mem}]" -n {threads} -R span[hosts=1] -W 24:00'
 

@@ -32,6 +32,7 @@ MQ_MIN=config["MQ_MIN"]
 BIN_SIZE=config["BIN_SIZE"]
 GSIZE=config["GSIZE"]
 SizeFile=config["SizeFile"]
+MEME_DB=config["MEME_DB"]
 
 o=parse_meta_contrast(fmeta="meta.csv", fcontrast="contrast.csv") 
 # print("parse_meta_contrast_obj:", vars(o))
@@ -69,6 +70,7 @@ rule targets:
         macs2_DamID_contrast=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
         macs2_DamID_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
         macs2_DamID_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
+        meme=get_meme_outname_from_contrasts(contrasts=o.contrasts, o=o),
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         sorted_reads_bam_qc=expand("sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=SAMPLES),
@@ -545,7 +547,7 @@ rule macs2_DamID_contrast:
         control=lambda wildcards: get_control_bams_from_contrast(contrast=wildcards.contrast, o=o),
     output:
         # lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast)
-        # "macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak", 
+        "macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak", 
         # # e.g. "macs2_DamID_contrast/contrast1/G1_vs_ctrl_peaks.narrowPeak"
         temp("macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.bdg"),
         temp("macs2_DamID_contrast/{contrast}/{contrast_name}_control_lambda.bdg")
@@ -566,6 +568,56 @@ rule macs2_DamID_contrast:
         -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q 0.05 --keep-dup all \
         -n {params.contrast_name} --outdir macs2_DamID_contrast/{wildcards.contrast} -B &> {log}
         """
+
+rule get_peak_fasta:
+    input: 
+        peak="macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak", 
+        genome=GENOME
+    output:
+        fa="macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak.fa",
+        temp=temp("macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak.temp.fa"),
+    log: 
+        "macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak.fa.log"
+    params:
+        mem="4000",
+        width=100  # width from left to right, centering at peak center
+    threads:
+        1
+    envmodules:
+        "bedtools/2.29.2"
+    shell:
+        """
+        bedtools getfasta -fi {input.genome}  -bed {input.peak}  -name > {output.temp} 2> {log}
+        python scripts/fasta_padding.py {output.temp} 100 {output.fa} &>> {log} # biopython needed, in current osr
+        """
+
+rule meme:
+    input: 
+        fasta="macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak.fa",
+        neg=GENOME,
+        db=MEME_DB,
+    output: 
+        touch("macs2_DamID_contrast/{contrast}/memechip_out/{contrast_name}.finished")
+    log:
+        "macs2_DamID_contrast/{contrast}/memechip_out/{contrast_name}.log"
+    benchmark:
+        "macs2_DamID_contrast/{contrast}/memechip_out/{contrast_name}.benchmark"
+    params:
+        odir="macs2_DamID_contrast/{contrast}/memechip_out/",
+        mem="1000",
+    threads:
+        6
+    envmodules:
+        "meme/5.0.5"
+    shell:
+        """
+        meme-chip -oc {params.odir} -meme-p {threads} -db {input.db} {input.fasta} &> {log}
+        """
+        
+
+
+
+
 
 rule macs2_DamID_contrast_control_lambda_bw:
     input:
