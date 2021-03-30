@@ -185,18 +185,22 @@ def get_control_lambda_bw_names_from_contrasts(contrasts=["contrast1", "contrast
     return control_lambda_bdg_names
 
 
-def get_meme_outname_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
+def get_meme_outname_from_contrasts(
+    contrasts=["contrast1", "contrast2"], 
+    PEAK_WIDTH=["100","1000", "2000"], 
+    o = "parse_meta_contrast_obj"):
     """
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
     output example:
-    [macs2_DamID_contrast/contrast1/memechip_out/G1_vs_ctrl.finished,
+    [macs2_DamID_contrast/contrast1/memechip.2000/G1_vs_ctrl.finished
     ...
     ]
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append("macs2_DamID_contrast/"+contrast+"/memechip_out/" + name + '.finished')
+        for w in PEAK_WIDTH:
+            outnames.append("macs2_DamID_contrast/"+contrast+"/memechip." + str(w) + "/" + name + '.finished')
     return outnames
 # todo: end of this part
