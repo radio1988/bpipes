@@ -14,7 +14,9 @@
 
 ### parse and prepare
 from snakemake.utils import min_version
-
+from genome_enrichment_qc_modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
+    get_control_bams_from_contrast, get_contrast_name_from_contrast, \
+    get_treat_pileup_bdg_names_from_contrasts, get_treat_pileup_bw_names_from_contrasts
 # min_version("6.0")
 
 configfile: "config/config.yaml"
@@ -32,6 +34,7 @@ BAM_FOLDERS=config['BAM_FOLDERS']
 minFragmentLength=config['minFragmentLength']
 maxFragmentLength=config['maxFragmentLength']
 
+o=parse_meta_contrast(fmeta="./config/meta.csv", fcontrast="./config/contrast.csv") 
 
 shell.prefix("""
             HOME=/home/rl44w/
@@ -46,8 +49,9 @@ rule targets:
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
         fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
         align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
-        markDup=expand("results/markDup/{sample}.bam", sample=SAMPLES),
+        markDup=expand("results/markDup/{sample}.bam.bai", sample=SAMPLES),
         cleanBam=expand("results/cleanBam/{sample}.bam", sample=SAMPLES),
+        cleanBamBw=expand("results/cleanBam/bigWig/{sample}.cpm.bw", sample=SAMPLES),
         bamqc=expand("results/{bam_folder}/bamqc/stats_multiqc_report.html", bam_folder=BAM_FOLDERS),
         markDup_multiqc="results/markDup/multiqc/markDup_metrics_multiqc_report.html",
         chipqc1=expand("results/{bam_folder}/chipqc/fingerprint.pdf", bam_folder=BAM_FOLDERS),
@@ -56,6 +60,8 @@ rule targets:
         chipqc4=expand("results/{bam_folder}/chipqc/multiBamSummary.pca.pdf", bam_folder=BAM_FOLDERS),
         chipqc5=expand("results/{bam_folder}/chipqc/details/{sample}.insert_size.pdf", 
             bam_folder=BAM_FOLDERS, sample=SAMPLES),
+        #macs2_DamID_contrast=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
+        #macs2_DamID_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
         dag="Workflow_DAG.all.svg"
 
 
@@ -126,7 +132,7 @@ rule sort_index:
     threads:
         4
     params:
-        mem="1200"
+        mem="2000"
     log:
         "results/sorted_reads/log/{sample}.bam.log"
     shell:
@@ -142,7 +148,7 @@ rule markDup:
         "results/sorted_reads/{sample}.bam"
     output:
         bam=temp("results/markDup/{sample}.bam"),
-        bai=temp("results/markDup/{sample}.bam.bai"),
+        bai="results/markDup/{sample}.bam.bai",
         metrics="results/markDup/details/{sample}.markDup_metrics.txt",
     threads:
         1
@@ -154,6 +160,7 @@ rule markDup:
         "results/markDup/log/{sample}.bam.benchmark"
     shell:
         """        
+        rm -f {output.bai} {output.metrics}
         picard MarkDuplicates \
         I={input} \
         O={output.bam} \
@@ -218,6 +225,38 @@ rule cleanBam:
         fi
 
         samtools index {output} &> {log}
+        """
+
+rule bamCoverage_ext:
+    '''
+    # for ChIP
+    extend mode used, good for PE, and SE ChIP
+    not good for some technique that pinpoints signal at the end of fragments
+    '''
+    input:
+        "results/cleanBam/{sample}.bam"
+    output:
+        "results/cleanBam/bigWig/{sample}.cpm.bw"
+    threads:
+        8
+    params:
+        mem="1500"  # total 6-10G
+    log:
+        "results/cleanBam/bigWig/{sample}.cpm.bw.log"
+    benchmark:
+        "results/cleanBam/bigWig/{sample}.cpm.bw.benchmark"
+    shell:
+        # Aim: same as our downstream filters, extensions
+        """
+        bamCoverage --bam {input} \
+        -o  {output} \
+        --numberOfProcessors {threads} \
+        --outFileFormat bigwig \
+        --normalizeUsing CPM \
+        --minFragmentLength {config[minFragmentLength]} \
+        --maxFragmentLength {config[maxFragmentLength]} \
+        --binSize 50 \
+        -e 150 &> {log}
         """
 
 rule bamqc:
@@ -318,6 +357,9 @@ rule bamPEFragmentSize:
          "results/{bam_folder}/chipqc/log/fragment_size.benchmark",
     shell:
         """
+        conda deactivate &&  conda deactivate
+        source /share/pkg/condas/2018-05-11/bin/activate && conda activate deeptools_3.0.2_py36_0
+        source activate py27  # todo: env
         bamPEFragmentSize \
         -hist {output.plot} \
         --outRawFragmentLengths {output.txt} \
@@ -426,6 +468,93 @@ rule CollectInsertSizeMetrics:
         H={output.pdf}
         """ 
 
+### March5, 2021, Call peaks
+rule macs2_contrast:
+    """
+    For each contrast
+
+    MACS2: 
+    will concatenate all control bam files and treatment bam files anyway, 
+    so no need to collapse tech-reps
+    """
+    input:
+        treatment=lambda wildcards: get_treatment_bams_from_contrast(contrast=wildcards.contrast, o=o, root="results/cleanBam/"),
+        control=lambda wildcards: get_control_bams_from_contrast(contrast=wildcards.contrast, o=o, root="results/cleanBam/"),
+    output:
+        # lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast)
+        # "macs2_contrast/{contrast}/{contrast_name}_peaks.narrowPeak", 
+        # # e.g. "macs2_contrast/contrast1/G1_vs_ctrl_peaks.narrowPeak"
+        temp("results/macs2_contrast/{contrast}/{contrast_name}_treat_pileup.bdg"),
+        temp("results/macs2_contrast/{contrast}/{contrast_name}_control_lambda.bdg")
+    params:
+        contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
+        macs2_contrast_params="-f BAM -q 0.01 --keep-dup all",
+        mem="8000"
+    threads:
+        4        
+    conda:
+        "envs/macs2.yaml"
+    log:
+        "results/macs2_contrast/{contrast}/{contrast_name}.macs2_DamID.log"
+    benchmark:
+        "results/macs2_contrast/{contrast}/{contrast_name}.macs2_DamID.tsv"
+    shell:
+        """
+        macs2 callpeak -t {input.treatment} -c {input.control} -g {GSIZE} \
+        {params.macs2_contrast_params} \
+        -n {params.contrast_name} --outdir results/macs2_contrast/{wildcards.contrast} -B &> {log}
+        """
+
+rule macs2_contrast_control_lambda_bw:
+    input:
+        "results/macs2_contrast/{contrast}/{contrast_name}_control_lambda.bdg"
+    output:
+        bw="results/macs2_contrast/{contrast}/{contrast_name}_control_lambda.bw",
+        sbdg=temp("results/macs2_contrast/{contrast}/{contrast_name}_control_lambda.s.bdg")
+    params:
+        mem="16000"
+    threads:
+        1
+    priority:
+        100
+    log:
+        "results/macs2_contrast/{contrast}/log/{contrast_name}_control_lambda.bw.log"
+    benchmark:
+        "results/macs2_contrast/{contrast}/log/{contrast_name}_control_lambda.bw.tsv"
+    shell:
+        """
+        sort -k1,1 -k2,2n {input} > results/macs2_contrast/{wildcards.contrast}/{wildcards.contrast_name}_control_lambda.s.bdg 2>> {log}
+        bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
+        $bedGraphToBigWig results/macs2_contrast/{wildcards.contrast}/{wildcards.contrast_name}_control_lambda.s.bdg \
+            {SizeFile} {output.bw} &>> {log}
+        """
+
+rule macs2_contrast_treat_pileup_bw:
+    input:
+        "results/macs2_contrast/{contrast}/{contrast_name}_treat_pileup.bdg"
+    output:
+        bw="results/macs2_contrast/{contrast}/{contrast_name}_treat_pileup.bw",
+        sbdg=temp("results/macs2_contrast/{contrast}/{contrast_name}_treat_pileup.s.bdg")
+    params:
+        mem="16000"
+    threads:
+        1
+    priority:
+        100
+    log:
+        "results/macs2_contrast/{contrast}/{contrast_name}_treat_pileup.bw.log"
+    benchmark:
+        "results/macs2_contrast/{contrast}/{contrast_name}_treat_pileup.bw.tsv"
+    shell:
+        """
+        sort -k1,1 -k2,2n {input} > results/macs2_contrast/{wildcards.contrast}/{wildcards.contrast_name}_treat_pileup.s.bdg 2>> {log}
+        bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
+        $bedGraphToBigWig results/macs2_contrast/{wildcards.contrast}/{wildcards.contrast_name}_treat_pileup.s.bdg \
+            {SizeFile} {output.bw} &>> {log}
+        """
+
+### End
+
 rule create_dag:
     params:
         mem="1000"  
@@ -435,10 +564,8 @@ rule create_dag:
         1
     output:
         "Workflow_DAG.all.svg"
-    log:
-        "log/create_dag/Workflow_DAG.all.svg.log"
     shell:
-        "snakemake --dag all | dot -Tsvg > {output} 2> {log}"
+        "snakemake --dag targets | dot -Tsvg > {output} 2> {log}"
 
 
 rule reset:
