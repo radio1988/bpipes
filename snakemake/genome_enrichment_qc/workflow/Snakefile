@@ -48,9 +48,9 @@ rule targets:
         # 2. feed {sample}
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
         fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
-        align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
-        markDup=expand("results/markDup/{sample}.bam.bai", sample=SAMPLES),
-        cleanBam=expand("results/cleanBam/{sample}.bam", sample=SAMPLES),
+     #   align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
+     #   markDup=expand("results/markDup/{sample}.bam.bai", sample=SAMPLES),
+     #   cleanBam=expand("results/cleanBam/{sample}.bam", sample=SAMPLES),
         cleanBamBw=expand("results/cleanBam/bigWig/{sample}.cpm.bw", sample=SAMPLES),
         bamqc=expand("results/{bam_folder}/bamqc/stats_multiqc_report.html", bam_folder=BAM_FOLDERS),
         markDup_multiqc="results/markDup/multiqc/markDup_metrics_multiqc_report.html",
@@ -348,7 +348,7 @@ rule bamPEFragmentSize:
         plot="results/{bam_folder}/chipqc/fragment_size.pdf",
         txt="results/{bam_folder}/chipqc/fragment_size.txt"
     threads:
-        4
+        8
     params:
         mem="4000"
     log:
@@ -565,7 +565,7 @@ rule create_dag:
     output:
         "Workflow_DAG.all.svg"
     shell:
-        "snakemake --dag targets | dot -Tsvg > {output} 2> {log}"
+        "snakemake --dag targets | dot -Tsvg > {output} "
 
 
 rule reset:
