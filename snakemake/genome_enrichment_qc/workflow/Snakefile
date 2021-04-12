@@ -33,6 +33,7 @@ TYPE=config['TYPE']
 BAM_FOLDERS=config['BAM_FOLDERS']
 minFragmentLength=config['minFragmentLength']
 maxFragmentLength=config['maxFragmentLength']
+START=config['START']
 
 o=parse_meta_contrast(fmeta="./config/meta.csv", fcontrast="./config/contrast.csv") 
 
@@ -42,27 +43,40 @@ shell.prefix("""
             """)
 
 ### Workflow
-rule targets:
-    input:
-        # 1. everything listed here will be produced by the pipeline
-        # 2. feed {sample}
-        # Learn: Good trick to use tagets input to do contrast2contrast_name and more
-        fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
-     #   align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
-     #   markDup=expand("results/markDup/{sample}.bam.bai", sample=SAMPLES),
-     #   cleanBam=expand("results/cleanBam/{sample}.bam", sample=SAMPLES),
-        cleanBamBw=expand("results/cleanBam/bigWig/{sample}.cpm.bw", sample=SAMPLES),
-        bamqc=expand("results/{bam_folder}/bamqc/stats_multiqc_report.html", bam_folder=BAM_FOLDERS),
-        markDup_multiqc="results/markDup/multiqc/markDup_metrics_multiqc_report.html",
-        chipqc1=expand("results/{bam_folder}/chipqc/fingerprint.pdf", bam_folder=BAM_FOLDERS),
-        chipqc2=expand("results/{bam_folder}/chipqc/fragment_size.pdf", bam_folder=BAM_FOLDERS),
-        chipqc3=expand("results/{bam_folder}/chipqc/multiBamSummary.heatmap.pdf", bam_folder=BAM_FOLDERS),
-        chipqc4=expand("results/{bam_folder}/chipqc/multiBamSummary.pca.pdf", bam_folder=BAM_FOLDERS),
-        chipqc5=expand("results/{bam_folder}/chipqc/details/{sample}.insert_size.pdf", 
-            bam_folder=BAM_FOLDERS, sample=SAMPLES),
-        #macs2_DamID_contrast=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
-        #macs2_DamID_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
-        dag="Workflow_DAG.all.svg"
+if START == 'FASTQ':
+    rule targets:
+        input:
+            # 1. everything listed here will be produced by the pipeline
+            # 2. feed {sample}
+            # Learn: Good trick to use tagets input to do contrast2contrast_name and more
+            fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
+         #   align=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
+         #   markDup=expand("results/markDup/{sample}.bam.bai", sample=SAMPLES),
+         #   cleanBam=expand("results/cleanBam/{sample}.bam", sample=SAMPLES),
+            cleanBamBw=expand("results/cleanBam/bigWig/{sample}.cpm.bw", sample=SAMPLES),
+            bamqc=expand("results/{bam_folder}/bamqc/stats_multiqc_report.html", bam_folder=BAM_FOLDERS),
+            markDup_multiqc="results/markDup/multiqc/markDup_metrics_multiqc_report.html",
+            chipqc1=expand("results/{bam_folder}/chipqc/fingerprint.pdf", bam_folder=BAM_FOLDERS),
+            chipqc2=expand("results/{bam_folder}/chipqc/fragment_size.pdf", bam_folder=BAM_FOLDERS),
+            chipqc3=expand("results/{bam_folder}/chipqc/multiBamSummary.heatmap.pdf", bam_folder=BAM_FOLDERS),
+            chipqc4=expand("results/{bam_folder}/chipqc/multiBamSummary.pca.pdf", bam_folder=BAM_FOLDERS),
+            chipqc5=expand("results/{bam_folder}/chipqc/details/{sample}.insert_size.pdf", 
+                bam_folder=BAM_FOLDERS, sample=SAMPLES),
+            #macs2_DamID_contrast=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
+            #macs2_DamID_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
+            dag="Workflow_DAG.all.svg"
+else:
+    rule targets:
+        input:
+            bamqc=expand("results/{bam_folder}/bamqc/stats_multiqc_report.html", bam_folder=BAM_FOLDERS),
+            chipqc1=expand("results/{bam_folder}/chipqc/fingerprint.pdf", bam_folder=BAM_FOLDERS),
+            chipqc2=expand("results/{bam_folder}/chipqc/fragment_size.pdf", bam_folder=BAM_FOLDERS),
+            chipqc3=expand("results/{bam_folder}/chipqc/multiBamSummary.heatmap.pdf", bam_folder=BAM_FOLDERS),
+            chipqc4=expand("results/{bam_folder}/chipqc/multiBamSummary.pca.pdf", bam_folder=BAM_FOLDERS),
+            chipqc5=expand("results/{bam_folder}/chipqc/details/{sample}.insert_size.pdf", 
+                bam_folder=BAM_FOLDERS, sample=SAMPLES),
+            dag="Workflow_DAG.all.svg"
+    
 
 
 rule fastqc:
