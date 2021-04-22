@@ -1,0 +1,84 @@
+# for CHIP-like SE
+configfile: "config.yaml"
+SAMPLES=config["SAMPLES"]
+GENOME=config["GENOME"]
+INDEX=GENOME+".sa"
+
+rule targets:
+    input:
+        bamCoverage=expand("bigWig/{sample}.cpm.bw", sample=SAMPLES),
+
+rule bwa_index:
+    input:
+        GENOME
+    output:
+        INDEX
+    shell:
+        """
+        bwa index -a bwtsw {input} &> {log}
+        """
+
+rule bwa_map:
+    # 1min/1M reads with 16 cores
+    input:
+        index=INDEX,
+        read="fastq/{sample}.fastq.gz",
+    output:
+        temp("mapped_reads/{sample}.bam")
+    params:
+        mem="1500"  # todo auto adjust based on {threads}, for human need 18G+
+    threads:
+        16
+    log:
+        "mapped_reads/{sample}.bwa.log"
+    benchmark:
+        "mapped_reads/{sample}.bwa.benchmark"
+    shell:
+        """
+        bwa mem -t {threads} {GENOME} \
+        {input.read} \
+        2> {log}| samtools view -Sb -1 -@ 2 - -o {output} &>> {log}
+        """
+
+rule sort_index:
+    # 2M/min
+    input:
+        "mapped_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam"
+    threads:
+        4
+    params:
+        mem="2000"
+    log:
+        "sorted_reads/{sample}.bam.log"
+    shell:
+        """
+        samtools --version &> {log}
+        samtools sort -@ {threads} -m 1G {input} -o {output} &>> {log}
+        samtools index {output} &>> {log}
+        """
+
+
+rule bamCoverage:
+    # for ChIP
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "bigWig/{sample}.cpm.bw"
+    threads:
+        8
+    params:
+        mem="1500"  # total 6-10G
+    log:
+        "bigWig/{sample}.cpm.bw.log"
+    shell:
+        # Aim: same as our downstream filters, extensions
+        """
+        bamCoverage --bam {input} \
+        -o  {output} \
+        --numberOfProcessors {threads} \
+        --outFileFormat bigwig \
+        --normalizeUsing CPM \
+        --binSize 50 &> {log}
+        """

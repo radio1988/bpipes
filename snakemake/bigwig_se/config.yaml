@@ -1,0 +1,18 @@
+# Analysis Params
+SAMPLES:
+    - CTCF
+    - H2AZ
+    - H3K27ac
+    - H3K27me3
+    - H3K4me1
+    - H3K4me2
+    - H3K4me3
+    - H3K9ac
+    - H4K20me1
+    - pol-II
+    - PRO-seq
+
+GENOME: /project/umw_mccb/genome/Homo_sapiens/hg19/hg19.chr.fa
+GTF: /project/umw_mccb/genome/Homo_sapiens/hg19/ucsc.hg19.gtf
+GSIZE: "hs"  # MACS2 gsize param, hs, mm, ce, dm, 2.7e8
+
