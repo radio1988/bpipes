@@ -34,6 +34,7 @@ GSIZE=config["GSIZE"]
 SizeFile=config["SizeFile"]
 MEME_DB=config["MEME_DB"]
 PEAK_WIDTH=config['PEAK_WIDTH']
+CHRS=config['CHRS']
 
 o=parse_meta_contrast(fmeta="meta.csv", fcontrast="contrast.csv") 
 # print("parse_meta_contrast_obj:", vars(o))
@@ -41,7 +42,7 @@ o=parse_meta_contrast(fmeta="meta.csv", fcontrast="contrast.csv")
 # 'contrast2treatmentSamples': {'contrast1': ['2-1_S2', '2-2_S3', '2-3_S4'], 'contrast2': ['3-1_S5', '3-2_S6', '3-3_S7'], 'contrast3': ['2-1_S2', '2-2_S3', '2-3_S4', '3-1_S5', '3-2_S6', '3-3_S7']}, 
 # 'contrast2controlSamples': {'contrast1': ['1-2_S1'], 'contrast2': ['1-2_S1'], 'contrast3': ['1-2_S1']}}
 
-ruleorder: macs2_DamID_contrast_treat_pileup_bw > macs2_DamID_sample_treat_pileup_bw 
+ruleorder: meme_split > meme > macs2_DamID_contrast_treat_pileup_bw > macs2_DamID_sample_treat_pileup_bw > split_fa_by_chr > get_summit_neighbour
 # Learn: To Avoid AmbiguousRuleException:
 # Rules macs2_DamID_contrast_treat_pileup_bw and macs2_DamID_sample_treat_pileup_bw are ambiguous for the file macs2_DamID_sample/1-2_S1_treat_pileup.bw.
 # Consider starting rule output with a unique prefix, constrain your wildcards, or use the ruleorder directive.
@@ -71,7 +72,8 @@ rule targets:
         macs2_DamID_contrast=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
         macs2_DamID_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
         macs2_DamID_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
-        meme=get_meme_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
+#        meme=get_meme_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
+        meme_split=get_meme_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, CHRS=CHRS, o=o),
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
         fastqc="fastqc/multiqc_report.html", # not in main workflow, so list here
         sorted_reads_bam_qc=expand("sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=SAMPLES),
@@ -588,6 +590,22 @@ rule get_summit_neighbour:
         """
 
 
+rule split_fa_by_chr:
+    input:
+        fasta="macs2_DamID_contrast/{contrast}/{contrast_name}_summits.{width}.fa"
+    output:
+        "macs2_DamID_contrast/{contrast}/by_chr/{contrast_name}_summits.{width}.{chr}.fa"
+    log:
+        "macs2_DamID_contrast/{contrast}/by_chr/{contrast_name}_summits.{width}.{chr}.fa.log"
+    threads:
+        1
+    params:
+        mem=1000
+    shell:
+        """
+        grep -A 1 '>{wildcards.chr}:' {input} > {output} 2> {log}
+        """
+
 rule meme:
     input: 
         fasta="macs2_DamID_contrast/{contrast}/{contrast_name}_summits.{width}.fa",
@@ -601,6 +619,29 @@ rule meme:
         "macs2_DamID_contrast/{contrast}/memechip.{width}/{contrast_name}.benchmark"
     params:
         odir="macs2_DamID_contrast/{contrast}/memechip.{width}/",
+        mem="1000",
+    threads:
+        6
+    envmodules:
+        "meme/5.0.5"
+    shell:
+        """
+        meme-chip -oc {params.odir} -meme-p {threads} -db {input.db} {input.fasta} &> {log}
+        """
+
+rule meme_split:
+    input: 
+        fasta=rules.split_fa_by_chr.output,
+        neg=GENOME,
+        db=MEME_DB,
+    output: 
+        touch("macs2_DamID_contrast/{contrast}/memechip_chr.{width}_{chr}/{contrast_name}.finished")
+    log:
+        "macs2_DamID_contrast/{contrast}/memechip_chr.{width}_{chr}/{contrast_name}.log"
+    benchmark:
+        "macs2_DamID_contrast/{contrast}/memechip_chr.{width}_{chr}/{contrast_name}.benchmark"
+    params:
+        odir="macs2_DamID_contrast/{contrast}/memechip_chr.{width}_{chr}/",
         mem="1000",
     threads:
         6

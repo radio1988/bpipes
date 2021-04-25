@@ -42,7 +42,7 @@ with open(summit , 'r') as f:
         if location + math.ceil(width/2) > chr_len:
             extract = extract + 'N' * (location + math.ceil(width/2) - chr_len)
         extract = extract.upper()
-        extract ='>' + peak_name + "\n" + extract + "\n"
+        extract ='>' + chr + ":" + str(left) + '-' + str(right) + '; ' + peak_name + "\n" + extract + "\n"
         extract = str(extract)
         OUT.write(extract)
 OUT.close()

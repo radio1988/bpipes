@@ -204,3 +204,26 @@ def get_meme_outname_from_contrasts(
             outnames.append("macs2_DamID_contrast/"+contrast+"/memechip." + str(w) + "/" + name + '.finished')
     return outnames
 # todo: end of this part
+
+def get_meme_split_outname_from_contrasts(
+    contrasts=["contrast1", "contrast2"], 
+    PEAK_WIDTH=["100","1000", "2000"], 
+    CHRS=['chr1', 'chrX', 'chrY'],
+    o = "parse_meta_contrast_obj"):
+    """
+    Learn: Good trick to use tagets input to do contrast2contrast_name and more
+
+    output example:
+    [
+    macs2_DamID_contrast/contrast1/memechip_chr.100_chrX/G1_vs_ctrl.finished
+    ...
+    ]
+    """
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    outnames = []
+    for contrast,name in zip(contrasts, contrast_names):
+        for w in PEAK_WIDTH:
+            for chr in CHRS:
+                outnames.append("macs2_DamID_contrast/"+contrast+"/memechip_chr." + str(w) + "_" + chr + '/' + name + '.finished')
+    return outnames
+# todo: end of this part

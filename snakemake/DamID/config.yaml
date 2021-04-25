@@ -33,7 +33,16 @@ maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
 MEME_DB: "/project/umw_mccb/genome/Homo_sapiens/motifs/hocomoco/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme"
 PEAK_WIDTH: # center in peak summit
     - 100
-    - 200
-    - 1000
-    - 2000
     - 4000
+CHRS:
+    - chr1
+    - chr2
+    - chr3
+    - chr4
+    - chr5
+    - chr6
+    - chr10
+    - chr11
+    - chrM
+    - chrX
+    - chrY
