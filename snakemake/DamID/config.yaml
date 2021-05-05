@@ -1,4 +1,6 @@
 # Analysis Params
+MODE: PE  # PE, MACS2 PE mode; SITE, get GATC site
+
 SAMPLES:
     - 1-1_S36
     - 1-2_S37

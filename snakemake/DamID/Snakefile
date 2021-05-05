@@ -425,31 +425,127 @@ rule CollectInsertSizeMetrics:
         H={output.pdf}
         """ 
 
-rule macs2_DamID_sample:
-    # for each sample
-    # todo: contrast
-    input:
-        "DamID_reads/{sample}.bam"
-    output:
-        "macs2_DamID_sample/{sample}_peaks.narrowPeak", 
-        temp("macs2_DamID_sample/{sample}_treat_pileup.bdg"),
-        temp("macs2_DamID_sample/{sample}_control_lambda.bdg")
-    params:
-        mem="8000"    
-    threads:
-        4
-    conda:
-        "scripts/macs2.yaml"
-    log:
-        "macs2_DamID_sample/{sample}_peaks.narrowPeak.log"
-    benchmark:
-        "macs2_DamID_sample/{sample}_peaks.narrowPeak.tsv"
-    shell:
+if config['MODE'] == 'SITE':
+    rule macs2_DamID_sample_SITE:
+        input:
+            "DamID_reads/{sample}.bam"
+        output:
+            "macs2_DamID_sample/{sample}_peaks.narrowPeak", 
+            temp("macs2_DamID_sample/{sample}_treat_pileup.bdg"),
+            temp("macs2_DamID_sample/{sample}_control_lambda.bdg")
+        params:
+            mem="8000"    
+        threads:
+            4
+        conda:
+            "scripts/macs2.yaml"
+        log:
+            "macs2_DamID_sample/{sample}_peaks.narrowPeak.log"
+        benchmark:
+            "macs2_DamID_sample/{sample}_peaks.narrowPeak.tsv"
+        shell:
+            """
+             macs2 callpeak -t {input} \
+             -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q 0.05 --keep-dup all \
+             -n {wildcards.sample} --outdir macs2_DamID_sample -B &> {log}
+            """
+
+    rule macs2_DamID_contrast_SITE:
         """
-         macs2 callpeak -t {input} \
-         -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q 0.05 --keep-dup all \
-         -n {wildcards.sample} --outdir macs2_DamID_sample -B &> {log}
+        For each contrast
+
+        MACS2: 
+        will concatenate all control bam files and treatment bam files anyway, 
+        so no need to collapse tech-reps
         """
+        input:
+            treatment=lambda wildcards: get_treatment_bams_from_contrast(contrast=wildcards.contrast, o=o),
+            control=lambda wildcards: get_control_bams_from_contrast(contrast=wildcards.contrast, o=o),
+        output:
+            # lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast)
+            "macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak", # e.g. "macs2_DamID_contrast/contrast1/G1_vs_ctrl_peaks.narrowPeak"
+            "macs2_DamID_contrast/{contrast}/{contrast_name}_summits.bed", 
+            temp("macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.bdg"),
+            temp("macs2_DamID_contrast/{contrast}/{contrast_name}_control_lambda.bdg")
+        params:
+            contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
+            mem="8000"
+        threads:
+            4        
+        conda:
+            "scripts/macs2.yaml"
+        log:
+            "macs2_DamID_contrast/{contrast}/{contrast_name}.macs2_DamID.log"
+        benchmark:
+            "macs2_DamID_contrast/{contrast}/{contrast_name}.macs2_DamID.tsv"
+        shell:
+            """
+            macs2 callpeak -t {input.treatment} -c {input.control} \
+            -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q 0.05 --keep-dup all \
+            -n {params.contrast_name} --outdir macs2_DamID_contrast/{wildcards.contrast} -B &> {log}
+            """
+elif config['MODE'] == 'PE':
+    rule macs2_DamID_sample_PE:
+        input:
+            "DamID_reads/{sample}.bam"
+        output:
+            "macs2_DamID_sample/{sample}_peaks.narrowPeak", 
+            temp("macs2_DamID_sample/{sample}_treat_pileup.bdg"),
+            temp("macs2_DamID_sample/{sample}_control_lambda.bdg")
+        params:
+            mem="8000"    
+        threads:
+            4
+        conda:
+            "scripts/macs2.yaml"
+        log:
+            "macs2_DamID_sample/{sample}_peaks.narrowPeak.log"
+        benchmark:
+            "macs2_DamID_sample/{sample}_peaks.narrowPeak.tsv"
+        shell:
+            """
+             macs2 callpeak -t {input} \
+             -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all \
+             -n {wildcards.sample} --outdir macs2_DamID_sample -B &> {log}
+            """
+
+    rule macs2_DamID_contrast_PE:
+        """
+        For each contrast
+
+        MACS2: 
+        will concatenate all control bam files and treatment bam files anyway, 
+        so no need to collapse tech-reps
+        """
+        input:
+            treatment=lambda wildcards: get_treatment_bams_from_contrast(contrast=wildcards.contrast, o=o),
+            control=lambda wildcards: get_control_bams_from_contrast(contrast=wildcards.contrast, o=o),
+        output:
+            # lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast)
+            "macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak", # e.g. "macs2_DamID_contrast/contrast1/G1_vs_ctrl_peaks.narrowPeak"
+            "macs2_DamID_contrast/{contrast}/{contrast_name}_summits.bed", 
+            temp("macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.bdg"),
+            temp("macs2_DamID_contrast/{contrast}/{contrast_name}_control_lambda.bdg")
+        params:
+            contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
+            mem="8000"
+        threads:
+            4        
+        conda:
+            "scripts/macs2.yaml"
+        log:
+            "macs2_DamID_contrast/{contrast}/{contrast_name}.macs2_DamID.log"
+        benchmark:
+            "macs2_DamID_contrast/{contrast}/{contrast_name}.macs2_DamID.tsv"
+        shell:
+            """
+            macs2 callpeak -t {input.treatment} -c {input.control} \
+            -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all \
+            -n {params.contrast_name} --outdir macs2_DamID_contrast/{wildcards.contrast} -B &> {log}
+            """
+else:
+    sys.exit("MODE Error")
+    
 
 rule macs2_DamID_sample_treat_pileup_bw:
     input:
@@ -537,40 +633,6 @@ rule macs2_DamID_sample_treat_pileup_bw:
 #         """
 
 ### macs2_DamID_contrast ### 
-rule macs2_DamID_contrast:
-    """
-    For each contrast
-
-    MACS2: 
-    will concatenate all control bam files and treatment bam files anyway, 
-    so no need to collapse tech-reps
-    """
-    input:
-        treatment=lambda wildcards: get_treatment_bams_from_contrast(contrast=wildcards.contrast, o=o),
-        control=lambda wildcards: get_control_bams_from_contrast(contrast=wildcards.contrast, o=o),
-    output:
-        # lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast)
-        "macs2_DamID_contrast/{contrast}/{contrast_name}_peaks.narrowPeak", # e.g. "macs2_DamID_contrast/contrast1/G1_vs_ctrl_peaks.narrowPeak"
-        "macs2_DamID_contrast/{contrast}/{contrast_name}_summits.bed", 
-        temp("macs2_DamID_contrast/{contrast}/{contrast_name}_treat_pileup.bdg"),
-        temp("macs2_DamID_contrast/{contrast}/{contrast_name}_control_lambda.bdg")
-    params:
-        contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
-        mem="8000"
-    threads:
-        4        
-    conda:
-        "scripts/macs2.yaml"
-    log:
-        "macs2_DamID_contrast/{contrast}/{contrast_name}.macs2_DamID.log"
-    benchmark:
-        "macs2_DamID_contrast/{contrast}/{contrast_name}.macs2_DamID.tsv"
-    shell:
-        """
-        macs2 callpeak -t {input.treatment} -c {input.control} \
-        -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q 0.05 --keep-dup all \
-        -n {params.contrast_name} --outdir macs2_DamID_contrast/{wildcards.contrast} -B &> {log}
-        """
 
 rule get_summit_neighbour:
     input:
