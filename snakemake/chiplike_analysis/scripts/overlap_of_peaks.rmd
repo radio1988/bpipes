@@ -1,0 +1,465 @@
+---
+title: "Overlap_of_peaks(GM)"
+author: "Rui Li"
+date: "2/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ChIPpeakAnno)
+library(ggplot2)
+getwd()
+```
+
+
+```{r read_data_functions}
+readNarrowPeak <- function(fname){
+  # function saved in Evernote [R] [code]
+  df <- read.table(fname)
+  colnames(df) <- c("seqnames", "start", "end", "peak_id", "score", "strand", "signalValue", "pValue", "qValue", "peak")
+  gr <- makeGRangesFromDataFrame(df, keep.extra.columns = T)
+  return(gr)
+}
+
+readGappedPeak <- function(fname){
+  # function saved in Evernote [R] [code]
+  df <- read.table(fname)
+  colnames(df) <- c("seqnames", "start", "end", "peak_id", "score", "strand", "thickStart", "thickEnd", "itemRgb", "blockCount", "blockSizes", "blockStarts", "signalValue", "pValue", "qValue")
+  gr <- makeGRangesFromDataFrame(df, keep.extra.columns = T)
+  return(gr)
+}
+
+save_gr_as_bed <- function(gr, outname="out.bed"){
+  df <- as.data.frame(gr)
+  bed <- df[, c(1,2,3,6, 7, 5)]
+  write.table(bed, outname, row.names = F, col.names = F, quote = F, sep = "\t")
+}
+
+save_gr_as_summit_bed <- function(gr, outname="out.summit.bed"){
+  # only works for narrowPeak format converted gr (designed for Genrich.narrowPeak)
+  df <- as.data.frame(gr)
+  df$summit_start <- df$start + df$peak
+  df$summit_end <- df$summit_start + 1
+  head(df)
+  bed <- df[, c("seqnames", "summit_start", "summit_end", "peak_id", "score", "strand")]
+  write.table(bed, outname, row.names = F, col.names = F, quote = F, sep = "\t")
+}
+```
+
+## Read data
+```{r}
+MACS2.BAMPE <- readNarrowPeak("../macs2_bampe/SRR891269_peaks.narrowPeak")
+MACS2.SITE <- readNarrowPeak("../macs2_site/SRR891269_peaks.narrowPeak")
+Genrich <- readNarrowPeak("../genrich/SRR891269.narrowPeak")
+HMMRATAC <- readGappedPeak("../hmmratac/SRR891269_peaks.gappedPeak_peaks.gappedPeak")
+
+save_gr_as_bed(MACS2.BAMPE, "MACS2.BAMPE.bed")
+save_gr_as_bed(MACS2.SITE, "MACS2.SITE.bed")
+save_gr_as_bed(Genrich, "Genrich.bed")
+save_gr_as_bed(HMMRATAC, "HMMRATAC.bed")
+
+save_gr_as_summit_bed(Genrich, "Genrich.summit.bed")
+```
+
+
+## Overlap Venny by peak (maxgap=0bp)
+```{r overlap_venn, echo=FALSE, fig.height = 6, fig.width = 6}
+# find overlap in peaks, keepAll mode
+ol4 <- findOverlapsOfPeaks(MACS2.BAMPE, MACS2.SITE, Genrich, HMMRATAC, 
+                           maxgap = 0, connectedPeaks = "keepAll")
+
+# plot venny
+dir.create("plots", showWarnings = F)
+pdf("plots/4venny.pdf", width=7.5, height=7.5)
+makeVennDiagram(ol4, totalTest=1e+2,
+                fill=c("blue", "seagreen", "gold", "lightpink2"), # circle fill color
+                col=c("blue", "darkgreen", "brown", "red"), #circle border color
+                cat.col=c("blue", "darkgreen", "brown", "red"), 
+                cex=1.8 )
+dev.off()
+
+# export peaks
+df4 <- as.data.frame(ol4$uniquePeaks)
+MACS2.BAMPE_uniq <- df4[grep("MACS2.BAMPE", row.names(df4)), ]
+MACS2.SITE_uniq <- df4[grep("MACS2.SITE", row.names(df4)), ]
+Genrich_uniq <- df4[grep("Genrich", row.names(df4)), ]
+HMMRATAC_uniq <- df4[grep("HMMRATAC", row.names(df4)), ]
+
+consensus.gr <- ol4$peaklist$`MACS2.BAMPE///MACS2.SITE///Genrich///HMMRATAC`
+consensus.df <- as.data.frame(consensus.gr)
+consensus.df$signalValue <- 4  # 4 peak callers
+consensus.df$peakNames <- paste("peak", 1:length(consensus.df$peakNames), sep="_")
+
+x <- ol4$peaklist[c(3, 5:7, 9:14)]
+others.gr <- c(x[[1]], x[[2]], x[[3]], x[[4]], x[[5]], x[[6]], x[[7]], x[[8]], x[[9]], x[[10]])
+others.df <- as.data.frame(others.gr)
+others.df$peakNames <- paste("peak", 1:length(others.df$peakNames), sep="_")
+others.df$signalValue <- 1
+
+#ol4
+
+save_gr_as_bed(MACS2.BAMPE_uniq, "MACS2.BAMPE_uniq.bed")
+save_gr_as_bed(MACS2.SITE_uniq, "MACS2.SITE_uniq.bed")
+save_gr_as_bed(Genrich_uniq, "Genrich_uniq.bed")
+save_gr_as_bed(HMMRATAC_uniq, "HMMRATAC_uniq.bed")
+save_gr_as_bed(consensus.df, "consensus.bed")
+save_gr_as_bed(others.df, "others.bed")
+```
+
+## LogWidth Stat
+```{r width_stat}
+violin.df <- data.frame(
+  Caller=c(
+    rep("MACS2.BAMPE", length(MACS2.BAMPE)), 
+    rep("MACS2.SITE", length(MACS2.SITE)), 
+    rep("Genrich", length(Genrich)), 
+    rep("HMMRATAC", length(HMMRATAC))
+  ),
+  LogWidth=c(
+    as.data.frame(MACS2.BAMPE)$width,
+    as.data.frame(MACS2.SITE)$width,
+    as.data.frame(Genrich)$width,
+    as.data.frame(HMMRATAC)$width
+  )
+)
+violin.df$LogWidth <- log10(violin.df$LogWidth)
+p <- ggplot(violin.df, aes(x=Caller, y=LogWidth, color = Caller)) + 
+  geom_violin()
+
+
+p + 
+  geom_boxplot(width=0.1) #+ 
+  #scale_color_manual(values=c("blue", "darkgreen", "brown", "red"))
+
+ggsave("plots/PeakWidthViolin.pdf", 
+       width = 6, 
+       height = 4,
+       units = "in",
+       dpi = 300,
+       limitsize = T)
+```
+
+## Complex width boxplot
+```{r width_stat}
+violin.df <- data.frame(
+  Peaks=c(
+    rep("MP", length(MACS2.BAMPE)), 
+    rep("MS", length(MACS2.SITE)), 
+    rep("G", length(Genrich)), 
+    rep("H", length(HMMRATAC)),
+    rep("C", dim(consensus.df)[1]),
+    rep("G.U", dim(Genrich_uniq)[1]),
+    rep("H.U", dim(HMMRATAC_uniq)[1]),
+    rep("MP.U", dim(MACS2.BAMPE_uniq)[1]),
+    rep("MS.U", dim(MACS2.SITE_uniq)[1]),
+    rep("O", dim(others.df)[1])
+  ),
+  LogWidth=c(
+    as.data.frame(MACS2.BAMPE)$width,
+    as.data.frame(MACS2.SITE)$width,
+    as.data.frame(Genrich)$width,
+    as.data.frame(HMMRATAC)$width, 
+    consensus.df$width,
+    Genrich_uniq$width,
+    HMMRATAC_uniq$width,
+    MACS2.BAMPE_uniq$width,
+    MACS2.SITE_uniq$width,
+    others.df$width
+  )
+)
+violin.df$LogWidth <- log10(violin.df$LogWidth)
+p <- ggplot(violin.df, aes(x=Peaks, y=LogWidth, color = Peaks)) + 
+  geom_violin()
+
+
+p + 
+  geom_boxplot(width=0.1) #+ 
+  #scale_color_manual(values=c("blue", "darkgreen", "brown", "red", "black"))
+
+ggsave("plots/PeakWidthViolin.full.pdf", 
+       width = 6, 
+       height = 4,
+       units = "in",
+       dpi = 300,
+       limitsize = F)
+```
+
+## Count
+- featureCounts -a hmmratac/SRR891269.gtf -o hmmratac/SRR891269.count.txt -g gene_id -t peak -s 0 -p -B -C -d 38 -D 2000 -T 4 -Q 20 --minOverlap 1 --fracOverlap 0 cleanBam/SRR891269.bam
+
+```{r}
+readData <- function(fname) {
+  df <- read.table(fname,
+                   sep = '\t',
+                   header = TRUE,
+                   row.names = 1)
+  # Rename colnames:
+  colnames(df) <- gsub('.bam$', '', colnames(df))
+  colnames(df) <- gsub('cleanBam.', '', colnames(df))
+  colnames(df)[dim(df)[2]] <- "Count"
+
+  return(df)
+}
+
+Genrich.ct <- readData("../genrich/SRR891269.count.txt")
+HMMRATAC.ct <- readData("../hmmratac/SRR891269.count.txt")
+MACS2.SITE.ct <- readData("../macs2_site/SRR891269.count.txt")
+MACS2.BAMPE.ct <- readData("../macs2_bampe/SRR891269.count.txt")
+
+Genrich.uniq.ct <- readData("count/Genrich_uniq.count.txt")
+hmmratac.uniq.ct <- readData("count/HMMRATAC_uniq.count.txt")
+macs2.site.uniq.ct <- readData("count/MACS2.SITE_uniq.count.txt")
+macs2.bampe.uniq.ct <- readData("count/MACS2.BAMPE_uniq.count.txt")
+
+consensus.ct <- readData("count/consensus.count.txt")
+others.ct <- readData("count/others.count.txt")
+```
+
+## boxplot of Count
+```{r}
+violin.df <- data.frame(
+  Caller=c(
+    rep("MACS2.BAMPE", dim(MACS2.BAMPE.ct)[1]),
+    rep("MACS2.SITE", dim(MACS2.SITE.ct)[1]),
+    rep("Genrich", dim(Genrich.ct)[1]),
+    rep("HMMRATAC", dim(HMMRATAC.ct)[1])
+  ),
+  LogReadCount=c(
+    MACS2.BAMPE.ct$Count,
+    MACS2.SITE.ct$Count,
+    Genrich.ct$Count,
+    HMMRATAC.ct$Count
+  )
+)
+
+
+violin.df$LogReadCount <- log10(violin.df$LogReadCount)
+
+p <- ggplot(violin.df, aes(x=Caller, y=LogReadCount, color = Caller)) +
+  geom_violin()
+p +
+  geom_boxplot(width=0.1) #+
+  #scale_color_manual(values=c("blue", "darkgreen", "brown", "red"))
+
+ggsave("plots/PeakCountViolin.pdf",
+       width = 6,
+       height = 4,
+       units = "in",
+       dpi = 300,
+       limitsize = T)
+```
+
+## Complex BoxPlot of Count
+```{r}
+violin.df <- data.frame(
+  Peaks=c(
+    rep("MP", dim(MACS2.BAMPE.ct)[1]),
+    rep("MS", dim(MACS2.SITE.ct)[1]),
+    rep("G", length(Genrich.ct$Count)),
+    rep("H", length(HMMRATAC.ct$Count)),
+    rep("C", dim(consensus.ct)[1]),
+    rep("G.U", dim(Genrich.uniq.ct)[1]),
+    rep("H.U", dim(hmmratac.uniq.ct)[1]),
+    rep("MP.U", dim(macs2.bampe.uniq.ct)[1]),
+    rep("MS.U", dim(macs2.site.uniq.ct)[1]),
+    rep("O", dim(others.ct)[1])
+  ),
+  LogReadCount=c(
+    MACS2.BAMPE.ct$Count,
+    MACS2.SITE.ct$Count,
+    Genrich.ct$Count,
+    HMMRATAC.ct$Count,
+    consensus.ct$Count,
+    Genrich.uniq.ct$Count,
+    hmmratac.uniq.ct$Count,
+    macs2.bampe.uniq.ct$Count,
+    macs2.site.uniq.ct$Count,
+    others.ct$Count
+  )
+)
+
+
+violin.df$LogReadCount <- log10(violin.df$LogReadCount)
+
+p <- ggplot(violin.df, aes(x=Peaks, y=LogReadCount, color = Peaks)) +
+  geom_violin()
+p +
+  geom_boxplot(width=0.1) #+
+  #scale_color_manual(values=c("blue", "darkgreen", "brown", "red"))
+
+ggsave("plots/PeakCountViolin.full.pdf",
+       width = 6,
+       height = 4,
+       units = "in",
+       dpi = 300,
+       limitsize = T)
+```
+
+
+
+
+
+## Scatterplot showing relationship of peak length and count for each peak caller
+```{r}
+plot(Genrich.ct$Length, Genrich.ct$Count, 
+     log="xy", col = gray(0, .1))
+
+cor.test(log10(Genrich.ct$Length), log10(Genrich.ct$Count))
+```
+
+```{r}
+plot(HMMRATAC.ct$Length, HMMRATAC.ct$Count, 
+     log="xy", col = gray(0, .1))
+
+cor.test(log10(HMMRATAC.ct$Length), log10(HMMRATAC.ct$Count))
+```
+
+```{r}
+plot(MACS2.BAMPE.ct$Length, MACS2.BAMPE.ct$Count, 
+     log="xy", col = gray(0, .1))
+
+cor.test(log10(MACS2.BAMPE.ct$Length), log10(MACS2.BAMPE.ct$Count))
+```
+
+```{r}
+plot(MACS2.SITE.ct$Length, MACS2.SITE.ct$Count, 
+     log="xy", col = gray(0, .1))
+
+#cor.test(log10(MACS2.SITE.ct$Length+1), log10(MACS2.SITE.ct$Count+1))
+```
+
+## Annotate
+```{r}
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+TxDb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+TxDb.gr <- toGRanges(TxDb)
+```
+
+```{r}
+# todo: atacseqQC heatmapPlot
+peaks.gr <- makeGRangesFromDataFrame(HMMRATAC_uniq, keep.extra.columns = T)
+binOverFeature(peaks.gr, annotationData=TxDb.gr,
+               select = "nearest",
+               #PeakLocForDistance="end",
+               featureSite="FeatureStart",
+               radius=10000, nbins=500, FUN=length, 
+               errFun=0,
+               ylab="count", 
+               main="Distribution of peaks around TSS\nHMMRATAC.uniq")
+```
+
+```{r}
+peaks.gr <- makeGRangesFromDataFrame(Genrich_uniq, keep.extra.columns = T)
+binOverFeature(peaks.gr, annotationData=TxDb.gr,
+               # select = "nearest",
+               # PeakLocForDistance="middle",
+               # featureSite="FeatureStart",
+               radius=10000, nbins=500, FUN=length, 
+               errFun=0,
+               ylab="count", 
+               main="Distribution of peaks around TSS\nGenrich.uniq")
+```
+
+```{r}
+peaks.gr <- makeGRangesFromDataFrame(MACS2.BAMPE_uniq, keep.extra.columns = T)
+binOverFeature(peaks.gr, annotationData=TxDb.gr,
+               # select = "nearest",
+               # PeakLocForDistance="middle",
+               # featureSite="FeatureStart",
+               radius=10000, nbins=500, FUN=length, 
+               errFun=0,
+               ylab="count", 
+               main="Distribution of peaks around TSS\nMACS2.BAMPE.uniq")
+```
+
+```{r}
+peaks.gr <- makeGRangesFromDataFrame(MACS2.SITE_uniq, keep.extra.columns = T)
+binOverFeature(peaks.gr, annotationData=TxDb.gr,
+               # select = "nearest",
+               # PeakLocForDistance="middle",
+               # featureSite="FeatureStart",
+               radius=10000, nbins=500, FUN=length, 
+               errFun=0,
+               ylab="count", 
+               main="Distribution of peaks around TSS\nMACS2.SITE_uniq")
+
+aCR<-assignChromosomeRegion(peaks.gr, 
+                            nucleotideLevel=F, # peak centric view
+                            # precedence=c("Promoters", "immediateDownstream", 
+                            #              "fiveUTRs", "threeUTRs", 
+                            #              "Exons", "Introns"), # double count
+                            proximal.promoter.cutoff	<- 3000,
+                            immediate.downstream.cutoff	<- 1000, 
+                            TxDb=TxDb)
+
+op <- par(mar=c(11,4,4,2)) # allows the names.arg below the barplot
+barplot(aCR$percentage, las=3)
+rm(op)
+```
+
+```{r}
+library("org.Hs.eg.db")
+library( "KEGG.db" )
+
+peaks.gr <- Genrich
+binOverFeature(peaks.gr, annotationData=TxDb.gr,
+               # select = "nearest",
+               # PeakLocForDistance="middle",
+               # featureSite="FeatureStart",
+               radius=10000, nbins=500, FUN=length, 
+               errFun=0,
+               ylab="count", 
+               main=paste("Distribution of peaks around TSS", name, sep="\n")
+)
+
+aCR<-assignChromosomeRegion(peaks.gr, 
+                            nucleotideLevel=F, # peak centric view
+                            # precedence=c("Promoters", "immediateDownstream", 
+                            #              "fiveUTRs", "threeUTRs", 
+                            #              "Exons", "Introns"), # double count
+                            proximal.promoter.cutoff	<- 3000,
+                            immediate.downstream.cutoff	<- 1000, 
+                            TxDb=TxDb)
+
+op <- par(mar=c(11,4,4,2)) # allows the names.arg below the barplot
+barplot(aCR$percentage, las=3)
+rm(op)
+
+gr.anno <- annotatePeakInBatch(myPeakList = peaks.gr, 
+                               AnnotationData =  TxDb.gr, 
+                               FeatureLocForDistance="TSS",
+                               bindingRegion = c(-3000, +3000),
+                               output = "overlapping", 
+                               select = 'all',
+                               ignore.strand = T
+)
+gr.anno$feature 
+
+
+
+```
+
+```{r}
+kegg <- getEnrichedPATH(
+    gr.anno$feature, 
+    orgAnn="org.Hs.eg.db", 
+    pathAnn = "KEGG.db",
+    feature_id_type = "ensembl_gene_id", 
+    maxP=max_BH,
+    minPATHterm=10,
+    multiAdjMethod= "BH"
+)
+```
+
+
+## double count
+```{r, warning=F}
+
+```
+
+## RNAseq
+
+
+
+

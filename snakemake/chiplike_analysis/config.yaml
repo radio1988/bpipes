@@ -1,0 +1,51 @@
+# Analysis Params
+MODE: PE  # PE, MACS2 PE mode; SITE, get GATC site
+
+SAMPLES:
+    - 1-1_S36
+    - 1-2_S37
+    - 1-3_S38
+    - 2-1_S39
+    - 2-2_S40
+    - 2-3_S41
+    - 3-1_S42
+    - 3-2_S43
+    - 3-3_S44
+
+GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa 
+
+GTF: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
+
+GSIZE: "hs"  
+# MACS2 gsize param, hs, mm, ce, dm, 2.7e8
+
+SizeFile: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx/chrNameLength.txt
+# for bedGraphToBigWig, and hmmratac
+
+
+BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
+MQ_MIN: 0 # multiBamSummary, plotFingerprint
+
+# Filters for bamCoverage, plotFingerprint, multiBamSummary
+minFragmentLength: 50  # 100 for mono-nucleosome
+maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
+
+
+# MEME related
+MEME_DB: "/project/umw_mccb/genome/Homo_sapiens/motifs/hocomoco/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme"
+PEAK_WIDTH: # center in peak summit
+    - 100
+    - 1000
+    - 4000
+CHRS:
+    - chr1
+    - chr2
+    - chr3
+    - chr4
+    - chr5
+    - chr6
+    - chr10
+    - chr11
+    - chrM
+    - chrX
+    - chrY

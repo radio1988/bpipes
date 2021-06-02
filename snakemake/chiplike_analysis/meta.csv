@@ -1,0 +1,11 @@
+# note: column names must be kept as in this example file, this comment line is optional
+# note2: type, treatment, control names should not be numerical, must contain letters
+sample,group
+1-2_S1,ctrl
+2-1_S2,G1
+2-2_S3,G1
+2-3_S4,G1
+3-1_S5,G2
+3-2_S6,G2
+3-3_S7,G2
+L6_S25,ctrl
