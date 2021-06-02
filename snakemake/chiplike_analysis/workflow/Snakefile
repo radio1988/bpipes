@@ -1,9 +1,9 @@
-# Dec. 22, 2020
-# DamID pipeline
+# June2, 2021
+# ChIPSeq like data analysis pipeline
 # Functions: 
     # fastqc
-    # map, filter (DamID specific), bam_qc
-    # call peak (DamID specific): sample level and contrast based
+    # map, filter, bam_qc
+    # call peak: sample level and contrast based (read contras.csv and meta.csv)
     # bigwig (macs2_DamID signal based)
 # Env: 
     # source activate damid
@@ -24,7 +24,7 @@ from damid_modules import *
 ### parse and prepare
 min_version("5.17.0")
 
-configfile: "config.yaml"
+configfile: "config/config.yaml"
 SAMPLES=config["SAMPLES"]
 GENOME=config["GENOME"]
 INDEX=GENOME+".sa"
@@ -36,10 +36,10 @@ MEME_DB=config["MEME_DB"]
 PEAK_WIDTH=config['PEAK_WIDTH']
 CHRS=config['CHRS']
 
-o=parse_meta_contrast(fmeta="meta.csv", fcontrast="contrast.csv") 
+o=parse_meta_contrast(fmeta="./config/meta.csv", fcontrast="./config/contrast.csv") 
 # print("parse_meta_contrast_obj:", vars(o))
 # {'contrast2contrast_name': {'contrast1': 'G1_vs_ctrl', 'contrast2': 'G2_vs_ctrl', 'contrast3': 'G1_G2_vs_ctrl'}, 
-# 'contrast2treatmentSamples': {'contrast1': ['2-1_S2', '2-2_S3', '2-3_S4'], 'contrast2': ['3-1_S5', '3-2_S6', '3-3_S7'], 'contrast3': ['2-1_S2', '2-2_S3', '2-3_S4', '3-1_S5', '3-2_S6', '3-3_S7']}, 
+# 'contrast2treatmentSamples': {'contrast1': ['2-1_S2', '2-2_S3', '2-3_S4'], 'contrast2': ['3-1_S5', '3-2_S6', '3-3_S7']}, 
 # 'contrast2controlSamples': {'contrast1': ['1-2_S1'], 'contrast2': ['1-2_S1'], 'contrast3': ['1-2_S1']}}
 
 ruleorder: meme_split > meme > macs2_DamID_contrast_treat_pileup_bw > macs2_DamID_sample_treat_pileup_bw > split_fa_by_chr > get_summit_neighbour
@@ -189,7 +189,7 @@ rule DamID_filter:
     shell:
         """
         # need samtools/1.9
-        python scripts/filter_bam.py {input} {GENOME} GATC {output} &> {log}
+        python workflow/scripts/filter_bam.py {input} {GENOME} GATC {output} &> {log}
         """
 
 
@@ -438,7 +438,7 @@ if config['MODE'] == 'SITE':
         threads:
             4
         conda:
-            "scripts/macs2.yaml"
+            "envs/macs2.yaml"
         log:
             "macs2_DamID_sample/{sample}_peaks.narrowPeak.log"
         benchmark:
@@ -473,7 +473,7 @@ if config['MODE'] == 'SITE':
         threads:
             4        
         conda:
-            "scripts/macs2.yaml"
+            "envs/macs2.yaml"
         log:
             "macs2_DamID_contrast/{contrast}/{contrast_name}.macs2_DamID.log"
         benchmark:
@@ -497,7 +497,7 @@ elif config['MODE'] == 'PE':
         threads:
             4
         conda:
-            "scripts/macs2.yaml"
+            "envs/macs2.yaml"
         log:
             "macs2_DamID_sample/{sample}_peaks.narrowPeak.log"
         benchmark:
@@ -532,7 +532,7 @@ elif config['MODE'] == 'PE':
         threads:
             4        
         conda:
-            "scripts/macs2.yaml"
+            "envs/macs2.yaml"
         log:
             "macs2_DamID_contrast/{contrast}/{contrast_name}.macs2_DamID.log"
         benchmark:
@@ -583,7 +583,7 @@ rule macs2_DamID_sample_treat_pileup_bw:
 #         "log/macs2_site/peak2gtf/{sample}.log"
 #     shell:
 #         """
-#         perl scripts/peak2gtf.pl {input} > {output} 
+#         perl workflow/scripts/peak2gtf.pl {input} > {output} 
 #         """
 
 # rule macs_site_count:
@@ -648,7 +648,7 @@ rule get_summit_neighbour:
         mem="6000"
     shell:
         """
-        python scripts/get_summit_neighbour.py {input.genome} {input.summit} {wildcards.width} {output} &> {log}
+        python workflow/scripts/get_summit_neighbour.py {input.genome} {input.summit} {wildcards.width} {output} &> {log}
         """
 
 
