@@ -1,0 +1,3 @@
+rule align:
+    input: 'fastq/a.fastq.gz'
+    output: touch('results/sorted_bam/a.bam')

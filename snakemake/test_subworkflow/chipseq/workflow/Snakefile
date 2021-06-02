@@ -1,0 +1,16 @@
+rule targets:
+    input:
+        'results/qc/qc.txt'
+
+tool_path='/home/rl44w/github/bpipes/snakemake/test_subworkflow/'
+
+module align:
+    snakefile: tool_path + '/align/workflow/Snakefile'
+
+use rule * from align as align_*
+
+module qc:
+    snakefile: "../../qc/workflow/Snakefile"
+
+use rule * from qc as qc_*
+

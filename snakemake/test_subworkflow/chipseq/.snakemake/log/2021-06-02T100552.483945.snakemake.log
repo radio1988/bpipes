@@ -1,0 +1,4 @@
+WorkflowError in line 5 of /home/rl44w/github/bpipes/snakemake/test_subworkflow/chipseq/workflow/Snakefile:
+Failed to open source file /home/rl44w/github/bpipes/snakemake/test_subworkflow/chipseq/align/workflow/Snakefile
+FileNotFoundError: [Errno 2] No such file or directory: '/home/rl44w/github/bpipes/snakemake/test_subworkflow/chipseq/align/workflow/Snakefile'
+  File "/home/rl44w/github/bpipes/snakemake/test_subworkflow/chipseq/workflow/Snakefile", line 5, in <module>

@@ -1,0 +1,21 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	qc_qc
+	1
+Select jobs to execute...
+
+[Wed Jun  2 10:10:06 2021]
+rule qc_qc:
+    input: results/sorted_bam/a.bam
+    output: results/qc/qc.txt
+    jobid: 0
+
+Touching output file results/qc/qc.txt.
+[Wed Jun  2 10:10:08 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Complete log: /home/rl44w/github/bpipes/snakemake/test_subworkflow/chipseq/.snakemake/log/2021-06-02T101004.817346.snakemake.log

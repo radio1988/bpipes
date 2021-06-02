@@ -1,0 +1,3 @@
+rule qc:
+    input: 'results/sorted_bam/a.bam'
+    output: touch('results/qc/qc.txt')

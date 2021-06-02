@@ -1,0 +1,2 @@
+SyntaxError in line 9 of /home/rl44w/github/bpipes/snakemake/test_subworkflow/workflow/Snakefile:
+Expected name or colon after rule or checkpoint keyword. (Snakefile, line 9)

@@ -1,0 +1,45 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	align_align
+	1	qc_qc
+	1	targets
+	3
+Select jobs to execute...
+
+[Wed Jun  2 10:13:24 2021]
+rule align_align:
+    input: fastq/a.fastq.gz
+    output: results/sorted_bam/a.bam
+    jobid: 2
+
+Touching output file results/sorted_bam/a.bam.
+[Wed Jun  2 10:13:26 2021]
+Finished job 2.
+1 of 3 steps (33%) done
+Select jobs to execute...
+
+[Wed Jun  2 10:13:26 2021]
+rule qc_qc:
+    input: results/sorted_bam/a.bam
+    output: results/qc/qc.txt
+    jobid: 1
+
+Touching output file results/qc/qc.txt.
+[Wed Jun  2 10:13:28 2021]
+Finished job 1.
+2 of 3 steps (67%) done
+Select jobs to execute...
+
+[Wed Jun  2 10:13:28 2021]
+localrule targets:
+    input: results/qc/qc.txt
+    jobid: 0
+
+[Wed Jun  2 10:13:28 2021]
+Finished job 0.
+3 of 3 steps (100%) done
+Complete log: /home/rl44w/github/bpipes/snakemake/test_subworkflow/chipseq/.snakemake/log/2021-06-02T101323.255300.snakemake.log
