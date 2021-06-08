@@ -1,7 +1,7 @@
-name: damid 
+name: chiplike 
 # Install:
-# conda env create -n damid -f scripts/env.yaml
-# conda env update -n damid -f scripts/env.yaml
+# conda env create -n chiplike -f scripts/env.yaml
+# conda env update -n chiplike -f scripts/env.yaml
 
 channels:
   - conda-forge
