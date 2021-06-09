@@ -90,29 +90,6 @@ shell.prefix("""
 #         dag="Workflow_DAG.all.svg"
 
 
-rule fastqc:
-    # don't need input, if you agree on not checking them
-    # without output, output will not be created
-    output:
-        "results/fastqc/multiqc_report.html"
-    log:
-        "log/fastqc/fastqc.log"
-    params:
-        mem="1000"
-    threads:
-        8
-    conda:
-        "../envs/chiplike.yaml"
-    shell:
-        # {input/output} don't have to be in command
-        # have to load module in one block
-        """
-        module load fastqc/0.11.5
-        mkdir -p results/fastqc
-        mkdir -p results/fastqc/details
-        fastqc -t {threads} fastq/*q.gz -o results/fastqc/details &> {log}
-        multiqc results/fastqc/details -o results/fastqc &>> {log}
-        """
 
 
 rule bwa_index:
