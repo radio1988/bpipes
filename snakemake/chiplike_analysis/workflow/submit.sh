@@ -6,6 +6,6 @@ snakemake -k -p --ri \
 --use-envmodules \
 --ri  --restart-times 1 \
 --jobs 99  --latency-wait 20 \
---cluster 'bsub -q long -o lsf.log -R "rusage[mem={params.mem}]" -n {threads} -R span[hosts=1] -W 24:00'
+--cluster 'bsub -q long -o lsf.log -R "rusage[mem={resources.mem_mb}]" -n {threads} -R span[hosts=1] -W 24:00'
 
 snakemake -j 1 --report report.html

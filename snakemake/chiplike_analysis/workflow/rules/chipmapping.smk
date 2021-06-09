@@ -47,7 +47,7 @@ rule bwa_map_pe:
         """
 
 
-rule samtools_sort_index:
+rule bam_sort_index:
 # todo: remove temp files, which cause problems when re-run failed submissions
     # 2M/min
     input:
@@ -69,8 +69,5 @@ rule samtools_sort_index:
         """
         samtools --version &> {log}
         samtools sort -@ {threads} -m 2G {input} -o {output.bam} &>> {log}
-        echo sorting finished
-        sleep 10
-        echo indexing started
-        samtools index {output.bam} &>> {log}
+        samtools index -@ {threads} -m {resources.mem_mb} {output.bam} {output.bai} &>> {log}
         """

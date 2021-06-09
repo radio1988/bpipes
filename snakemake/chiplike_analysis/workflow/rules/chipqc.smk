@@ -1,6 +1,10 @@
 SAMPLES=config['SAMPLES']
+minFragmentLength=config['minFragmentLength']
+maxFragmentLength=config['maxFragmentLength']
+MQ_MIN=config['MQ_MIN']
+BIN_SIZE=config['BIN_SIZE']
 
-rule plotFingerprint_PE:
+rule plotFingerprint_pe:
     input:
         expand("results/clean_reads/{sample}.bam", sample=SAMPLES)
     output:
@@ -23,8 +27,8 @@ rule plotFingerprint_PE:
             --smartLabels \
             --minMappingQuality {MQ_MIN} \
             --binSize {BIN_SIZE} \
-            --minFragmentLength {config[minFragmentLength]} \
-            --maxFragmentLength {config[maxFragmentLength]} \
+            --minFragmentLength {minFragmentLength} \
+            --maxFragmentLength {maxFragmentLength} \
             --extendReads \
             --centerReads \
             --samFlagInclude 2 \
@@ -82,8 +86,8 @@ rule multiBamSummary:
         --smartLabels \
         -p {threads} \
         --minMappingQuality {MQ_MIN} \
-        --minFragmentLength {config[minFragmentLength]} \
-        --maxFragmentLength {config[maxFragmentLength]} \
+        --minFragmentLength {minFragmentLength} \
+        --maxFragmentLength {maxFragmentLength} \
         -e \
         --samFlagInclude 2 &> {log}
         """
@@ -133,33 +137,6 @@ rule plotPCA:
         --plotFile {output} &> {log}
         """
 
-# rule CollectInsertSizeMetrics:
-#     input:
-#         "results/clean_reads/{sample}.bam"
-#     output:
-#         txt="results/clean_reads_qc/{sample}.insert_size.txt",
-#         pdf="results/clean_reads_qc/{sample}.insert_size.pdf"
-#     log:
-#         'results/clean_reads_qc/{sample}.intert_size.log'
-#     resources:
-#         mem_mb=lambda wildcards, attempt: attempt * 1600
-#     threads:
-#         1
-#     # conda: todo
-#     #     "../envs/chiplike.yaml"  # also need Rscript
-#     envmodules:
-#         "picard/2.17.8"
-#     shell:
-#         """
-#         module load picard/2.17.8
-#         PICARD=/share/pkg/picard/2.17.8/picard.jar
-
-#         java -Xmx15g -jar $PICARD CollectInsertSizeMetrics \
-#         I={input} \
-#         O={output.txt} \
-#         H={output.pdf} &> {log}
-#         """ 
-
 
 rule insert_size:
     input:
@@ -168,7 +145,7 @@ rule insert_size:
         txt="results/clean_reads_qc/insert_size/{sample}.insert_size.txt",
         pdf="results/clean_reads_qc/insert_size/{sample}.insert_size.pdf"
     log:
-        'results/clean_reads_qc/{sample}.intert_size.log'
+        'log/clean_reads_qc/insert_size/{sample}.intert_size.log'
     params:
         # optional parameters (e.g. relax checks as below)
         "VALIDATION_STRINGENCY=LENIENT "

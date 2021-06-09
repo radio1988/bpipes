@@ -3,15 +3,18 @@ min_version("6.0")
 
 configfile: 'config/config.yaml'
 SAMPLES=config['SAMPLES']
+PEAK_WIDTH=config['PEAK_WIDTH']
 
 from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_control_bams_from_contrast, get_contrast_name_from_contrast, \
     get_treat_pileup_bdg_names_from_contrasts, get_treat_pileup_bw_names_from_contrasts, \
-    get_control_lambda_bw_names_from_contrasts, get_meme_split_outname_from_contrasts, get_meme_outname_from_contrasts
+    get_control_lambda_bw_names_from_contrasts, \
+    get_meme_peak_outname_from_contrasts, get_meme_summit_outname_from_contrasts, get_meme_summit_split_outname_from_contrasts, \
+    get_count_names_from_contrasts
 
 o=parse_meta_contrast(fmeta="config/meta.csv", fcontrast="config/contrast.csv") 
 
-rule main_targets:
+rule targets:
     input:
         # qc
         fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
@@ -26,16 +29,20 @@ rule main_targets:
 
         # call peak and create signal tracks
         # narrow peak
-        macs2_sample_level_peaks=expand("results/macs2_sample_level_peaks/{sample}_peaks.narrowPeak", sample=SAMPLES),
-        macs2_sample_treat_pileup_bw=expand("results/macs2_sample_level_peaks/{sample}_treat_pileup.bw", sample=SAMPLES),
-        macs2_contrast_level_peaks=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
+        narrow_peaks_sample_level=expand("results/narrow_peaks_sample_level/{sample}_clean.narrowPeak", sample=SAMPLES),
+        macs2_sample_treat_pileup_bw=expand("results/narrow_peaks_sample_level/{sample}_treat_pileup.bw", sample=SAMPLES),
+        macs2_narrow_peak_count_sample = expand("results/narrow_peaks_sample_level/{sample}.count.txt", sample=SAMPLES),
+
+        narrow_peaks_contrast_level=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
         macs2_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
         macs2_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
-        macs2_narrow_peak_count = expand("results/macs2_sample_level_peaks/{sample}.count.txt", sample=SAMPLES),
+        macs2_narrow_peak_count_contrast = get_count_names_from_contrasts(contrasts=o.contrasts, o=o),
+
 
         # motifs
-        meme=get_meme_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=config['PEAK_WIDTH'], o=o),
-        #meme_split=get_meme_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=config['PEAK_WIDTH'], CHRS=config['CHRS'], o=o),
+        meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o),
+        #meme_summit=get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
+        #meme_split=get_meme_summit_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, CHRS=config['CHRS'], o=o),
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
 
@@ -47,5 +54,8 @@ include: 'rules/chipmapping.smk'
 include: 'rules/chipbamfilter.smk'
 include: 'rules/bamqc.smk'
 include: 'rules/chipqc.smk'
+include: 'rules/getpeak.smk'
+include: 'rules/countpeak.smk'
+include: 'rules/findmotif.smk'
 include: 'rules/Snakefile_DamID.smk'
 include: 'rules/snakemake_misc.smk'

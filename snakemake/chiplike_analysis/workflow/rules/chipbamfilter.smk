@@ -1,49 +1,10 @@
 DATA_TYPE = config['DATA_TYPE']
 
-# rule markDup:
-#     # same speed as bwa_map, slow
-#     input:
-#         bam="results/sorted_reads/{sample}.bam",
-#         bai="results/sorted_reads/{sample}.bam.bai"
-#     output:
-#         #temp(
-#         bam=temp("results/markDup/{sample}.bam"),
-#         metrics="results/markDup/{sample}.markDup_metrics.txt",
-#         bai=temp("results/markDup/{sample}.bam.bai"),
-#         #)  # make temp and save storage
-#     log:
-#         "log/markDup/{sample}.markDup.log"
-#     benchmark:
-#         "log/markDup/{sample}.benchmark"
-#     conda:
-#         "../envs/chiplike.yaml"
-#     threads:
-#         2
-#     resources:
-#         mem_mb=lambda wildcards, attempt: attempt * 16000
-#     shell:
-#         """
-#         module load picard/2.17.8
-#         PICARD=/share/pkg/picard/2.17.8/picard.jar
-        
-#         java -Xmx30g -XX:ParallelGCThreads=2 -jar $PICARD MarkDuplicates \
-#         I={input.bam} \
-#         O={output.bam} \
-#         M={output.metrics} \
-#         REMOVE_DUPLICATES=true \
-#         ASSUME_SORTED=true \
-#         &> {log}
-
-#         samtools index {output.bam} &>> {log}
-#         """
-
-rule mark_duplicates:
+rule markDup:
+    # same speed as bwa_map, slow
     input:
         bam="results/sorted_reads/{sample}.bam",
         bai="results/sorted_reads/{sample}.bam.bai"
-    # optional to specify a list of BAMs; this has the same effect
-    # of marking duplicates on separate read groups for a sample
-    # and then merging
     output:
         bam=temp("results/markDup/{sample}.bam"),
         metrics="results/markDup/{sample}.markDup_metrics.txt",
@@ -51,19 +12,28 @@ rule mark_duplicates:
         "log/markDup/{sample}.markDup.log"
     benchmark:
         "log/markDup/{sample}.benchmark"
-    params:
-        "REMOVE_DUPLICATES=true ASSUME_SORTED=true",
+    conda:
+        "../envs/picard.yaml"
     threads:
         2
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 16000
-    wrapper:
-        "v0.75.0/bio/picard/markduplicates"
+
+    shell:
+        """
+        picard MarkDuplicates \
+        I={input.bam} \
+        O={output.bam} \
+        M={output.metrics} \
+        REMOVE_DUPLICATES=true \
+        ASSUME_SORTED=true \
+        &> {log}
+        """
 
 
 # todo: new MODE, DATA_TYPE pattern
 if DATA_TYPE == 'DamID':
-    rule DamID_filter:
+    rule bam_filter_damid:
         input:
             bam="results/sorted_reads/{sample}.bam",
             bai="results/sorted_reads/{sample}.bam.bai"
@@ -82,14 +52,15 @@ if DATA_TYPE == 'DamID':
         shell:
             """
             # need samtools/1.9
-            python workflow/scripts/filter_bam.py {input.bam} {GENOME} GATC {output} &> {log}
+            python scripts/filter_bam.py {input.bam} {GENOME} GATC {output} &> {log}
             """
 elif DATA_TYPE == 'ATAC':
-    rule ATAC_filter:
+    rule bam_filter_atac:
         input:
             "results/markDup/{sample}.bam"
         output:
-            "results/clean_reads/{sample}.bam"
+            bam="results/clean_reads/{sample}.bam",
+            bai="results/clean_reads/{sample}.bam.bai"
         log:
             "log/clean_reads/{sample}.log"
         benchmark:
@@ -108,10 +79,11 @@ elif DATA_TYPE == 'ATAC':
                 samtools view -h {input} 2>{log}| perl -lane 'print unless ($F[2] eq {chrM} and $_ != /\@/)' 2>>{log}| awk \'{config[filter]}\' 2>>{log}| $samtools sort -m 8G -o {output}  2>> {log}
                 cp {input} {output}
 
-            samtools index {output} &> {log}
+                samtools index -@ {threads} -m {resources.mem_mb} {output.bam} {output.bai} &>> {log}
+
             """
 elif DATA_TYPE == 'ChIP':
-    rule ChIP_filter:
+    rule bam_filter_chip:
         input:
             bam="results/markDup/{sample}.bam",
         output:
@@ -122,7 +94,7 @@ elif DATA_TYPE == 'ChIP':
         benchmark:
             "log/clean_reads/{sample}.benchmark"
         threads:
-            1
+            2
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         conda:
@@ -130,7 +102,7 @@ elif DATA_TYPE == 'ChIP':
         shell:
             """
             cp {input.bam} {output.bam} &> {log}
-            samtools index {input.bam}
+            samtools index -@ {threads} -m {resources.mem_mb} {output.bam} {output.bai} &>> {log}
             """
 else: 
     sys.exit("DATA_TYPE error, see config.yaml for details")

@@ -10,7 +10,7 @@ SAMPLES:
 GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa 
 
 GTF: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
-
+BLACKLIST: /project/umw_mccb/genome/Blacklist/lists/hg38-blacklist.v2.bed
 GSIZE: "hs"  
 # MACS2 gsize param, hs, mm, ce, dm, 2.7e8
 

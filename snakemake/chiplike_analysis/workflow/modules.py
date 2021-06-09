@@ -130,14 +130,14 @@ def get_treat_pileup_bdg_names_from_contrasts(contrasts=["contrast1", "contrast2
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
     output example:
-    [macs2_contrast_level_peaks/contrast1/G1_vs_ctrl_treat_pileup.bdg, 
-    macs2_contrast_level_peaks/contrast2/G2_vs_ctrl_treat_pileup.bdg, 
-    macs2_contrast_level_peaks/contrast3/G1_G2_vs_ctrl_treat_pileup.bdg]
+    [narrow_peaks_contrast_level/contrast1/G1_vs_ctrl_treat_pileup.bdg, 
+    narrow_peaks_contrast_level/contrast2/G2_vs_ctrl_treat_pileup.bdg, 
+    narrow_peaks_contrast_level/contrast3/G1_G2_vs_ctrl_treat_pileup.bdg]
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     treat_pileup_bdg_names = []
     for contrast,name in zip(contrasts, contrast_names):
-        treat_pileup_bdg_names.append("results/macs2_contrast_level_peaks/"+contrast+"/"+name+"_treat_pileup.bdg")
+        treat_pileup_bdg_names.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_treat_pileup.bdg")
     return treat_pileup_bdg_names
 
 def get_treat_pileup_bw_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
@@ -145,14 +145,14 @@ def get_treat_pileup_bw_names_from_contrasts(contrasts=["contrast1", "contrast2"
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
     output example:
-    [macs2_contrast_level_peaks/contrast1/G1_vs_ctrl_treat_pileup.bdg, 
-    macs2_contrast_level_peaks/contrast2/G2_vs_ctrl_treat_pileup.bdg, 
-    macs2_contrast_level_peaks/contrast3/G1_G2_vs_ctrl_treat_pileup.bdg]
+    [narrow_peaks_contrast_level/contrast1/G1_vs_ctrl_treat_pileup.bdg, 
+    narrow_peaks_contrast_level/contrast2/G2_vs_ctrl_treat_pileup.bdg, 
+    narrow_peaks_contrast_level/contrast3/G1_G2_vs_ctrl_treat_pileup.bdg]
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     treat_pileup_bdg_names = []
     for contrast,name in zip(contrasts, contrast_names):
-        treat_pileup_bdg_names.append("results/macs2_contrast_level_peaks/"+contrast+"/"+name+"_treat_pileup.bw")
+        treat_pileup_bdg_names.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_treat_pileup.bw")
     return treat_pileup_bdg_names
 
 def get_control_lambda_bdg_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
@@ -160,14 +160,14 @@ def get_control_lambda_bdg_names_from_contrasts(contrasts=["contrast1", "contras
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
     output example:
-    [macs2_contrast_level_peaks/contrast1/G1_vs_ctrl_control_lambda.bdg, 
-    macs2_contrast_level_peaks/contrast2/G2_vs_ctrl_control_lambda.bdg, 
-    macs2_contrast_level_peaks/contrast3/G1_G2_vs_ctrl_control_lambda.bdg]
+    [narrow_peaks_contrast_level/contrast1/G1_vs_ctrl_control_lambda.bdg, 
+    narrow_peaks_contrast_level/contrast2/G2_vs_ctrl_control_lambda.bdg, 
+    narrow_peaks_contrast_level/contrast3/G1_G2_vs_ctrl_control_lambda.bdg]
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     control_lambda_bdg_names = []
     for contrast,name in zip(contrasts, contrast_names):
-        control_lambda_bdg_names.append("results/macs2_contrast_level_peaks/"+contrast+"/"+name+"_control_lambda.bdg")
+        control_lambda_bdg_names.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_control_lambda.bdg")
     return control_lambda_bdg_names
 
 def get_control_lambda_bw_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
@@ -175,18 +175,45 @@ def get_control_lambda_bw_names_from_contrasts(contrasts=["contrast1", "contrast
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
     output example:
-    [macs2_contrast_level_peaks/contrast1/G1_vs_ctrl_control_lambda.bdg, 
-    macs2_contrast_level_peaks/contrast2/G2_vs_ctrl_control_lambda.bdg, 
-    macs2_contrast_level_peaks/contrast3/G1_G2_vs_ctrl_control_lambda.bdg]
+    [narrow_peaks_contrast_level/contrast1/G1_vs_ctrl_control_lambda.bdg, 
+    narrow_peaks_contrast_level/contrast2/G2_vs_ctrl_control_lambda.bdg, 
+    narrow_peaks_contrast_level/contrast3/G1_G2_vs_ctrl_control_lambda.bdg]
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     control_lambda_bdg_names = []
     for contrast,name in zip(contrasts, contrast_names):
-        control_lambda_bdg_names.append("results/macs2_contrast_level_peaks/"+contrast+"/"+name+"_control_lambda.bw")
+        control_lambda_bdg_names.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_control_lambda.bw")
     return control_lambda_bdg_names
 
 
-def get_meme_outname_from_contrasts(
+def get_count_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    outnames = []
+    for contrast,name in zip(contrasts, contrast_names):
+        outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_count.txt")
+    return outnames
+
+
+def get_meme_peak_outname_from_contrasts(
+    contrasts=["contrast1", "contrast2"], 
+    o = "parse_meta_contrast_obj"):
+    """
+    Learn: Good trick to use tagets input to do contrast2contrast_name and more
+
+    output example:
+    [narrow_peaks_contrast_level/contrast1/memechip.2000/G1_vs_ctrl.finished
+    ...
+    ]
+    """
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    outnames = []
+    for contrast,name in zip(contrasts, contrast_names):
+        outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/meme_clean_peaks/"+name+'.finished')
+    return outnames
+
+
+
+def get_meme_summit_outname_from_contrasts(
     contrasts=["contrast1", "contrast2"], 
     PEAK_WIDTH=["100","1000", "2000"], 
     o = "parse_meta_contrast_obj"):
@@ -194,7 +221,7 @@ def get_meme_outname_from_contrasts(
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
     output example:
-    [macs2_contrast_level_peaks/contrast1/memechip.2000/G1_vs_ctrl.finished
+    [narrow_peaks_contrast_level/contrast1/memechip.2000/G1_vs_ctrl.finished
     ...
     ]
     """
@@ -202,11 +229,11 @@ def get_meme_outname_from_contrasts(
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
         for w in PEAK_WIDTH:
-            outnames.append("results/macs2_contrast_level_peaks/"+contrast+"/memechip." + str(w) + "/" + name + '.finished')
+            outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/memechip." + str(w) + "/" + name + '.finished')
     return outnames
-# todo: end of this part
 
-def get_meme_split_outname_from_contrasts(
+
+def get_meme_summit_split_outname_from_contrasts(
     contrasts=["contrast1", "contrast2"], 
     PEAK_WIDTH=["100","1000", "2000"], 
     CHRS=['chr1', 'chrX', 'chrY'],
@@ -216,7 +243,7 @@ def get_meme_split_outname_from_contrasts(
 
     output example:
     [
-    macs2_contrast_level_peaks/contrast1/memechip_chr.100_chrX/G1_vs_ctrl.finished
+    narrow_peaks_contrast_level/contrast1/memechip_chr.100_chrX/G1_vs_ctrl.finished
     ...
     ]
     """
@@ -225,6 +252,5 @@ def get_meme_split_outname_from_contrasts(
     for contrast,name in zip(contrasts, contrast_names):
         for w in PEAK_WIDTH:
             for chr in CHRS:
-                outnames.append("results/macs2_contrast_level_peaks/"+contrast+"/memechip_chr." + str(w) + "_" + chr + '/' + name + '.finished')
+                outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/memechip_chr." + str(w) + "_" + chr + '/' + name + '.finished')
     return outnames
-# todo: end of this part

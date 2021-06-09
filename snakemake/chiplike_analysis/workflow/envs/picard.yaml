@@ -3,4 +3,4 @@ channels:
     - bioconda
 
 dependencies:
-    - picard
+    - picard=2.25.5
