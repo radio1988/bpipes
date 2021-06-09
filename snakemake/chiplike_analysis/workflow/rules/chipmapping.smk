@@ -9,8 +9,8 @@ rule bwa_index:
         INDEX
     log:
         "log/bwa_index.log"
-    params:
-        mem="8000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 12000
     threads:
         2
     conda:
@@ -29,10 +29,10 @@ rule bwa_map_pe:
         r2="fastq/{sample}.R2.fastq.gz",
     output:
         temp("results/mapped_reads/{sample}.bam")
-    params:
-        mem="3000"  # todo auto adjust based on {threads}, for human need 18G+ 
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000 # human need 18G
     threads:
-        8
+        12
     log:
         "log/mapped_reads/{sample}.bam.log"
     benchmark:
@@ -55,8 +55,8 @@ rule samtools_sort_index:
     output:
         bam=temp("results/sorted_reads/{sample}.bam"),
         bai=temp("results/sorted_reads/{sample}.bam.bai")
-    params:
-        mem="2500"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2500
     threads:
         4
     log:
@@ -74,35 +74,3 @@ rule samtools_sort_index:
         echo indexing started
         samtools index {output.bam} &>> {log}
         """
-
-
-# rule bwa_mem_pe:
-#     input:
-#         reads=["fastq/{sample}.R1.fastq.gz", "fastq/{sample}.R2.fastq.gz"]
-#     output:
-#         "mapped/{sample}.bam"
-#     log:
-#         "logs/mapped/bwa.{sample}.log"
-#     benchmark:
-#         "logs/mapped/bwa.{sample}.benchmark"
-#     params:
-#         index=config['genome'],
-#         extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
-#         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
-#         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
-#         sort_extra="-m 2G -@ 2"            # Extra args for samtools/picard.
-#     threads: 12
-#    # resources:
-#    #     mem_mb=lambda wildcards, attempt: attempt * 
-#     wrapper:
-#         "0.72.0/bio/bwa/mem"
-
-# rule samtools_index:
-#     input:
-#         "mapped/{sample}.bam"
-#     output:
-#         "mapped/{sample}.bam.bai"
-#     params:
-#         "" # optional params string
-#     wrapper:
-#         "0.72.0/bio/samtools/index"

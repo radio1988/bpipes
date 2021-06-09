@@ -94,120 +94,6 @@ shell.prefix("""
 
 
 
-rule markDup:
-    # same speed as bwa_map, slow
-    input:
-        bam="results/sorted_reads/{sample}.bam",
-        bai="results/sorted_reads/{sample}.bam.bai"
-    output:
-        #temp(
-        bam=temp("results/markDup/{sample}.bam"),
-        metrics="results/markDup/{sample}.markDup_metrics.txt",
-        bai=temp("results/markDup/{sample}.bam.bai"),
-        #)  # make temp and save storage
-    log:
-        "log/markDup/{sample}.markDup.log"
-    benchmark:
-        "log/markDup/{sample}.benchmark"
-    conda:
-        "../envs/chiplike.yaml"
-    threads:
-        2
-    params:
-        mem="16000",  # Used Max of 24G before
-    shell:
-        """
-        module load picard/2.17.8
-        PICARD=/share/pkg/picard/2.17.8/picard.jar
-        
-        java -Xmx30g -XX:ParallelGCThreads=2 -jar $PICARD MarkDuplicates \
-        I={input.bam} \
-        O={output.bam} \
-        M={output.metrics} \
-        REMOVE_DUPLICATES=true \
-        ASSUME_SORTED=true \
-        &> {log}
-
-        samtools index {output.bam} &>> {log}
-        """
-
-
-if DATA_TYPE == 'DamID':
-    rule DamID_filter:
-        input:
-            bam="results/sorted_reads/{sample}.bam",
-            bai="results/sorted_reads/{sample}.bam.bai"
-        output:
-            "results/clean_reads/{sample}.bam"
-        log:
-            "log/clean_reads/{sample}.log"
-        benchmark:
-            "log/clean_reads/{sample}.benchmark"
-        params:
-                mem="16000"
-        threads:
-            1
-        conda:
-            "../envs/chiplike.yaml"
-        shell:
-            """
-            # need samtools/1.9
-            python workflow/scripts/filter_bam.py {input.bam} {GENOME} GATC {output} &> {log}
-            """
-elif DATA_TYPE == 'ATAC':
-    rule ATAC_filter:
-        input:
-            "results/markDup/{sample}.bam"
-        output:
-            "results/clean_reads/{sample}.bam"
-        log:
-            "log/clean_reads/{sample}.log"
-        benchmark:
-            "log/clean_reads/{sample}.benchmark"
-        threads:
-            2
-        params:
-            mem="8000"
-        conda:
-            "../envs/chiplike.yaml"
-        shell:
-            """
-                echo 'ATACseq mode'
-                echo {input}
-                echo 'remove mito reads; keep paired reads with MQ>20 and 38-2000nt fragment size only'
-                samtools view -h {input} 2>{log}| perl -lane 'print unless ($F[2] eq {chrM} and $_ != /\@/)' 2>>{log}| awk \'{config[filter]}\' 2>>{log}| $samtools sort -m 8G -o {output}  2>> {log}
-                cp {input} {output}
-
-            samtools index {output} &> {log}
-            """
-elif DATA_TYPE == 'ChIP':
-    rule ChIP_filter:
-        input:
-            bam="results/markDup/{sample}.bam",
-            bai="results/markDup/{sample}.bam.bai"
-        output:
-            bam="results/clean_reads/{sample}.bam",
-            bai="results/clean_reads/{sample}.bam.bai"
-        log:
-            "log/clean_reads/{sample}.log"
-        benchmark:
-            "log/clean_reads/{sample}.benchmark"
-        threads:
-            2
-        params:
-            mem="8000"
-        conda:
-            "../envs/chiplike.yaml"
-        shell:
-            """
-            cp {input.bam} {output.bam} &> {log}
-            cp {input.bai} {output.bai} &>> {log}
-            """
-else: 
-    sys.exit("DATA_TYPE error, see config.yaml for details")
-
-
-
 
 rule sorted_reads_bam_qc:
     input:
@@ -217,8 +103,8 @@ rule sorted_reads_bam_qc:
         idxstats="results/sorted_reads_bam_qc/idxstats/{sample}.idxstats.txt",
         flagstat="results/sorted_reads_bam_qc/flagstat/{sample}.flagstat.txt",
         stats="results/sorted_reads_bam_qc/stats/{sample}.stats.txt"
-    params:
-        mem="3000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 3000
     threads:
         1
     log:
@@ -243,8 +129,8 @@ rule multiQC_sorted_reads:
         "results/sorted_reads_bam_qc/stats/multiqc_report.html",
         "results/sorted_reads_bam_qc/idxstats/multiqc_report.html",
         "results/sorted_reads_bam_qc/flagstat/multiqc_report.html",
-    params:
-        mem="3000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 3000
     threads:
         1
     log:
@@ -265,8 +151,8 @@ rule clean_reads_bam_qc:
         idxstats="results/clean_reads_bam_qc/idxstats/{sample}.idxstats.txt",
         flagstat="results/clean_reads_bam_qc/flagstat/{sample}.flagstat.txt",
         stats="results/clean_reads_bam_qc/stats/{sample}.stats.txt"
-    params:
-        mem="2000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000
     threads:
         1
     log:
@@ -291,8 +177,8 @@ rule multiQC_clean_reads:
         "results/clean_reads_bam_qc/stats/multiqc_report.html",
         "results/clean_reads_bam_qc/idxstats/multiqc_report.html",
         "results/clean_reads_bam_qc/flagstat/multiqc_report.html",
-    params:
-        mem="3000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 3000
     threads:
         1
     log:
@@ -312,8 +198,8 @@ rule plotFingerprint_PE:
     output:
         plot="results/clean_reads_bam_qc/fingerprint.pdf",
         txt="results/clean_reads_bam_qc/fingerprint.txt",
-    params:
-        mem="2000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2500
     threads:
         6
     log:
@@ -346,8 +232,8 @@ rule bamPEFragmentSize:
     output:
         plot="results/clean_reads_bam_qc/fragment_size.pdf",
         txt="results/clean_reads_bam_qc/fragment_size.txt"
-    params:
-        mem="4000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000
     threads:
         4
     log:
@@ -371,8 +257,8 @@ rule multiBamSummary:
         expand("results/clean_reads/{sample}.bam", sample=SAMPLES)
     output:
         "results/clean_reads_bam_qc/multiBamSummary.npz",
-    params:
-        mem="3500"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 3500
     threads:
         8
     log:
@@ -400,8 +286,8 @@ rule plotCorrelation:
         "results/clean_reads_bam_qc/multiBamSummary.npz",
     output:
         "results/clean_reads_bam_qc/multiBamSummary.heatmap.pdf"
-    params:
-        mem="20000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000
     threads:
         1
     log:
@@ -424,8 +310,8 @@ rule plotPCA:
         "results/clean_reads_bam_qc/multiBamSummary.npz",
     output:
         "results/clean_reads_bam_qc/multiBamSummary.pca.pdf"
-    params:
-        mem="20000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000
     threads:
         1
     log:
@@ -447,8 +333,8 @@ rule CollectInsertSizeMetrics:
         pdf="results/clean_reads_bam_qc/{sample}.insert_size.pdf"
     log:
         'results/clean_reads_bam_qc/{sample}.intert_size.log'
-    params:
-        mem="16000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1600
     threads:
         1
     # conda: todo
@@ -474,8 +360,8 @@ if DATA_TYPE == 'DamID' and config['MODE'] == 'SITE':
             "results/macs2_sample_level_peaks/{sample}_peaks.narrowPeak", 
             temp("results/macs2_sample_level_peaks/{sample}_treat_pileup.bdg"),
             temp("results/macs2_sample_level_peaks/{sample}_control_lambda.bdg")
-        params:
-            mem="8000"    
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 8000  
         threads:
             4
         conda:
@@ -510,7 +396,8 @@ if DATA_TYPE == 'DamID' and config['MODE'] == 'SITE':
             temp("results/macs2_contrast_level_peaks/{contrast}/{contrast_name}_control_lambda.bdg")
         params:
             contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
-            mem="8000"
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
             4        
         conda:
@@ -534,8 +421,9 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
             temp("results/macs2_sample_level_peaks/{sample}_treat_pileup.bdg"),
             temp("results/macs2_sample_level_peaks/{sample}_control_lambda.bdg")
         params:
-            mem="8000", 
             odir='results/macs2_sample_level_peaks'
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
             4
         conda:
@@ -570,7 +458,8 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
             temp("results/macs2_contrast_level_peaks/{contrast}/{contrast_name}_control_lambda.bdg")
         params:
             contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
-            mem="8000"
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
             4        
         conda:
@@ -595,8 +484,8 @@ rule sample_bdg2bw:
     output:
         bw="results/macs2_sample_level_peaks/{sample}_treat_pileup.bw",
         sbdg=temp("results/macs2_sample_level_peaks/{sample}_treat_pileup.s.bdg")
-    params:
-        mem="16000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1600
     threads:
         1
     log:
@@ -622,8 +511,8 @@ rule peak2gtf:
         "results/macs2_sample_level_peaks/{sample}_peaks.gtf"
     threads:
         1
-    params:
-        mem="2000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000
     log:
         "log/macs2_sample_level_peaks_peak2gtf/{sample}.log"
     shell:
@@ -645,11 +534,11 @@ rule peak_count:
     threads:
         4
     params:
-        mem="8000",
         maxFragmentLength=maxFragmentLength,
         minFragmentLength=minFragmentLength,
         MQ_MIN=MQ_MIN
-
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 8000
     conda: 
         '../envs/chiplike.yaml'
     shell:
@@ -670,8 +559,8 @@ rule bamCoverage_PE:
         "results/clean_reads_bigWig/{sample}.cpm.bw"
     threads:
         8
-    params:
-        mem="4000"  # total 6-10G
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000
     log:
         "log/clean_reads_bigWig/{sample}.bamCoverage.log"
     benchmark:
@@ -704,8 +593,8 @@ rule get_summit_neighbour:
         "log/macs2_contrast_level_peaks/{contrast}/{contrast_name}_summits.{width}.fa.log"
     threads:
         1
-    params:
-        mem="6000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 6000
     conda:
         "../envs/chiplike.yaml"
     shell:
@@ -723,8 +612,8 @@ rule split_fa_by_chr:
         "log/macs2_contrast_level_peaks/{contrast}/by_chr/{contrast_name}_summits.{width}.{chr}.fa.log"
     threads:
         1
-    params:
-        mem=1000
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000
     conda:
         "../envs/chiplike.yaml"
     shell:
@@ -745,7 +634,8 @@ rule meme_neibour:
         "log/macs2_contrast_level_peaks/{contrast}/memechip.{width}/{contrast_name}.benchmark"
     params:
         odir="results/macs2_contrast_level_peaks/{contrast}/memechip.{width}/",
-        mem="1000",
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:
         6
     envmodules:
@@ -768,7 +658,8 @@ rule meme_neibour_chr_split:
         "log/macs2_contrast_level_peaks/{contrast}/memechip_chr.{width}_{chr}/{contrast_name}.benchmark"
     params:
         odir="results/macs2_contrast_level_peaks/{contrast}/memechip_chr.{width}_{chr}/",
-        mem="1000",
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:
         6
     envmodules:
@@ -785,8 +676,8 @@ rule contrast_control_lambda_bw:
     output:
         bw="results/macs2_contrast_level_peaks/{contrast}/{contrast_name}_control_lambda.bw",
         sbdg=temp("results/macs2_contrast_level_peaks/{contrast}/{contrast_name}_control_lambda.s.bdg")
-    params:
-        mem="16000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 16000
     threads:
         1
     priority:
@@ -810,8 +701,8 @@ rule contrast_treat_pileup_bw:
     output:
         bw="results/macs2_contrast_level_peaks/{contrast}/{contrast_name}_treat_pileup.bw",
         sbdg=temp("results/macs2_contrast_level_peaks/{contrast}/{contrast_name}_treat_pileup.s.bdg")
-    params:
-        mem="16000"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 16000
     threads:
         1
     priority:
@@ -830,8 +721,8 @@ rule contrast_treat_pileup_bw:
         """
 
 rule create_dag:
-    params:
-        mem="1000"  
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000 
     threads:
         1
     output:

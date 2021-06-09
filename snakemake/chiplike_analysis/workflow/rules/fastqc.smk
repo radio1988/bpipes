@@ -10,10 +10,11 @@ rule fastqc_pe:
     log:
         "log/fastqc/fastqc.log"
     params:
-        mem="1000",
         odir="results/fastqc"
     threads:
         8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000
     conda:
         "../envs/chiplike.yaml"
     shell:
