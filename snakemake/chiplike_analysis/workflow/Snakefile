@@ -30,11 +30,8 @@ rule all:
 
         # qc
         fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
-        # todo: combine bamqc into one report
-        # sorted_reads_bam_qc=expand("results/sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=config['SAMPLES']),
-        # clean_reads_bam_qc=expand("results/clean_reads_bam_qc/stats/{sample}.stats.txt", sample=config['SAMPLES']),
-        multiqc_sorted_reads="results/sorted_reads_bam_qc/stats/multiqc_report.html",
-        multiqc_clean_reads="results/clean_reads_bam_qc/stats/multiqc_report.html",
+        multiqc_sorted_reads="results/sorted_reads_bam_qc/multiqc_report.html",
+        multiqc_clean_reads="results/clean_reads_bam_qc/multiqc_report.html",
 
         qc1="results/clean_reads_bam_qc/fingerprint.pdf",
         qc2="results/clean_reads_bam_qc/fragment_size.pdf", # test 
@@ -47,5 +44,6 @@ rule all:
 include: 'rules/fastqc.smk'
 include: 'rules/chipmapping.smk'
 include: 'rules/chipbamfilter.smk'
+include: 'rules/bamqc.smk'
 include: 'rules/Snakefile_DamID.smk'
 include: 'rules/snakemake_misc.smk'
