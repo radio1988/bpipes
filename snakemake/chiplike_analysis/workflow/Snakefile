@@ -2,6 +2,7 @@ from snakemake.utils import min_version
 min_version("6.0")
 
 configfile: 'config/config.yaml'
+SAMPLES=config['SAMPLES']
 
 from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_control_bams_from_contrast, get_contrast_name_from_contrast, \
@@ -10,34 +11,34 @@ from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
 
 o=parse_meta_contrast(fmeta="config/meta.csv", fcontrast="config/contrast.csv") 
 
-rule all:
+rule main_targets:
     input:
-        # 1. everything listed here will be produced by the pipeline
-        # 2. feed {sample}
+        # qc
+        fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
+        multiqc_sorted_reads="results/sorted_reads_qc/multiqc_report.html",
+        multiqc_clean_reads="results/clean_reads_qc/multiqc_report.html",
+        chipqc1="results/clean_reads_qc/fingerprint.pdf",
+        chipqc2="results/clean_reads_qc/fragment_size.pdf", # test 
+        chipqc3="results/clean_reads_qc/multiBamSummary.heatmap.pdf",
+        chipqc4="results/clean_reads_qc/multiBamSummary.pca.pdf",
+        #chipqc5=expand("results/clean_reads_qc/{sample}.insert_size.pdf", sample=SAMPLES), # Rscript env problem
+        chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
+
         # call peak and create signal tracks
-        macs2_sample_level_peaks=expand("results/macs2_sample_level_peaks/{sample}_peaks.narrowPeak", sample=config['SAMPLES']),
-        macs2_sample_treat_pileup_bw=expand("results/macs2_sample_level_peaks/{sample}_treat_pileup.bw", sample=config['SAMPLES']),
+        # narrow peak
+        macs2_sample_level_peaks=expand("results/macs2_sample_level_peaks/{sample}_peaks.narrowPeak", sample=SAMPLES),
+        macs2_sample_treat_pileup_bw=expand("results/macs2_sample_level_peaks/{sample}_treat_pileup.bw", sample=SAMPLES),
         macs2_contrast_level_peaks=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
         macs2_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
         macs2_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
-
-        macs2_narrow_peak_count = expand("results/macs2_sample_level_peaks/{sample}.count.txt", sample=config['SAMPLES']),
+        macs2_narrow_peak_count = expand("results/macs2_sample_level_peaks/{sample}.count.txt", sample=SAMPLES),
 
         # motifs
         meme=get_meme_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=config['PEAK_WIDTH'], o=o),
         #meme_split=get_meme_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=config['PEAK_WIDTH'], CHRS=config['CHRS'], o=o),
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
-        # qc
-        fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
-        multiqc_sorted_reads="results/sorted_reads_bam_qc/multiqc_report.html",
-        multiqc_clean_reads="results/clean_reads_bam_qc/multiqc_report.html",
 
-        qc1="results/clean_reads_bam_qc/fingerprint.pdf",
-        qc2="results/clean_reads_bam_qc/fragment_size.pdf", # test 
-        qc3="results/clean_reads_bam_qc/multiBamSummary.heatmap.pdf",
-        qc4="results/clean_reads_bam_qc/multiBamSummary.pca.pdf",
-        #qc5=expand("results/clean_reads_bam_qc/{sample}.insert_size.pdf", sample=config['SAMPLES']), # Rscript env problem
 
         dag="Workflow_DAG.svg"
 
@@ -45,5 +46,6 @@ include: 'rules/fastqc.smk'
 include: 'rules/chipmapping.smk'
 include: 'rules/chipbamfilter.smk'
 include: 'rules/bamqc.smk'
+include: 'rules/chipqc.smk'
 include: 'rules/Snakefile_DamID.smk'
 include: 'rules/snakemake_misc.smk'
