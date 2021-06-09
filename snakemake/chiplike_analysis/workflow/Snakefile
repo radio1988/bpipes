@@ -45,4 +45,5 @@ rule all:
         dag="Workflow_DAG.svg"
 
 include: 'rules/fastqc.smk'
+include: 'rules/mapping.smk'
 include: 'rules/Snakefile_DamID.smk'

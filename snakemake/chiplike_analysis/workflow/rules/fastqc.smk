@@ -2,7 +2,7 @@
 SAMPLES=config['SAMPLES']
 
 
-rule fastqc_PE:
+rule fastqc_pe:
     input:
         expand("fastq/{sample}.{r}.fastq.gz", sample=SAMPLES, r=["R1", "R2"])
     output:
