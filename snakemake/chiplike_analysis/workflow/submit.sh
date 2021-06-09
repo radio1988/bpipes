@@ -1,7 +1,7 @@
 #nohup bash submit.sh &
-# bsub -W 48:00 -q long 'source activate damid; bash submit.sh &> submit.log '
-source activate damid
-snakemake -k -p \
+# bsub -W 48:00 -q long 'source activate snakemake; bash workflow/submit.sh &> submit.log '
+source activate snakemake
+snakemake -k -p --ri \
 --use-conda  --conda-prefix "~/anaconda3/envs/" \
 --use-envmodules \
 --jobs 99  --latency-wait 20 \

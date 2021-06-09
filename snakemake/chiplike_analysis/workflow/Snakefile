@@ -14,27 +14,34 @@ rule all:
     input:
         # 1. everything listed here will be produced by the pipeline
         # 2. feed {sample}
+        # call peak and create signal tracks
         macs2_sample_level_peaks=expand("results/macs2_sample_level_peaks/{sample}_peaks.narrowPeak", sample=config['SAMPLES']),
         macs2_sample_treat_pileup_bw=expand("results/macs2_sample_level_peaks/{sample}_treat_pileup.bw", sample=config['SAMPLES']),
         macs2_contrast_level_peaks=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
         macs2_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
         macs2_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
+
+        macs2_narrow_peak_count = expand("results/macs2_sample_level_peaks/{sample}.count.txt", sample=config['SAMPLES']),
+
+        # motifs
         meme=get_meme_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=config['PEAK_WIDTH'], o=o),
         #meme_split=get_meme_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=config['PEAK_WIDTH'], CHRS=config['CHRS'], o=o),
         # Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
+        # qc
         fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
-        sorted_reads_bam_qc=expand("results/sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=config['SAMPLES']),
+        # todo: combine bamqc into one report
+        # sorted_reads_bam_qc=expand("results/sorted_reads_bam_qc/stats/{sample}.stats.txt", sample=config['SAMPLES']),
+        # clean_reads_bam_qc=expand("results/clean_reads_bam_qc/stats/{sample}.stats.txt", sample=config['SAMPLES']),
         multiqc_sorted_reads="results/sorted_reads_bam_qc/stats/multiqc_report.html",
         multiqc_clean_reads="results/clean_reads_bam_qc/stats/multiqc_report.html",
 
-        clean_reads_bam_qc=expand("results/clean_reads_bam_qc/stats/{sample}.stats.txt", sample=config['SAMPLES']),
         qc1="results/clean_reads_bam_qc/fingerprint.pdf",
-        #qc2="results/clean_reads_bam_qc/fragment_size.pdf",
+        qc2="results/clean_reads_bam_qc/fragment_size.pdf", # test 
         qc3="results/clean_reads_bam_qc/multiBamSummary.heatmap.pdf",
         qc4="results/clean_reads_bam_qc/multiBamSummary.pca.pdf",
-        qc5=expand("results/clean_reads_bam_qc/{sample}.insert_size.pdf", sample=config['SAMPLES']),
+        #qc5=expand("results/clean_reads_bam_qc/{sample}.insert_size.pdf", sample=config['SAMPLES']), # Rscript env problem
 
-        dag="Workflow_DAG.all.svg"
+        dag="Workflow_DAG.svg"
 
 include: 'rules/Snakefile_DamID.smk'

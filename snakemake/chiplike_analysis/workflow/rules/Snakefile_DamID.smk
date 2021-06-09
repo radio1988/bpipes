@@ -60,8 +60,6 @@ ruleorder: meme_neibour_chr_split > meme_neibour > contrast_treat_pileup_bw > co
 #     macs2_DamID_sample_treat_pileup_bw: macs2_sample_level_peaks/1-2_S1_treat_pileup.bw
 
 shell.prefix("""
-            HOME=/home/rl44w/
-            bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
             """)
 
 
@@ -145,9 +143,9 @@ rule bwa_map:
     output:
         temp("results/mapped_reads/{sample}.bam")
     params:
-        mem="1500"  # todo auto adjust based on {threads}, for human need 18G+ 
+        mem="3000"  # todo auto adjust based on {threads}, for human need 18G+ 
     threads:
-        16
+        8
     log:
         "log/mapped_reads/{sample}.bam.log"
     benchmark:
@@ -163,13 +161,15 @@ rule bwa_map:
 
 
 rule samtools_sort_index:
+# todo: remove temp files, which cause problems when re-run failed submissions
     # 2M/min
     input:
         "results/mapped_reads/{sample}.bam"
     output:
-        "results/sorted_reads/{sample}.bam"
+        bam=temp("results/sorted_reads/{sample}.bam"),
+        bai=temp("results/sorted_reads/{sample}.bam.bai")
     params:
-        mem="1200"
+        mem="2500"
     threads:
         4
     log:
@@ -181,15 +181,19 @@ rule samtools_sort_index:
     shell:
         """
         samtools --version &> {log}
-        samtools sort -@ {threads} -m 1G {input} -o {output} &>> {log}
-        samtools index {output} &>> {log}
+        samtools sort -@ {threads} -m 2G {input} -o {output.bam} &>> {log}
+        echo sorting finished
+        sleep 10
+        echo indexing started
+        samtools index {output.bam} &>> {log}
         """
 
 
 rule markDup:
     # same speed as bwa_map, slow
     input:
-        "results/sorted_reads/{sample}.bam"
+        bam="results/sorted_reads/{sample}.bam",
+        bai="results/sorted_reads/{sample}.bam.bai"
     output:
         #temp(
         bam=temp("results/markDup/{sample}.bam"),
@@ -212,7 +216,7 @@ rule markDup:
         PICARD=/share/pkg/picard/2.17.8/picard.jar
         
         java -Xmx30g -XX:ParallelGCThreads=2 -jar $PICARD MarkDuplicates \
-        I={input} \
+        I={input.bam} \
         O={output.bam} \
         M={output.metrics} \
         REMOVE_DUPLICATES=true \
@@ -226,7 +230,8 @@ rule markDup:
 if DATA_TYPE == 'DamID':
     rule DamID_filter:
         input:
-            "results/sorted_reads/{sample}.bam"
+            bam="results/sorted_reads/{sample}.bam",
+            bai="results/sorted_reads/{sample}.bam.bai"
         output:
             "results/clean_reads/{sample}.bam"
         log:
@@ -242,7 +247,7 @@ if DATA_TYPE == 'DamID':
         shell:
             """
             # need samtools/1.9
-            python workflow/scripts/filter_bam.py {input} {GENOME} GATC {output} &> {log}
+            python workflow/scripts/filter_bam.py {input.bam} {GENOME} GATC {output} &> {log}
             """
 elif DATA_TYPE == 'ATAC':
     rule ATAC_filter:
@@ -290,8 +295,8 @@ elif DATA_TYPE == 'ChIP':
             "../envs/chiplike.yaml"
         shell:
             """
-            ln {input.bam} {output.bam} &> {log}
-            ln {input.bai} {output.bai} &> {log}
+            cp {input.bam} {output.bam} &> {log}
+            cp {input.bai} {output.bai} &>> {log}
             """
 else: 
     sys.exit("DATA_TYPE error, see config.yaml for details")
@@ -301,7 +306,8 @@ else:
 
 rule sorted_reads_bam_qc:
     input:
-        bam="results/sorted_reads/{sample}.bam"
+        bam="results/sorted_reads/{sample}.bam",
+        bai="results/sorted_reads/{sample}.bam.bai"
     output:
         idxstats="results/sorted_reads_bam_qc/idxstats/{sample}.idxstats.txt",
         flagstat="results/sorted_reads_bam_qc/flagstat/{sample}.flagstat.txt",
@@ -342,9 +348,9 @@ rule multiQC_sorted_reads:
         "../envs/chiplike.yaml"
     shell:
         """
-        multiqc -f {input.stats} -o sorted_reads_bam_qc/stats/ &> {log}
-        multiqc -f {input.idxstats} -o sorted_reads_bam_qc/idxstats   &>> {log}
-        multiqc -f {input.flagstat} -o sorted_reads_bam_qc/flagstat/ &>> {log}
+        multiqc -f {input.stats} -o results/sorted_reads_bam_qc/stats/ &> {log}
+        multiqc -f {input.idxstats} -o results/sorted_reads_bam_qc/idxstats/   &>> {log}
+        multiqc -f {input.flagstat} -o results/sorted_reads_bam_qc/flagstat/ &>> {log}
         """
 
 rule clean_reads_bam_qc:
@@ -390,12 +396,12 @@ rule multiQC_clean_reads:
         "../envs/chiplike.yaml"
     shell:
         """
-        multiqc -f {input.stats} -o DamID_reads_bam_qc/stats/ &> {log}
-        multiqc -f {input.idxstats} -o DamID_reads_bam_qc/idxstats   &>> {log}
-        multiqc -f {input.flagstat} -o DamID_reads_bam_qc/flagstat/ &>> {log}
+        multiqc -f {input.stats} -o results/clean_reads_bam_qc/stats/ &> {log}
+        multiqc -f {input.idxstats} -o results/clean_reads_bam_qc/idxstats   &>> {log}
+        multiqc -f {input.flagstat} -o results/clean_reads_bam_qc/flagstat/ &>> {log}
         """
 
-rule plotFingerprint:
+rule plotFingerprint_PE:
     input:
         expand("results/clean_reads/{sample}.bam", sample=SAMPLES)
     output:
@@ -408,7 +414,7 @@ rule plotFingerprint:
     log:
         "log/clean_reads_bam_qc/fingerprint.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/deeptools.yaml"
     shell:
         """
         plotFingerprint -b {input} \
@@ -442,7 +448,7 @@ rule bamPEFragmentSize:
     log:
         "log/clean_reads_bam_qc/fragment_size.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/deeptools.yaml"
     shell:
         """
         bamPEFragmentSize \
@@ -467,7 +473,7 @@ rule multiBamSummary:
     log:
         "log/clean_reads_bam_qc/multiBamSummary.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/deeptools.yaml"
     shell:
         """
         multiBamSummary bins \
@@ -496,7 +502,7 @@ rule plotCorrelation:
     log:
         "log/clean_reads_bam_qc/plotCorrelation.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/deeptools.yaml"
     shell:
         """
         plotCorrelation \
@@ -520,7 +526,7 @@ rule plotPCA:
     log:
         "log/clean_reads_bam_qc/plotPCA.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/deeptools.yaml"
     shell:
         """
         plotPCA \
@@ -534,16 +540,19 @@ rule CollectInsertSizeMetrics:
     output:
         txt="results/clean_reads_bam_qc/{sample}.insert_size.txt",
         pdf="results/clean_reads_bam_qc/{sample}.insert_size.pdf"
+    log:
+        'results/clean_reads_bam_qc/{sample}.intert_size.log'
     params:
         mem="16000"
     threads:
         1
     # conda: todo
-    #     "../envs/chiplike.yaml"
+    #     "../envs/chiplike.yaml"  # also need Rscript
     envmodules:
         "picard/2.17.8"
     shell:
         """
+        module load picard/2.17.8
         PICARD=/share/pkg/picard/2.17.8/picard.jar
 
         java -Xmx15g -jar $PICARD CollectInsertSizeMetrics \
@@ -612,7 +621,7 @@ if DATA_TYPE == 'DamID' and config['MODE'] == 'SITE':
             -n {params.contrast_name} --outdir results/macs2_contrast_level_peaks/{wildcards.contrast} -B &> {log}
             """
 elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
-    rule macs2_DamID_sample_PE:
+    rule macs2_sample_PE:
         input:
             "results/clean_reads/{sample}.bam"
         output:
@@ -620,7 +629,8 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
             temp("results/macs2_sample_level_peaks/{sample}_treat_pileup.bdg"),
             temp("results/macs2_sample_level_peaks/{sample}_control_lambda.bdg")
         params:
-            mem="8000"    
+            mem="8000", 
+            odir='results/macs2_sample_level_peaks'
         threads:
             4
         conda:
@@ -633,10 +643,10 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
             """
              macs2 callpeak -t {input} \
              -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all \
-             -n {wildcards.sample} --outdir results/macs2_sample_level_peaks -B &> {log}
+             -n {wildcards.sample} --outdir {params.odir} -B &> {log}
             """
 
-    rule macs2_DamID_contrast_PE:
+    rule macs2_contrast_PE:
         """
         For each contrast
 
@@ -691,12 +701,11 @@ rule sample_bdg2bw:
     priority:
         100
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/bdg2bw.yaml"
     shell:
         """
         sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
-        bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
-        $bedGraphToBigWig macs2_sample_level_peaks/{wildcards.sample}_treat_pileup.s.bdg {SizeFile} {output.bw} &>> {log}
+        bedGraphToBigWig {output.sbdg} {SizeFile} {output.bw} &>> {log}
         """
 
 # rule clean_peaks todo
@@ -714,10 +723,11 @@ rule peak2gtf:
         "log/macs2_sample_level_peaks_peak2gtf/{sample}.log"
     shell:
         """
-        perl ..//scripts/peak2gtf.pl {input} > {output} 
+        perl ../scripts/peak2gtf.pl {input} > {output} 
         """
 
-rule macs_site_count:
+rule peak_count:
+    # todo broad/narrow
     input:
         bam=expand("results/clean_reads/{sample}.bam", sample=SAMPLES),
         gtf="results/macs2_sample_level_peaks/{sample}_peaks.gtf"
@@ -747,7 +757,7 @@ rule macs_site_count:
 
     
 
-rule bamCoverage:
+rule bamCoverage_PE:
     # for ChIP
     input:
         "results/clean_reads/{sample}.bam"
@@ -761,6 +771,8 @@ rule bamCoverage:
         "log/clean_reads_bigWig/{sample}.bamCoverage.log"
     benchmark:
         "log/clean_reads_bigWig/{sample}.bamCoverage.benchmark"
+    conda: 
+        "../envs/deeptools.yaml"
     shell:
         # Aim: same as our downstream filters, extensions
         """
@@ -879,12 +891,11 @@ rule contrast_control_lambda_bw:
     benchmark:
         "log/macs2_contrast_level_peaks/{contrast}/log/{contrast_name}_control_lambda.bw.benchmark"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/bdg2bw.yaml"
     shell:
         """
-        sort -k1,1 -k2,2n {input} > macs2_contrast_level_peaks/{wildcards.contrast}/{wildcards.contrast_name}_control_lambda.s.bdg 2>> {log}
-        bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
-        $bedGraphToBigWig macs2_contrast_level_peaks/{wildcards.contrast}/{wildcards.contrast_name}_control_lambda.s.bdg \
+        sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
+        bedGraphToBigWig {output.sbdg} \
             {SizeFile} {output.bw} &>> {log}
         """
 
@@ -905,26 +916,23 @@ rule contrast_treat_pileup_bw:
     benchmark:
         "log/macs2_contrast_level_peaks/{contrast}/{contrast_name}_treat_pileup.bw.benchmark"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/bdg2bw.yaml"
     shell:
         """
-        sort -k1,1 -k2,2n {input} > macs2_contrast_level_peaks/{wildcards.contrast}/{wildcards.contrast_name}_treat_pileup.s.bdg 2>> {log}
-        bedGraphToBigWig="singularity exec $HOME/singularity/hand_sandbox.simg bedGraphToBigWig"
-        $bedGraphToBigWig macs2_contrast_level_peaks/{wildcards.contrast}/{wildcards.contrast_name}_treat_pileup.s.bdg \
+        sort -k1,1 -k2,2n {input} > {output.sbdg} 2>> {log}
+        bedGraphToBigWig {output.sbdg} \
             {SizeFile} {output.bw} &>> {log}
         """
 
 rule create_dag:
     params:
         mem="1000"  
-        # every job has to have this defined 
-        # to use snakemake --cluster 'bsub -q short -R "rusage[mem={params.mem}]" -n {threads}'
     threads:
         1
     output:
-        "Workflow_DAG.all.svg"
+        "Workflow_DAG.svg"
     log:
-        "log/create_dag/Workflow_DAG.all.svg.log"
+        "log/create_dag/Workflow_DAG.svg.log"
     shell:
         "snakemake --dag all | dot -Tsvg > {output} 2> {log}"
 

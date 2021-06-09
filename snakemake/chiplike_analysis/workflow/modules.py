@@ -23,8 +23,6 @@ def parse_meta_contrast (fmeta="meta.csv", fcontrast="contrast.csv"):
     ### parse meta
     meta = pd.read_csv(fmeta, comment='#')
     # todo: remove empty row/columns from meta.csv and contrast.csv
-    print(meta)
-    print("meta.csv read\n")
     #    sample group
     # 0  1-2_S1  ctrl
     # 1  2-1_S2    G1

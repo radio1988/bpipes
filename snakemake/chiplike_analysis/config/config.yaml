@@ -1,16 +1,11 @@
 # Analysis Params
+DATA_TYPE: ChIP
 MODE: PE  # PE, MACS2 PE mode; SITE, get GATC site
 
 SAMPLES:
     - 1-1_S36
-    - 1-2_S37
-    - 1-3_S38
     - 2-1_S39
     - 2-2_S40
-    - 2-3_S41
-    - 3-1_S42
-    - 3-2_S43
-    - 3-3_S44
 
 GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa 
 

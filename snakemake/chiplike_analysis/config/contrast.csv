@@ -2,5 +2,3 @@
 # note2: type, treatment, control names should not be numerical, must contain letters
 type,treatment,control
 contrast1,G1,ctrl
-contrast2,G2,ctrl
-contrast3,G1;G2,ctrl

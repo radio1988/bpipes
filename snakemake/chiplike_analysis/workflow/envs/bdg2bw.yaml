@@ -1,0 +1,8 @@
+name: bdg2bw
+
+channels:
+    - bioconda
+
+dependencies:
+    - ucsc-bedgraphtobigwig
+    - libgcc-ng 
