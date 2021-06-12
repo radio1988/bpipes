@@ -2,9 +2,9 @@ SAMPLES=config['SAMPLES']
 
 rule peak2gtf_sample_level:
     input:
-        "results/narrow_peaks_sample_level/{sample}_clean.narrowPeak"
+        "results/{narrowbroad}_peaks_sample_level/{name1}/{name2}_clean.{narrowbroad}Peak"
     output:
-        "results/narrow_peaks_sample_level/{sample}_clean.gtf"
+        "results/{narrowbroad}_peaks_sample_level/{name1}/{name2}_clean.gtf"
     threads:
         1
     resources:
@@ -12,7 +12,7 @@ rule peak2gtf_sample_level:
     conda: 
         '../envs/chiplike.yaml'
     log:
-        "log/narrow_peaks_sample_level_peak2gtf/{sample}.log"
+        "log/{narrowbroad}_peaks_sample_level_peak2gtf/{name1}/{name2}.log"
     shell:
         """
         perl workflow/scripts/peak2gtf.pl {input} > {output} 2> {log}
@@ -22,13 +22,13 @@ rule peak_count_sample_level:
     # todo broad/narrow
     input:
         bam=expand("results/clean_reads/{sample}.bam", sample=SAMPLES),
-        gtf="results/narrow_peaks_sample_level/{sample}_clean.gtf"
+        gtf="results/{narrowbroad}_peaks_sample_level/{name1}/{name2}_clean.gtf"
     output:
-        "results/narrow_peaks_sample_level/{sample}.count.txt"
+        "results/{narrowbroad}_peaks_sample_level/{name1}/{name2}.count.txt"
     log:
-        "log/narrow_peaks_sample_level/{sample}.count.log"
+        "log/{narrowbroad}_peaks_sample_level/{name1}/{name2}.count.log"
     benchmark:
-        "log/narrow_peaks_sample_level/{sample}.count.benchmark"
+        "log/{narrowbroad}_peaks_sample_level/{name1}/{name2}.count.benchmark"
     threads:
         4
     params:
@@ -50,9 +50,9 @@ rule peak_count_sample_level:
 rule peak2gtf_contrast_level:
 # todo: handle zero peak gtf files
     input:
-        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.narrowPeak"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak"
     output:
-        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.gtf"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.gtf"
     threads:
         1
     resources:
@@ -60,7 +60,7 @@ rule peak2gtf_contrast_level:
     conda: 
         '../envs/chiplike.yaml'
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.gtf.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.gtf.log"
     shell:
         """
         perl workflow/scripts/peak2gtf.pl {input} > {output} 2> {log}
@@ -70,13 +70,13 @@ rule peak_count_contrast_level:
     # todo broad/narrow
     input:
         bam=expand("results/clean_reads/{sample}.bam", sample=SAMPLES),
-        gtf="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.gtf"
+        gtf="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.gtf"
     output:
-        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_count.txt"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_count.txt"
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_count.txt.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_count.txt.log"
     benchmark:
-        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_count.txt.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_count.txt.log"
     threads:
         4
     params:

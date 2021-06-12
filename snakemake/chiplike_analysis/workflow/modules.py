@@ -125,19 +125,18 @@ def get_contrast_name_from_contrast(contrast="contrast1", o = "parse_meta_contra
     # print("name", contrast, o.contrast2contrast_name[contrast])
     return o.contrast2contrast_name[contrast]
 
-def get_treat_pileup_bdg_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
-    """
-    Learn: Good trick to use tagets input to do contrast2contrast_name and more
-
-    output example:
-    [narrow_peaks_contrast_level/contrast1/G1_vs_ctrl_treat_pileup.bdg, 
-    narrow_peaks_contrast_level/contrast2/G2_vs_ctrl_treat_pileup.bdg, 
-    narrow_peaks_contrast_level/contrast3/G1_G2_vs_ctrl_treat_pileup.bdg]
-    """
+def get_narrowPeak_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     treat_pileup_bdg_names = []
     for contrast,name in zip(contrasts, contrast_names):
-        treat_pileup_bdg_names.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_treat_pileup.bdg")
+        treat_pileup_bdg_names.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_clean.narrowPeak")
+    return treat_pileup_bdg_names
+
+def get_broadPeak_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    treat_pileup_bdg_names = []
+    for contrast,name in zip(contrasts, contrast_names):
+        treat_pileup_bdg_names.append("results/broad_peaks_contrast_level/"+contrast+"/"+name+"_clean.broadPeak")
     return treat_pileup_bdg_names
 
 def get_treat_pileup_bw_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
@@ -186,11 +185,19 @@ def get_control_lambda_bw_names_from_contrasts(contrasts=["contrast1", "contrast
     return control_lambda_bdg_names
 
 
-def get_count_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
+def get_narrow_count_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
         outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_count.txt")
+    return outnames
+
+
+def get_broad_count_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    outnames = []
+    for contrast,name in zip(contrasts, contrast_names):
+        outnames.append("results/broad_peaks_contrast_level/"+contrast+"/"+name+"_count.txt")
     return outnames
 
 

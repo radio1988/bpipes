@@ -4,50 +4,58 @@ min_version("6.0")
 configfile: 'config/config.yaml'
 SAMPLES=config['SAMPLES']
 PEAK_WIDTH=config['PEAK_WIDTH']
+DATA_TYPE=config['DATA_TYPE']  # ChIP
+MODE=config['MODE'] # PE
 
 from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_control_bams_from_contrast, get_contrast_name_from_contrast, \
-    get_treat_pileup_bdg_names_from_contrasts, get_treat_pileup_bw_names_from_contrasts, \
+    get_narrowPeak_names_from_contrasts, get_broadPeak_names_from_contrasts, \
+    get_treat_pileup_bw_names_from_contrasts, \
     get_control_lambda_bw_names_from_contrasts, \
     get_meme_peak_outname_from_contrasts, get_meme_summit_outname_from_contrasts, get_meme_summit_split_outname_from_contrasts, \
-    get_count_names_from_contrasts
+    get_narrow_count_names_from_contrasts, get_broad_count_names_from_contrasts
 
 o=parse_meta_contrast(fmeta="config/meta.csv", fcontrast="config/contrast.csv") 
 
-rule targets:
-    input:
-        # qc
-        fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
-        multiqc_sorted_reads="results/sorted_reads_qc/multiqc_report.html",
-        multiqc_clean_reads="results/clean_reads_qc/multiqc_report.html",
-        chipqc1="results/clean_reads_qc/fingerprint.pdf",
-        chipqc2="results/clean_reads_qc/fragment_size.pdf", # test 
-        chipqc3="results/clean_reads_qc/multiBamSummary.heatmap.pdf",
-        chipqc4="results/clean_reads_qc/multiBamSummary.pca.pdf",
-        #chipqc5=expand("results/clean_reads_qc/{sample}.insert_size.pdf", sample=SAMPLES), # Rscript env problem
-        chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
 
-        # call peak and create signal tracks
-        # narrow peak
-        narrow_peaks_sample_level=expand("results/narrow_peaks_sample_level/{sample}_clean.narrowPeak", sample=SAMPLES),
-        macs2_sample_treat_pileup_bw=expand("results/narrow_peaks_sample_level/{sample}_treat_pileup.bw", sample=SAMPLES),
-        macs2_narrow_peak_count_sample = expand("results/narrow_peaks_sample_level/{sample}.count.txt", sample=SAMPLES),
+if DATA_TYPE == "ChIP" and MODE=='PE':
+    rule targets:
+        input:
+            # qc
+            fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
+            multiqc_sorted_reads="results/sorted_reads_qc/multiqc_report.html",
+            multiqc_clean_reads="results/clean_reads_qc/multiqc_report.html",
+            chipqc1="results/clean_reads_qc/fingerprint.pdf",
+            chipqc2="results/clean_reads_qc/fragment_size.pdf", # test 
+            chipqc3="results/clean_reads_qc/multiBamSummary.heatmap.pdf",
+            chipqc4="results/clean_reads_qc/multiBamSummary.pca.pdf",
+            #chipqc5=expand("results/clean_reads_qc/{sample}.insert_size.pdf", sample=SAMPLES), # Rscript env problem
+            chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
 
-        narrow_peaks_contrast_level=get_treat_pileup_bdg_names_from_contrasts(contrasts=o.contrasts, o=o), 
-        macs2_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
-        macs2_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
-        macs2_narrow_peak_count_contrast = get_count_names_from_contrasts(contrasts=o.contrasts, o=o),
+            # peaks
+            clean_narrowpeak_sample_level=expand("results/narrow_peaks_sample_level/{sample}/{sample}_clean.narrowPeak", sample=SAMPLES),
+            # macs2_sample_treat_pileup_bw=expand("results/narrow_peaks_sample_level/{sample}/{sample}_treat_pileup.bw", sample=SAMPLES),
+            # macs2_narrow_peak_count_sample = expand("results/narrow_peaks_sample_level/{sample}/{sample}.count.txt", sample=SAMPLES),
 
+            clean_narrowpeaks_contrast_level=get_narrowPeak_names_from_contrasts(contrasts=o.contrasts, o=o), 
+            macs2_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
+            macs2_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
+            macs2_narrow_peak_count_contrast = get_narrow_count_names_from_contrasts(contrasts=o.contrasts, o=o),
 
-        # motifs
-        meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o),
-        #meme_summit=get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
-        #meme_split=get_meme_summit_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, CHRS=config['CHRS'], o=o),
-        # Learn: Good trick to use tagets input to do contrast2contrast_name and more
+            clean_broadpeak_sample_level=expand("results/broad_peaks_sample_level/{sample}/{sample}_clean.broadPeak", sample=SAMPLES),
+            clean_broadpeaks_contrast_level=get_broadPeak_names_from_contrasts(contrasts=o.contrasts, o=o), 
+            macs2_broad_peak_count_contrast = get_broad_count_names_from_contrasts(contrasts=o.contrasts, o=o),
 
 
+            # # motifs narrow
+            # meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o), # narrow peak
+            #meme_summit=get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
+            #meme_split=get_meme_summit_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, CHRS=config['CHRS'], o=o),
+            # Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
-        dag="Workflow_DAG.svg"
+
+
+            dag="Workflow_DAG.svg"
 
 include: 'rules/fastqc.smk'
 include: 'rules/chipmapping.smk'

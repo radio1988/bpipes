@@ -17,7 +17,7 @@
 from snakemake.utils import min_version
 from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_control_bams_from_contrast, get_contrast_name_from_contrast, \
-    get_treat_pileup_bdg_names_from_contrasts, get_treat_pileup_bw_names_from_contrasts, \
+    get_treat_pileup_bw_names_from_contrasts, \
     get_control_lambda_bw_names_from_contrasts
 
 
