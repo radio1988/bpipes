@@ -48,6 +48,7 @@ rule peak_count_sample_level:
         """
 
 rule peak2gtf_contrast_level:
+# todo: handle zero peak gtf files
     input:
         "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.narrowPeak"
     output:

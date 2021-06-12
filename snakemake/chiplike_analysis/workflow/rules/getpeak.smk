@@ -149,7 +149,6 @@ rule blacklist_filter_contrast_level:
         "../envs/bedtools.yaml"   
     shell:
         """
-        cp {input.blacklist} resources/
         bedtools intersect -v -a {input.peak} -b {input.blacklist} > {output}
         """
 
@@ -172,7 +171,6 @@ rule blacklist_filter_sample_level:
         "../envs/bedtools.yaml"   
     shell:
         """
-        cp {input.blacklist} resources/
         bedtools intersect -v -a {input.peak} -b {input.blacklist} > {output}
         """
 
