@@ -33,8 +33,8 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
             chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
 
             # tracks
-            bigWig=expand('results/clean_reads_bigWig/{sample}.cpm.bw', sample=SAMPLES)
-            
+            bamCoverage=expand('results/clean_reads_bigWig/{sample}.cpm.bw', sample=SAMPLES),
+
             # peaks
             clean_narrowpeak_sample_level=expand("results/narrow_peaks_sample_level/{sample}/{sample}_clean.narrowPeak", sample=SAMPLES),
             # macs2_sample_treat_pileup_bw=expand("results/narrow_peaks_sample_level/{sample}/{sample}_treat_pileup.bw", sample=SAMPLES),
