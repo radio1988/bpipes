@@ -89,13 +89,19 @@ rule sample_bdg2bw:
 # rule clean_peaks todo
 
     
-
-rule bamCoverage_PE:
+BW_BIN_SIZE=config['BW_BIN_SIZE']
+MODE=config['MODE']
+rule bamCoverage:
     # for ChIP
     input:
         "results/clean_reads/{sample}.bam"
     output:
         "results/clean_reads_bigWig/{sample}.cpm.bw"
+    params:
+        bin_size=BW_BIN_SIZE,
+        pse=("--minFragmentLength {config[minFragmentLength]} --maxFragmentLength {config[maxFragmentLength]}  -e 150"
+                if MODE=='PE'
+                else "" )
     threads:
         8
     resources:
@@ -114,10 +120,9 @@ rule bamCoverage_PE:
         --numberOfProcessors {threads} \
         --outFileFormat bigwig \
         --normalizeUsing CPM \
-        --minFragmentLength {config[minFragmentLength]} \
-        --maxFragmentLength {config[maxFragmentLength]} \
-        --binSize 10 \
-        -e 150 &> {log}
+        --binSize {params.bin_size} \
+        {params.pse} \
+        &> {log}
         """
 
 ### narrow_peaks_contrast_level ### 

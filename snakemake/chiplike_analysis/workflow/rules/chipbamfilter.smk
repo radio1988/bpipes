@@ -15,19 +15,23 @@ rule markDup:
     conda:
         "../envs/picard.yaml"
     threads:
-        2
+        1
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 16000
 
     shell:
         """
-        picard MarkDuplicates \
+        # todo: portability, not only picard from conda (2.25.5) can be used
+        p=`which picard` && echo $p &> {log};
+        PICARD=`echo $p|sed 's/bin\/picard/share\/picard-2.25.5-0\/picard.jar/'` && echo $PICARD &>>{log}; 
+        java -Xmx15g -jar $PICARD \
+        MarkDuplicates \
         I={input.bam} \
         O={output.bam} \
         M={output.metrics} \
         REMOVE_DUPLICATES=true \
         ASSUME_SORTED=true \
-        &> {log}
+        &>> {log}
         """
 
 
@@ -79,7 +83,7 @@ elif DATA_TYPE == 'ATAC':
                 samtools view -h {input} 2>{log}| perl -lane 'print unless ($F[2] eq {chrM} and $_ != /\@/)' 2>>{log}| awk \'{config[filter]}\' 2>>{log}| $samtools sort -m 8G -o {output}  2>> {log}
                 cp {input} {output}
 
-                samtools index -@ {threads} -m {resources.mem_mb} {output.bam} {output.bai} &>> {log}
+                samtools index {output.bam} {output.bai} &>> {log}
 
             """
 elif DATA_TYPE == 'ChIP':
@@ -101,8 +105,8 @@ elif DATA_TYPE == 'ChIP':
             "../envs/chiplike.yaml"
         shell:
             """
-            cp {input.bam} {output.bam} &> {log}
-            samtools index -@ {threads} -m {resources.mem_mb} {output.bam} {output.bai} &>> {log}
+            cp {input.bam} {output.bam} &> {log} ; 
+            samtools index {output.bam} {output.bai} &>> {log}
             """
 else: 
     sys.exit("DATA_TYPE error, see config.yaml for details")

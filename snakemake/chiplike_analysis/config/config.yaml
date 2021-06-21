@@ -1,7 +1,6 @@
 # Analysis Params
 DATA_TYPE: ChIP
-MODE: PE  # PE, MACS2 PE mode; SITE, get GATC site
-
+MODE: PE  # PE, ChIP PE mode; SE, ChIP SE MODE; SITE, get GATC site; 
 SAMPLES:
     - 1-1_S36
     - 2-1_S39
@@ -20,6 +19,7 @@ SizeFile: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx/chrNa
 
 BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
 MQ_MIN: 0 # multiBamSummary, plotFingerprint
+BW_BIN_SIZE: 50 # Resolution of bamCoverage bigWig files, default 50
 
 # Filters for bamCoverage, plotFingerprint, multiBamSummary
 minFragmentLength: 50  # 100 for mono-nucleosome

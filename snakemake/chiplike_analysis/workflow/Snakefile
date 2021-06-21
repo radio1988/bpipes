@@ -18,7 +18,7 @@ from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
 o=parse_meta_contrast(fmeta="config/meta.csv", fcontrast="config/contrast.csv") 
 
 
-if DATA_TYPE == "ChIP" and MODE=='PE':
+if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
     rule targets:
         input:
             # qc
@@ -32,6 +32,9 @@ if DATA_TYPE == "ChIP" and MODE=='PE':
             #chipqc5=expand("results/clean_reads_qc/{sample}.insert_size.pdf", sample=SAMPLES), # Rscript env problem
             chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
 
+            # tracks
+            bigWig=expand('results/clean_reads_bigWig/{sample}.cpm.bw', sample=SAMPLES)
+            
             # peaks
             clean_narrowpeak_sample_level=expand("results/narrow_peaks_sample_level/{sample}/{sample}_clean.narrowPeak", sample=SAMPLES),
             # macs2_sample_treat_pileup_bw=expand("results/narrow_peaks_sample_level/{sample}/{sample}_treat_pileup.bw", sample=SAMPLES),
@@ -48,7 +51,7 @@ if DATA_TYPE == "ChIP" and MODE=='PE':
 
 
             # # motifs narrow
-            # meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o), # narrow peak
+            meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o), # narrow peak
             #meme_summit=get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
             #meme_split=get_meme_summit_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, CHRS=config['CHRS'], o=o),
             # Learn: Good trick to use tagets input to do contrast2contrast_name and more

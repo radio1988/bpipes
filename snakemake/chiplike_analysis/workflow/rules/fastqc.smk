@@ -1,10 +1,12 @@
-
 SAMPLES=config['SAMPLES']
+MODE=config['MODE']
 
 
-rule fastqc_pe:
+rule fastqc:
     input:
-        expand("fastq/{sample}.{r}.fastq.gz", sample=SAMPLES, r=["R1", "R2"])
+        (expand("fastq/{sample}.{r}.fastq.gz", sample=SAMPLES, r=["R1", "R2"])
+            if MODE == 'PE'
+            else expand("fastq/{sample}.fastq.gz", sample=SAMPLES))
     output:
         "results/fastqc/multiqc_report.html"
     log:

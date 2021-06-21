@@ -1,9 +1,10 @@
 BLACKLIST=config['BLACKLIST']
+MODE=config['MODE']
 
 
 
 
-if DATA_TYPE == 'DamID' and config['MODE'] == 'SITE':
+if DATA_TYPE == 'DamID' and 'MODE' == 'SITE':
     rule macs2_DamID_sample_SITE:
         input:
             "results/clean_reads/{sample}.bam"
@@ -63,8 +64,8 @@ if DATA_TYPE == 'DamID' and config['MODE'] == 'SITE':
             -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q 0.05 --keep-dup all \
             -n {params.contrast_name} --outdir results/narrow_peaks_contrast_level/{wildcards.contrast} -B &> {log}
             """
-elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
-    rule macs2_narrow_sample_pe:
+elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
+    rule macs2_narrow_sample:
         input:
             "results/clean_reads/{sample}.bam"
         output:
@@ -72,7 +73,10 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
             temp("results/narrow_peaks_sample_level/{sample}/{sample}_treat_pileup.bdg"),
             temp("results/narrow_peaks_sample_level/{sample}/{sample}_control_lambda.bdg")
         params:
-            odir='results/narrow_peaks_sample_level/{sample}'
+            odir='results/narrow_peaks_sample_level/{sample}',
+            pse='BAMPE'
+                    if MODE=='PE'
+                    else 'BAM'
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
@@ -86,17 +90,20 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
         shell:
             """
              macs2 callpeak -t {input} \
-             -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all \
+             -f {params.pse} -g {GSIZE} -q 0.05 --keep-dup all \
              -n {wildcards.sample} --outdir {params.odir} -B &> {log}
             """
 
-    rule macs2_broad_sample_pe:
+    rule macs2_broad_sample:
         input:
             "results/clean_reads/{sample}.bam"
         output:
             "results/broad_peaks_sample_level/{sample}/{sample}_peaks.broadPeak", 
         params:
-            odir='results/broad_peaks_sample_level/{sample}'
+            odir='results/broad_peaks_sample_level/{sample}',
+            pse='BAMPE'
+                    if MODE=='PE'
+                    else 'BAM'
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
@@ -110,12 +117,12 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
         shell:
             """
              macs2 callpeak -t {input} \
-             -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all \
+             -f {params.pse} -g {GSIZE} -q 0.05 --keep-dup all \
              -n {wildcards.sample} --outdir {params.odir} \
              --broad --broad-cutoff 0.1 &> {log}
             """
 
-    rule macs2_narrow_contrast_pe:
+    rule macs2_narrow_contrast:
         """
         For each contrast
 
@@ -134,6 +141,9 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
             temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.bdg")
         params:
             contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
+            pse='BAMPE'
+                    if MODE=='PE'
+                    else 'BAM'
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
@@ -147,11 +157,11 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
         shell:
             """
             macs2 callpeak -t {input.treatment} -c {input.control} \
-            -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all \
+            -f {params.pse} -g {GSIZE} -q 0.05 --keep-dup all \
             -n {params.contrast_name} --outdir results/narrow_peaks_contrast_level/{wildcards.contrast} -B &> {log}
             """
 
-    rule macs2_broad_contrast_pe:
+    rule macs2_broad_contrast:
         input:
             treatment=lambda wildcards: get_treatment_bams_from_contrast(contrast=wildcards.contrast, o=o),
             control=lambda wildcards: get_control_bams_from_contrast(contrast=wildcards.contrast, o=o),
@@ -162,6 +172,9 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
             "results/broad_peaks_contrast_level/{contrast}/{contrast_name}_peaks.xls", 
         params:
             contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
+            pse='BAMPE'
+                    if MODE=='PE'
+                    else 'BAM'
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
@@ -175,7 +188,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and config['MODE'] == 'PE':
         shell:
             """
             macs2 callpeak -t {input.treatment} -c {input.control} \
-            -f BAMPE -g {GSIZE} -q 0.05 --keep-dup all \
+            -f {params.pse} -g {GSIZE} -q 0.05 --keep-dup all \
             -n {params.contrast_name} --outdir results/broad_peaks_contrast_level/{wildcards.contrast} \
             --broad --broad-cutoff 0.1 &> {log}
             """
