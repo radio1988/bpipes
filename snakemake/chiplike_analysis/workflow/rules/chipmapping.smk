@@ -69,5 +69,5 @@ rule bam_sort_index:
         """
         samtools --version &> {log}
         samtools sort -@ {threads} -m 2G {input} -o {output.bam} &>> {log}
-        samtools index -@ {threads} -m {resources.mem_mb} {output.bam} {output.bai} &>> {log}
+        samtools index {output.bam} {output.bai} &>> {log}
         """

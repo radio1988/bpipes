@@ -79,7 +79,7 @@ elif DATA_TYPE == 'ATAC':
                 samtools view -h {input} 2>{log}| perl -lane 'print unless ($F[2] eq {chrM} and $_ != /\@/)' 2>>{log}| awk \'{config[filter]}\' 2>>{log}| $samtools sort -m 8G -o {output}  2>> {log}
                 cp {input} {output}
 
-                samtools index -@ {threads} -m {resources.mem_mb} {output.bam} {output.bai} &>> {log}
+                samtools index {output.bam} {output.bai} &>> {log}
 
             """
 elif DATA_TYPE == 'ChIP':
@@ -102,7 +102,7 @@ elif DATA_TYPE == 'ChIP':
         shell:
             """
             cp {input.bam} {output.bam} &> {log}
-            samtools index -@ {threads} -m {resources.mem_mb} {output.bam} {output.bai} &>> {log}
+            samtools index {output.bam} {output.bai} &>> {log}
             """
 else: 
     sys.exit("DATA_TYPE error, see config.yaml for details")
