@@ -29,8 +29,10 @@ if DATA_TYPE == "ChIP" and MODE=='PE':
             chipqc2="results/clean_reads_qc/fragment_size.pdf", # test 
             chipqc3="results/clean_reads_qc/multiBamSummary.heatmap.pdf",
             chipqc4="results/clean_reads_qc/multiBamSummary.pca.pdf",
-            #chipqc5=expand("results/clean_reads_qc/{sample}.insert_size.pdf", sample=SAMPLES), # Rscript env problem
             chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
+
+            # tracks
+            tracks=expand("results/clean_reads_bigWig/{sample}.cpm.bw", sample=SAMPLES),
 
             # peaks
             clean_narrowpeak_sample_level=expand("results/narrow_peaks_sample_level/{sample}/{sample}_clean.narrowPeak", sample=SAMPLES),
