@@ -11,20 +11,21 @@ rule bowtie2_index:
     log:
         "log/bowtie2_index.log"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 6000
+        mem_mb=lambda wildcards, attempt: attempt * 8000
     threads:
-        4
+        1
     conda:
         "../envs/bowtie2.yaml"
     shell:
         """
-        bowtie2-build --version > {log}
-        bowtie2-build --threads {threads} {input} {input} &>> {log}
+        bowtie2-build --version &> {log}
+        bowtie2-build  {input} {input} &>> {log}
         """
 
 rule bowtie2:
     # 1min/1M reads with 16 cores
     input:
+        genome=GENOME,
         index=INDEX,
         reads=(["fastq/{sample}.R1.fastq.gz", "fastq/{sample}.R2.fastq.gz"]
                   if MODE == 'PE'
@@ -47,9 +48,10 @@ rule bowtie2:
     shell:
         """
         bowtie2 --version &> {log}
-        bowtie2 -x {input.index} -p {threads} {params.reads} | \
+        bowtie2 -x {input.genome} -p {threads} {params.reads} | \
         samtools sort -@ 2 -m 1G -O BAM -o {output} &>> {log}
         samtools index {output} &>> {log}
+        # bowtie2-2.2.5 and samtools-1.7 incompatible in bioconda for libcrypto.so.1.0.0
         """
 
 
