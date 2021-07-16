@@ -2,6 +2,11 @@ GENOME=config["GENOME"]
 INDEX=GENOME+".sa"
 MODE=config['MODE']
 
+def get_bwa_input(wildcards):
+    if MODE == 'PE':
+        return ["fastq/{sample}.R1.fastq.gz", "fastq/{sample}.R2.fastq.gz"]
+    else:
+        return "fastq/{sample}.fastq.gz"
 
 rule bwa_index:
     input:
@@ -21,13 +26,13 @@ rule bwa_index:
         bwa index -a bwtsw {input} &> {log}
         """
 
+    
+
 rule bwa_map:
     # 1min/1M reads with 16 cores
     input:
         index=INDEX,
-        reads=(expand("fastq/{sample}.{r}.fastq.gz", r=["R1", "R2"])
-                  if MODE == 'PE'
-                  else "fastq/{sample}.fastq.gz")
+        reads=get_bwa_input
     output:
         temp("results/mapped_reads/{sample}.bam")
     resources:
@@ -42,9 +47,8 @@ rule bwa_map:
         "../envs/bwa.yaml"
     shell:
         """
-        bwa mem -t {threads} {GENOME} \
-        {input.reads} \
-        2> {log}| samtools view -Sb -1 -@ 2 - -o {output} &>> {log}
+        bwa mem -t {threads} {GENOME} {input.reads} 2> {log} | \
+        samtools view -Sb -1 -@ 2 - -o {output} &>> {log}
         """
 
 

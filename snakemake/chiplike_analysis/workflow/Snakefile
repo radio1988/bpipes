@@ -60,7 +60,7 @@ if DATA_TYPE == "ChIP" and MODE=='PE':
             dag="Workflow_DAG.svg"
 
 include: 'rules/fastqc.smk'
-include: 'rules/chipmapping.smk'
+include: 'rules/bwa.smk'
 include: 'rules/chipbamfilter.smk'
 include: 'rules/bamqc.smk'
 include: 'rules/chipqc.smk'
