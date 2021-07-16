@@ -1,5 +1,6 @@
 GENOME=config["GENOME"]
 INDEX=GENOME+".sa"
+MODE=config['MODE']
 
 
 rule bwa_index:
@@ -14,19 +15,19 @@ rule bwa_index:
     threads:
         2
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/bwa.yaml"
     shell:
         """
         bwa index -a bwtsw {input} &> {log}
         """
 
-
-rule bwa_map_pe:
+rule bwa_map:
     # 1min/1M reads with 16 cores
     input:
         index=INDEX,
-        r1="fastq/{sample}.R1.fastq.gz",
-        r2="fastq/{sample}.R2.fastq.gz",
+        reads=(expand("fastq/{sample}.{r}.fastq.gz", r=["R1", "R2"])
+                  if MODE == 'PE'
+                  else "fastq/{sample}.fastq.gz")
     output:
         temp("results/mapped_reads/{sample}.bam")
     resources:
@@ -38,13 +39,14 @@ rule bwa_map_pe:
     benchmark:
         "log/mapped_reads/{sample}.bam.benchmark"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/bwa.yaml"
     shell:
         """
         bwa mem -t {threads} {GENOME} \
-        {input.r1} {input.r2} \
+        {input.reads} \
         2> {log}| samtools view -Sb -1 -@ 2 - -o {output} &>> {log}
         """
+
 
 
 rule bam_sort_index:
