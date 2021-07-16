@@ -26,14 +26,14 @@ rule bowtie2:
     # 1min/1M reads with 16 cores
     input:
         index=INDEX,
-        reads=(expand("fastq/{sample}.{r}.fastq.gz", r=["R1", "R2"])
+        reads=(["fastq/{sample}.R1.fastq.gz", "fastq/{sample}.R2.fastq.gz"]
                   if MODE == 'PE'
                   else "fastq/{sample}.fastq.gz")
     output:
         temp("results/mapped_reads/{sample}.bam")
     params:
         reads="-1 fastq/{sample}.R1.fastq.gz -2 fastq/{sample}.R2.fastq.gz" \
-            if config['PAIR_END'] else '-U fastq/{sample}.fastq.gz'
+            if MODE == 'PE' else '-U fastq/{sample}.fastq.gz'
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000 # human need 18G
     threads:
@@ -47,9 +47,9 @@ rule bowtie2:
     shell:
         """
         bowtie2 --version &> {log}
-        bowtie2 -x {input.genome} -p {threads} {params.reads} \
-        | samtools sort -@ 2 -m 1G -O BAM -o {output.bam} &>> {log}
-        samtools index {output.bam} &>> {log}
+        bowtie2 -x {input.index} -p {threads} {params.reads} | \
+        samtools sort -@ 2 -m 1G -O BAM -o {output} &>> {log}
+        samtools index {output} &>> {log}
         """
 
 

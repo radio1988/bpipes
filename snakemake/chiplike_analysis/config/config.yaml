@@ -1,37 +1,34 @@
 # Analysis Params
-DATA_TYPE: ChIP
-MODE: PE  # PE, ChIP PE mode; SE, ChIP SE MODE; SITE, get GATC site; 
+DATA_TYPE: ChIP  # ChIP, DamID, ATAC
+MODE: PE  # PE, MACS2 PE mode; SITE, get GATC site, macs2 damid mode; SE, single end (todo)
+# todo: merge, ChIP, DamID-PE, DamID-SITE, ATAC-SITE
+ALIGNER: bowtie2 # bowtie2, bwa
+
 SAMPLES:
-    - 1-1_S36
-    - 2-1_S39
-    - 2-2_S40
+    - Mes
+    - Ctrl
 
-GENOME: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa 
-
-GTF: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/gencode.v29.primary_assembly.annotation.fixed.gtf
-BLACKLIST: /project/umw_mccb/genome/Blacklist/lists/hg38-blacklist.v2.bed
-GSIZE: "hs"  
-# MACS2 gsize param, hs, mm, ce, dm, 2.7e8
-
-SizeFile: /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/star_idx/chrNameLength.txt
-# for bedGraphToBigWig, and hmmratac
-
+GENOME: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/mm10.ucsc.fa
+GTF: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM25.primary_assembly.annotation.gtf
+BLACKLIST: /project/umw_mccb/genome/Blacklist/lists/mm10-blacklist.v2.bed
+GSIZE: "mm"  # MACS2 gsize param, hs, mm, ce, dm, 2.7e8
+SizeFile: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/star_idx_vM25/chrNameLength.txt # for bedGraphToBigWig, and hmmratac
 
 BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
 MQ_MIN: 0 # multiBamSummary, plotFingerprint
-BW_BIN_SIZE: 50 # Resolution of bamCoverage bigWig files, default 50
 
 # Filters for bamCoverage, plotFingerprint, multiBamSummary
+BW_BIN_SIZE: 20
 minFragmentLength: 50  # 100 for mono-nucleosome
 maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
 
 
 # MEME related
-MEME_DB: "/project/umw_mccb/genome/Homo_sapiens/motifs/hocomoco/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme"
+MEME_DB: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/motifs/hocomoco/HOCOMOCOv11_full_MOUSE_mono_meme_format.meme
 PEAK_WIDTH: # center in peak summit
     - 100
-    - 1000
-    - 4000
+    - 500
+    - 2000
 CHRS:
     - chr1
     - chr2

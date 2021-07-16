@@ -39,6 +39,7 @@ PEAK_WIDTH=config['PEAK_WIDTH']
 CHRS=config['CHRS']
 minFragmentLength=config['minFragmentLength']
 maxFragmentLength=config['maxFragmentLength']
+BW_BIN_SIZE=config['BW_BIN_SIZE']
 
 #o=parse_meta_contrast(fmeta=pwd+"/config/meta.csv", fcontrast=pwd + "/config/contrast.csv") 
 # print("parse_meta_contrast_obj:", vars(o))
@@ -89,8 +90,6 @@ rule sample_bdg2bw:
 # rule clean_peaks todo
 
     
-BW_BIN_SIZE=config['BW_BIN_SIZE']
-MODE=config['MODE']
 rule bamCoverage:
     # for ChIP
     input:

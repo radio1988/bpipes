@@ -6,6 +6,7 @@ SAMPLES=config['SAMPLES']
 PEAK_WIDTH=config['PEAK_WIDTH']
 DATA_TYPE=config['DATA_TYPE']  # ChIP
 MODE=config['MODE'] # PE
+ALIGNER=config['ALIGNER']
 
 from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_control_bams_from_contrast, get_contrast_name_from_contrast, \
@@ -60,7 +61,10 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
             dag="Workflow_DAG.svg"
 
 include: 'rules/fastqc.smk'
-include: 'rules/bwa.smk'
+if ALIGNER == 'bwa':
+    include: 'rules/bwa.smk'
+elif ALIGNER == 'bowtie2':
+    include: 'rules/bowtie2.smk'
 include: 'rules/chipbamfilter.smk'
 include: 'rules/bamqc.smk'
 include: 'rules/chipqc.smk'
