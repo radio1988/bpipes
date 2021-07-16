@@ -78,6 +78,7 @@ rule multiQC_clean_reads:
         stats=expand("results/clean_reads_qc/stats/{sample}.stats.txt", sample=SAMPLES),
         idxstats=expand("results/clean_reads_qc/idxstats/{sample}.idxstats.txt", sample=SAMPLES),
         flagstat=expand("results/clean_reads_qc/flagstat/{sample}.flagstat.txt", sample=SAMPLES),
+        markdup=expand("results/markDup/{sample}.markDup_metrics.txt", sample=SAMPLES)
     output:
         "results/clean_reads_qc/multiqc_report.html"
     resources:
@@ -90,6 +91,7 @@ rule multiQC_clean_reads:
         "../envs/chiplike.yaml"
     shell:
         """
-        multiqc -f {input.stats} {input.idxstats} {input.flagstat} -o results/clean_reads_qc/ &> {log}
+        multiqc -f {input.stats} {input.idxstats} {input.flagstat} {input.markdup} \
+        -o results/clean_reads_qc/ &> {log}
 
         """

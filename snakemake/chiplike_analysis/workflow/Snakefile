@@ -29,11 +29,10 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
             chipqc2="results/clean_reads_qc/fragment_size.pdf", # test 
             chipqc3="results/clean_reads_qc/multiBamSummary.heatmap.pdf",
             chipqc4="results/clean_reads_qc/multiBamSummary.pca.pdf",
-            #chipqc5=expand("results/clean_reads_qc/{sample}.insert_size.pdf", sample=SAMPLES), # Rscript env problem
             chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
 
             # tracks
-            bamCoverage=expand('results/clean_reads_bigWig/{sample}.cpm.bw', sample=SAMPLES),
+            tracks=expand("results/clean_reads_bigWig/{sample}.cpm.bw", sample=SAMPLES),
 
             # peaks
             clean_narrowpeak_sample_level=expand("results/narrow_peaks_sample_level/{sample}/{sample}_clean.narrowPeak", sample=SAMPLES),
@@ -61,7 +60,7 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
             dag="Workflow_DAG.svg"
 
 include: 'rules/fastqc.smk'
-include: 'rules/chipmapping.smk'
+include: 'rules/bwa.smk'
 include: 'rules/chipbamfilter.smk'
 include: 'rules/bamqc.smk'
 include: 'rules/chipqc.smk'

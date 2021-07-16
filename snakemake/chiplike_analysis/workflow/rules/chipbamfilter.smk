@@ -105,7 +105,7 @@ elif DATA_TYPE == 'ChIP':
             "../envs/chiplike.yaml"
         shell:
             """
-            cp {input.bam} {output.bam} &> {log} ; 
+            cp {input.bam} {output.bam} &> {log}
             samtools index {output.bam} {output.bai} &>> {log}
             """
 else: 
