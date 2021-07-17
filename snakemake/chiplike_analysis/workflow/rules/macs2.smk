@@ -1,5 +1,7 @@
 BLACKLIST=config['BLACKLIST']
 MODE=config['MODE']
+GSIZE=config['GSIZE']
+SizeFile=config['SizeFile']
 
 
 if DATA_TYPE == 'DamID' and 'MODE' == 'SITE':

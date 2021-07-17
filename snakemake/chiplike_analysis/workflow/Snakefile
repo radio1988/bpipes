@@ -44,6 +44,7 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
             multiqc_clean_reads="results/clean_reads_qc/multiqc_report.html",
             chipqc1="results/clean_reads_qc/fingerprint.pdf",
             chipqc2="results/clean_reads_qc/fragment_size.pdf", # test 
+            chipqc2s="results/sorted_reads_qc/fragment_size.pdf", # test 
             chipqc3="results/clean_reads_qc/multiBamSummary.heatmap.pdf",
             chipqc4="results/clean_reads_qc/multiBamSummary.pca.pdf",
             chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),

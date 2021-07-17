@@ -37,18 +37,24 @@ rule plotFingerprint_pe:
         # --samFlagInclude 2: mate properly paired only
         # --extendReads: use mate into
 
+def bamPEFragmentSize_input(wildcards):
+   return ["results/"+wildcards.cs_folder+"/"+sample+".bam" for sample in SAMPLES]
+   
 rule bamPEFragmentSize:
     input:
-        expand("results/clean_reads/{sample}.bam", sample=SAMPLES)
+        bamPEFragmentSize_input
+       # expand("results/{cs_folder}/{sample}.bam", sample=SAMPLES)
     output:
-        plot="results/clean_reads_qc/fragment_size.pdf",
-        txt="results/clean_reads_qc/fragment_size.txt"
+        plot="results/{cs_folder}_qc/fragment_size.pdf",
+        txt="results/{cs_folder}_qc/fragment_size.txt"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 4000
     threads:
         4
     log:
-        "log/clean_reads_qc/fragment_size.log"
+        "log/{cs_folder}_qc/fragment_size.log"
+    benchmark:
+        "log/{cs_folder}_qc/fragment_size.benchmark"
     conda:
         "../envs/deeptools.yaml"
     shell:
@@ -57,10 +63,10 @@ rule bamPEFragmentSize:
         -hist {output.plot} \
         --outRawFragmentLengths {output.txt} \
         -T "Fragment Size Distribution" \
-        --maxFragmentLength 2000 \
         -b {input} \
         -p {threads} &> {log}
         """
+        # --maxFragmentLength 1000 \
 
 
 rule multiBamSummary:

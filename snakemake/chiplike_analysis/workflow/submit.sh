@@ -2,6 +2,7 @@
 # bsub -W 48:00 -q long -R select[rh=8] 'source activate snakemake; bash workflow/submit.sh &> submit.log '
 source activate snakemake6
 snakemake -k -p --ri \
+--notemp \
 --use-conda  --conda-prefix "~/anaconda3/envs/" \
 --use-envmodules \
 --ri  --restart-times 1 \
