@@ -90,39 +90,6 @@ rule sample_bdg2bw:
 # rule clean_peaks todo
 
     
-rule bamCoverage:
-    # for ChIP
-    input:
-        "results/clean_reads/{sample}.bam"
-    output:
-        "results/clean_reads_bigWig/{sample}.cpm.bw"
-    params:
-        bin_size=BW_BIN_SIZE,
-        pse=("--minFragmentLength {config[minFragmentLength]} --maxFragmentLength {config[maxFragmentLength]}  -e 150"
-                if MODE=='PE'
-                else "" )
-    threads:
-        8
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000
-    log:
-        "log/clean_reads_bigWig/{sample}.bamCoverage.log"
-    benchmark:
-        "log/clean_reads_bigWig/{sample}.bamCoverage.benchmark"
-    conda: 
-        "../envs/deeptools.yaml"
-    shell:
-        # Aim: same as our downstream filters, extensions
-        """
-        bamCoverage --bam {input} \
-        -o  {output} \
-        --numberOfProcessors {threads} \
-        --outFileFormat bigwig \
-        --normalizeUsing CPM \
-        --binSize {params.bin_size} \
-        {params.pse} \
-        &> {log}
-        """
 
 ### narrow_peaks_contrast_level ### 
 

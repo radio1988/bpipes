@@ -66,6 +66,7 @@ if ALIGNER == 'bwa':
 elif ALIGNER == 'bowtie2':
     include: 'rules/bowtie2.smk'
 include: 'rules/chipbamfilter.smk'
+include: 'rules/bigwig.smk'
 include: 'rules/bamqc.smk'
 include: 'rules/chipqc.smk'
 include: 'rules/getpeak.smk'
