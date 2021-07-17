@@ -1,5 +1,6 @@
-name: bowtie2
+name: samtools
 channels: 
     - bioconda
 dependencies: 
-    - bowtie2=2.2.5
+    - samtools=1.9
+

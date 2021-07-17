@@ -1,6 +1,6 @@
 #nohup bash submit.sh &
 # bsub -W 48:00 -q long 'source activate snakemake; bash workflow/submit.sh &> submit.log '
-source activate snakemake
+source activate snakemake6
 snakemake -k -p --ri \
 --use-conda  --conda-prefix "~/anaconda3/envs/" \
 --use-envmodules \

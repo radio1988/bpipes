@@ -10,6 +10,8 @@ rule bowtie2_index:
         INDEX
     log:
         "log/bowtie2_index.log"
+    benchmark:
+        'log/bowtie2_index.benchmark'
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 8000
     threads:
@@ -31,7 +33,7 @@ rule bowtie2:
                   if MODE == 'PE'
                   else "fastq/{sample}.fastq.gz")
     output:
-        temp("results/mapped_reads/{sample}.bam")
+        temp("results/mapped_reads/{sample}.sam")
     params:
         reads="-1 fastq/{sample}.R1.fastq.gz -2 fastq/{sample}.R2.fastq.gz" \
             if MODE == 'PE' else '-U fastq/{sample}.fastq.gz'
@@ -48,19 +50,20 @@ rule bowtie2:
     shell:
         """
         bowtie2 --version &> {log}
-        bowtie2 -x {input.genome} -p {threads} {params.reads} | \
-        samtools sort -@ 2 -m 1G -O BAM -o {output} &>> {log}
-        samtools index {output} &>> {log}
+        bowtie2 -x {input.genome} -p {threads} {params.reads} > {output}
+       # | \
+       # samtools sort -@ 2 -m 1G -O BAM -o {output} &>> {log}
+       # samtools index {output} &>> {log}
         # bowtie2-2.2.5 and samtools-1.7 incompatible in bioconda for libcrypto.so.1.0.0
         """
 
 
 
-rule bam_sort_index:
+rule sam_sort_index:
 # todo: remove temp files, which cause problems when re-run failed submissions
     # 2M/min
     input:
-        "results/mapped_reads/{sample}.bam"
+        "results/mapped_reads/{sample}.sam"
     output:
         bam=temp("results/sorted_reads/{sample}.bam"),
         bai=temp("results/sorted_reads/{sample}.bam.bai")
@@ -73,7 +76,7 @@ rule bam_sort_index:
     benchmark:
         "log/samtools_sort/{sample}.sort.benchmark"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/samtools.yaml"
     shell:
         """
         samtools --version &> {log}
