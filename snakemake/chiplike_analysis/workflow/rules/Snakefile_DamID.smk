@@ -47,19 +47,5 @@ BW_BIN_SIZE=config['BW_BIN_SIZE']
 # 'contrast2treatmentSamples': {'contrast1': ['2-1_S2', '2-2_S3', '2-3_S4'], 'contrast2': ['3-1_S5', '3-2_S6', '3-3_S7']}, 
 # 'contrast2controlSamples': {'contrast1': ['1-2_S1'], 'contrast2': ['1-2_S1'], 'contrast3': ['1-2_S1']}}
 
-ruleorder:  contrast_treat_pileup_bw > contrast_control_lambda_bw > sample_bdg2bw  
-# Learn: To Avoid AmbiguousRuleException:
-# Rules macs2_DamID_contrast_treat_pileup_bw and macs2_DamID_sample_treat_pileup_bw are ambiguous for the file narrow_peaks_sample_level/1-2_S1_treat_pileup.bw.
-# Consider starting rule output with a unique prefix, constrain your wildcards, or use the ruleorder directive.
-# Wildcards:
-#     macs2_DamID_contrast_treat_pileup_bw: sample=1-2_S1
-#     macs2_DamID_sample_treat_pileup_bw: sample=1-2_S1
-# Expected input files:
-#     macs2_DamID_contrast_treat_pileup_bw: narrow_peaks_sample_level/1-2_S1_treat_pileup.bdg
-#     macs2_DamID_sample_treat_pileup_bw: narrow_peaks_sample_level/1-2_S1_treat_pileup.bdgExpected output files:
-#     macs2_DamID_contrast_treat_pileup_bw: narrow_peaks_sample_level/1-2_S1_treat_pileup.bw
-#     macs2_DamID_sample_treat_pileup_bw: narrow_peaks_sample_level/1-2_S1_treat_pileup.bw
-
-
     
 

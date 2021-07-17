@@ -219,6 +219,19 @@ rule blacklist_filter:
 
 ### Tracks bdg2bw
 
+ruleorder:  contrast_treat_bdg2bw > contrast_control_bdg2bw > sample_bdg2bw
+# Learn: To Avoid AmbiguousRuleException:
+# Rules macs2_DamID_contrast_treat_pileup_bw and macs2_DamID_sample_treat_pileup_bw are ambiguous for the file narrow_peaks_sample_level/1-2_S1_treat_pileup.bw.
+# Consider starting rule output with a unique prefix, constrain your wildcards, or use the ruleorder directive.
+# Wildcards:
+#     macs2_DamID_contrast_treat_pileup_bw: sample=1-2_S1
+#     macs2_DamID_sample_treat_pileup_bw: sample=1-2_S1
+# Expected input files:
+#     macs2_DamID_contrast_treat_pileup_bw: narrow_peaks_sample_level/1-2_S1_treat_pileup.bdg
+#     macs2_DamID_sample_treat_pileup_bw: narrow_peaks_sample_level/1-2_S1_treat_pileup.bdgExpected output files:
+#     macs2_DamID_contrast_treat_pileup_bw: narrow_peaks_sample_level/1-2_S1_treat_pileup.bw
+#     macs2_DamID_sample_tre
+
 rule contrast_control_bdg2bw:
     input:
         "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.bdg"

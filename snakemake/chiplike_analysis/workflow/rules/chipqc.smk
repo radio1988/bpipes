@@ -37,7 +37,6 @@ rule plotFingerprint_pe:
         # --samFlagInclude 2: mate properly paired only
         # --extendReads: use mate into
 
-
 rule bamPEFragmentSize:
     input:
         expand("results/clean_reads/{sample}.bam", sample=SAMPLES)

@@ -1,3 +1,19 @@
+# July17, 2021
+# ChIPSeq like data analysis pipeline
+# Functions:
+    # fastqc
+    # map, filter, bigWig, bam_qc, chip_qc
+    # call peak: sample level and contrast based (read contras.csv and meta.csv)
+    # meme motif
+# Env:
+    # source activate snakemake6
+# Requirements
+    # inputs in ./fastq/
+    # named as {sample}.{R1,R2}.{fastq}.gz
+    # e.g. A.R1.fastq.gz A.R2.fastq.gz B...
+    # good format of meta.csv and contrast.csv, matching SAMPLES in config.yaml
+    
+    
 from snakemake.utils import min_version
 min_version("6.0")
 
@@ -72,5 +88,4 @@ include: 'rules/chipqc.smk'
 include: 'rules/macs2.smk'
 include: 'rules/countpeak.smk'
 include: 'rules/findmotif.smk'
-include: 'rules/Snakefile_DamID.smk'
 include: 'rules/snakemake_misc.smk'

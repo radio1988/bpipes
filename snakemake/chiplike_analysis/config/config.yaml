@@ -2,7 +2,7 @@
 DATA_TYPE: ChIP  # ChIP, DamID, ATAC
 MODE: PE  # PE, MACS2 PE mode; SITE, get GATC site, macs2 damid mode; SE, single end (todo)
 # todo: merge, ChIP, DamID-PE, DamID-SITE, ATAC-SITE
-ALIGNER: bowtie2 # bowtie2, bwa
+ALIGNER: bowtie2 # bowtie2, bwa (default)
 
 SAMPLES:
     - Mes
