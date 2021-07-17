@@ -4,18 +4,23 @@ maxFragmentLength=config['maxFragmentLength']
 MQ_MIN=config['MQ_MIN']
 BIN_SIZE=config['BIN_SIZE']
 
+def clean_or_sorted_bams_input(wildcards):
+   return ["results/"+wildcards.cs_folder+"/"+sample+".bam" for sample in SAMPLES]
+
 rule plotFingerprint_pe:
     input:
-        expand("results/clean_reads/{sample}.bam", sample=SAMPLES)
+        clean_or_sorted_bams_input
     output:
-        plot="results/clean_reads_qc/fingerprint.pdf",
-        txt="results/clean_reads_qc/fingerprint.txt",
+        plot="results/{cs_folder}_qc/fingerprint.pdf",
+        txt="results/{cs_folder}_qc/fingerprint.txt",
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 2500
     threads:
         6
     log:
-        "log/clean_reads_qc/fingerprint.log"
+        "log/{cs_folder}_qc/fingerprint.log"
+    benchmark:
+        "log/{cs_folder}_qc/fingerprint.benchmark"
     conda:
         "../envs/deeptools.yaml"
     shell:
@@ -37,13 +42,10 @@ rule plotFingerprint_pe:
         # --samFlagInclude 2: mate properly paired only
         # --extendReads: use mate into
 
-def bamPEFragmentSize_input(wildcards):
-   return ["results/"+wildcards.cs_folder+"/"+sample+".bam" for sample in SAMPLES]
    
 rule bamPEFragmentSize:
     input:
-        bamPEFragmentSize_input
-       # expand("results/{cs_folder}/{sample}.bam", sample=SAMPLES)
+        clean_or_sorted_bams_input
     output:
         plot="results/{cs_folder}_qc/fragment_size.pdf",
         txt="results/{cs_folder}_qc/fragment_size.txt"
