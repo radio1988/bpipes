@@ -2,8 +2,6 @@ BLACKLIST=config['BLACKLIST']
 MODE=config['MODE']
 
 
-
-
 if DATA_TYPE == 'DamID' and 'MODE' == 'SITE':
     rule macs2_DamID_sample_SITE:
         input:
@@ -219,56 +217,9 @@ rule blacklist_filter:
         """
 
 
-# rule blacklist_filter_contrast_level:
-#     input:
-#         peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_peaks.{narrowbroad}Peak",
-#         blacklist=BLACKLIST
-#     output:
-#         "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak"
-#         # e.g. xxx_clean.narrowPeak, xxx_clean.broadPeak
-#     log:
-#         "log/results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.log"
-#     benchmark:
-#         "log/results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.benchmark"
-#     resources:
-#         mem_mb=lambda wildcards, attempt: attempt * 8000
-#     threads:
-#         1
-#     conda:
-#         "../envs/bedtools.yaml"   
-#     shell:
-#         """
-#         bedtools intersect -v -a {input.peak} -b {input.blacklist} > {output}
-#         """
-
-
-# rule blacklist_filter_sample_level:
-#     input:
-#         peak="results/narrow_peaks_sample_level/{sample}_peaks.narrowPeak",
-#         blacklist=BLACKLIST
-#     output:
-#         "results/narrow_peaks_sample_level/{sample}_clean.narrowPeak",
-#     log:
-#         "log/narrow_peaks_sample_level/{sample}_clean.narrowPeak.log",
-#     benchmark:
-#         "log/results/narrow_peaks_sample_level/{sample}_clean.narrowPeak.benchmark",
-#     resources:
-#         mem_mb=lambda wildcards, attempt: attempt * 8000
-#     threads:
-#         1
-#     conda:
-#         "../envs/bedtools.yaml"   
-#     shell:
-#         """
-#         bedtools intersect -v -a {input.peak} -b {input.blacklist} > {output}
-#         """
-
-
 ### Tracks bdg2bw
-### narrow_peaks_contrast_level ###
 
-
-rule contrast_control_lambda_bw:
+rule contrast_control_bdg2bw:
     input:
         "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.bdg"
     output:
@@ -293,7 +244,7 @@ rule contrast_control_lambda_bw:
             {SizeFile} {output.bw} &>> {log}
         """
 
-rule contrast_treat_pileup_bw:
+rule contrast_treat_bdg2bw:
     input:
         "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.bdg"
     output:
@@ -318,8 +269,6 @@ rule contrast_treat_pileup_bw:
             {SizeFile} {output.bw} &>> {log}
         """
 
-
-### Sample level
 rule sample_bdg2bw:
     input:
         "results/narrow_peaks_sample_level/{sample}_treat_pileup.bdg"
