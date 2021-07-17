@@ -37,7 +37,7 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
 
             # peaks
             clean_narrowpeak_sample_level=expand("results/narrow_peaks_sample_level/{sample}/{sample}_clean.narrowPeak", sample=SAMPLES),
-            # macs2_sample_treat_pileup_bw=expand("results/narrow_peaks_sample_level/{sample}/{sample}_treat_pileup.bw", sample=SAMPLES),
+            macs2_sample_treat_pileup_bw=expand("results/narrow_peaks_sample_level/{sample}/{sample}_treat_pileup.bw", sample=SAMPLES),
             # macs2_narrow_peak_count_sample = expand("results/narrow_peaks_sample_level/{sample}/{sample}.count.txt", sample=SAMPLES),
 
             clean_narrowpeaks_contrast_level=get_narrowPeak_names_from_contrasts(contrasts=o.contrasts, o=o), 
@@ -69,7 +69,7 @@ include: 'rules/chipbamfilter.smk'
 include: 'rules/bigwig.smk'
 include: 'rules/bamqc.smk'
 include: 'rules/chipqc.smk'
-include: 'rules/getpeak.smk'
+include: 'rules/macs2.smk'
 include: 'rules/countpeak.smk'
 include: 'rules/findmotif.smk'
 include: 'rules/Snakefile_DamID.smk'

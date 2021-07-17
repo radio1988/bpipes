@@ -264,10 +264,85 @@ rule blacklist_filter:
 #         """
 
 
+### Tracks bdg2bw
+### narrow_peaks_contrast_level ###
 
 
+rule contrast_control_lambda_bw:
+    input:
+        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.bdg"
+    output:
+        bw="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.bw",
+        sbdg=temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.s.bdg")
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 16000
+    threads:
+        1
+    priority:
+        100
+    log:
+        "log/narrow_peaks_contrast_level/{contrast}/log/{contrast_name}_control_lambda.bw.log"
+    benchmark:
+        "log/narrow_peaks_contrast_level/{contrast}/log/{contrast_name}_control_lambda.bw.benchmark"
+    conda:
+        "../envs/bdg2bw.yaml"
+    shell:
+        """
+        sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
+        bedGraphToBigWig {output.sbdg} \
+            {SizeFile} {output.bw} &>> {log}
+        """
+
+rule contrast_treat_pileup_bw:
+    input:
+        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.bdg"
+    output:
+        bw="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.bw",
+        sbdg=temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.s.bdg")
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 16000
+    threads:
+        1
+    priority:
+        100
+    log:
+        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.bw.log"
+    benchmark:
+        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.bw.benchmark"
+    conda:
+        "../envs/bdg2bw.yaml"
+    shell:
+        """
+        sort -k1,1 -k2,2n {input} > {output.sbdg} 2>> {log}
+        bedGraphToBigWig {output.sbdg} \
+            {SizeFile} {output.bw} &>> {log}
+        """
 
 
+### Sample level
+rule sample_bdg2bw:
+    input:
+        "results/narrow_peaks_sample_level/{sample}_treat_pileup.bdg"
+    output:
+        bw="results/narrow_peaks_sample_level/{sample}_treat_pileup.bw",
+        sbdg=temp("results/narrow_peaks_sample_level/{sample}_treat_pileup.s.bdg")
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1600
+    threads:
+        1
+    log:
+        "log/narrow_peaks_sample_level/{sample}_treat_pileup.bw.log"
+    benchmark:
+        "log/narrow_peaks_sample_level/{sample}_treat_pileup.bw.benchmark"
+    priority:
+        100
+    conda:
+        "../envs/bdg2bw.yaml"
+    shell:
+        """
+        sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
+        bedGraphToBigWig {output.sbdg} {SizeFile} {output.bw} &>> {log}
+        """
 
 
 
