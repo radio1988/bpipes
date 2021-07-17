@@ -4,6 +4,7 @@ GSIZE=config['GSIZE']
 SizeFile=config['SizeFile']
 
 
+
 if DATA_TYPE == 'DamID' and 'MODE' == 'SITE':
     rule macs2_DamID_sample_SITE:
         input:
@@ -307,8 +308,4 @@ rule sample_bdg2bw:
         sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
         bedGraphToBigWig {output.sbdg} {SizeFile} {output.bw} &>> {log}
         """
-
-
-
-
 
