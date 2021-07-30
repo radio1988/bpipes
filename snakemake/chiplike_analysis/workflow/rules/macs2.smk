@@ -255,7 +255,7 @@ rule contrast_control_bdg2bw:
         "../envs/bdg2bw.yaml"
     shell:
         """
-        sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
+        LC_COLLATE=C sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
         bedGraphToBigWig {output.sbdg} \
             {SizeFile} {output.bw} &>> {log}
         """
@@ -280,7 +280,7 @@ rule contrast_treat_bdg2bw:
         "../envs/bdg2bw.yaml"
     shell:
         """
-        sort -k1,1 -k2,2n {input} > {output.sbdg} 2>> {log}
+        LC_COLLATE=C sort -k1,1 -k2,2n {input} > {output.sbdg} 2>> {log}
         bedGraphToBigWig {output.sbdg} \
             {SizeFile} {output.bw} &>> {log}
         """
@@ -305,7 +305,7 @@ rule sample_bdg2bw:
         "../envs/bdg2bw.yaml"
     shell:
         """
-        sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
+        LC_COLLATE=C sort -k1,1 -k2,2n {input} > {output.sbdg} 2> {log}
         bedGraphToBigWig {output.sbdg} {SizeFile} {output.bw} &>> {log}
         """
 
