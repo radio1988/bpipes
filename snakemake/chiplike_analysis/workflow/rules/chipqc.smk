@@ -66,9 +66,9 @@ rule bamPEFragmentSize:
         --outRawFragmentLengths {output.txt} \
         -T "Fragment Size Distribution" \
         -b {input} \
+        --maxFragmentLength 1000 \
         -p {threads} &> {log}
         """
-        # --maxFragmentLength 1000 \
 
 
 rule multiBamSummary:
