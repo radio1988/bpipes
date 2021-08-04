@@ -5,17 +5,20 @@ MODE: PE  # PE, MACS2 PE mode; SITE, get GATC site, macs2 damid mode; SE, single
 ALIGNER: bwa # bowtie2, bwa (default)
 
 SAMPLES:
-    - Mes
-    - Ctrl
+    - sample1
+    - sample2
+    - input1 
+    - input2
+
 
 GENOME: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/mm10.ucsc.fa
 GTF: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM25.primary_assembly.annotation.gtf
 BLACKLIST: /project/umw_mccb/genome/Blacklist/lists/mm10-blacklist.v2.bed
 GSIZE: "mm"  # MACS2 gsize param, hs, mm, ce, dm, 2.7e8
-SizeFile: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/star_idx_vM25/chrNameLength.txt # for bedGraphToBigWig, and hmmratac
+SizeFile: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/star_idx/chrNameLength.txt # for bedGraphToBigWig, and hmmratac
 
 BIN_SIZE: 2000 # For plotFingerprint, multiBamSummary, 2000 for mouse ATAC-seq
-MQ_MIN: 0 # multiBamSummary, plotFingerprint
+MQ_MIN: 20 # multiBamSummary, plotFingerprint
 
 # Filters for bamCoverage, plotFingerprint, multiBamSummary
 BW_BIN_SIZE: 20
