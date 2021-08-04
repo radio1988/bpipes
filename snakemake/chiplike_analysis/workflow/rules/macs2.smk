@@ -242,7 +242,7 @@ rule contrast_control_bdg2bw:
         bw="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.bw",
         sbdg=temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.s.bdg")
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 16000
+        mem_mb=lambda wildcards, attempt: attempt * 32000
     threads:
         1
     priority:
@@ -267,7 +267,7 @@ rule contrast_treat_bdg2bw:
         bw="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.bw",
         sbdg=temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.s.bdg")
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 16000
+        mem_mb=lambda wildcards, attempt: attempt * 32000
     threads:
         1
     priority:
@@ -292,7 +292,7 @@ rule sample_bdg2bw:
         bw="results/narrow_peaks_sample_level/{sample}_treat_pileup.bw",
         sbdg=temp("results/narrow_peaks_sample_level/{sample}_treat_pileup.s.bdg")
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 1600
+        mem_mb=lambda wildcards, attempt: attempt * 32000
     threads:
         1
     log:
