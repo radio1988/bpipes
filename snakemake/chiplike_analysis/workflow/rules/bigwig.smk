@@ -30,6 +30,8 @@ rule bamCoverage:
         "log/clean_reads_bigWig/{sample}.bamCoverage.benchmark"
     conda:
         "../envs/deeptools.yaml"
+    priority:
+        100
     shell:
         # Aim: same as our downstream filters, extensions
         """
