@@ -16,7 +16,7 @@ if DATA_TYPE == 'DamID' and 'MODE' == 'SITE':
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000  
         threads:
-            4
+            1
         conda:
             "../envs/macs2.yaml"
         log:
@@ -52,7 +52,7 @@ if DATA_TYPE == 'DamID' and 'MODE' == 'SITE':
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
-            4        
+            1        
         conda:
             "../envs/macs2.yaml"
         log:
@@ -81,7 +81,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
-            4
+            1
         conda:
             "../envs/macs2.yaml"
         log:
@@ -108,7 +108,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
-            4
+            1
         conda:
             "../envs/macs2.yaml"
         log:
@@ -148,7 +148,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
-            4        
+            1        
         conda:
             "../envs/macs2.yaml"
         log:
@@ -179,7 +179,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         threads:
-            4        
+            1        
         conda:
             "../envs/macs2.yaml"
         log:
