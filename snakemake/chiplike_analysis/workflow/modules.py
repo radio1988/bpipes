@@ -261,3 +261,20 @@ def get_meme_summit_split_outname_from_contrasts(
             for chr in CHRS:
                 outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/memechip_chr." + str(w) + "_" + chr + '/' + name + '.finished')
     return outnames
+
+
+def get_signalHeatmap_ContrastPeak_outname(
+    contrasts=["contrast1", "contrast2"], 
+    o = "parse_meta_contrast_obj"):
+    """
+    output example:
+    "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.pdf"
+    ...
+    ]
+    """
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    outnames = []
+    for contrast,name in zip(contrasts, contrast_names):
+        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.narrowPeak.pdf')
+        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.broadPeak.pdf')
+    return outnames

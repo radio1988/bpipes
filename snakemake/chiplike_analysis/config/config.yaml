@@ -24,6 +24,7 @@ MQ_MIN: 20 # multiBamSummary, plotFingerprint
 BW_BIN_SIZE: 20
 minFragmentLength: 50  # 100 for mono-nucleosome
 maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
+signalHeatmapWidth: 3000 # upsteam/downstream of TSS/PeakCenter for plotHeatmap
 
 
 # MEME related
