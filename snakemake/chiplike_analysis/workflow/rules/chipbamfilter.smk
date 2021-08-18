@@ -17,14 +17,14 @@ rule markDup:
     threads:
         1
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 16000
+        mem_mb=lambda wildcards, attempt: attempt * 12000
 
     shell:
         """
         # todo: portability, not only picard from conda (2.25.5) can be used
         p=`which picard` && echo $p &> {log};
         PICARD=`echo $p|sed 's/bin\/picard/share\/picard-2.25.5-0\/picard.jar/'` && echo $PICARD &>>{log}; 
-        java -Xmx15g -jar $PICARD \
+        java -Xmx8g -jar $PICARD \
         MarkDuplicates \
         I={input.bam} \
         O={output.bam} \
