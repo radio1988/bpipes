@@ -20,7 +20,7 @@ rule signalHeatmapMatrix_TSS:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 8000
     threads:
-        4
+        8
     log:
         "log/clean_reads_qc/signalHeatmap/clean.all_sample.mat.gz.log"
     benchmark:
@@ -40,6 +40,7 @@ rule signalHeatmapMatrix_TSS:
 rule signalHeatmap_TSS:
     """
     colormap: https://matplotlib.org/2.0.2/users/colormaps.html
+    jet (rainbow), viridis, seismic (blue-red)
     """
     input:
         "results/clean_reads_qc/signalHeatmap/clean.all_sample.mat.gz"
@@ -58,10 +59,11 @@ rule signalHeatmap_TSS:
     shell:
         """
         plotHeatmap -m {input} \
-            --zMin 0 --zMax 3 \
-            --colorMap Spectral \
-            --verbose \
-            -out {output} &> {log}
+            --zMin 0 --zMax auto --colorMap viridis \
+            --refPointLabel 'TSS' \
+            -T 'Signal Around TSS' \
+            -y 'signal' -x '' -z 'transcripts' \
+            --verbose  -out {output} &> {log}
         """
 
 ## Peak based
@@ -112,9 +114,10 @@ rule signalHeatmap_ContrastPeak:
     shell:
         """
         plotHeatmap -m {input} \
-            --zMin 0 --zMax 3 \
-            --colorMap Spectral \
-            --verbose \
-            -out {output} &> {log}
+            --zMin 0 --zMax auto --colorMap viridis \
+            --refPointLabel 'peak_center' \
+            -T 'Signal Around Peak Center' \
+            -y 'signal' -x '' -z 'peaks' \
+            --verbose -out {output} &> {log}
         """
 
