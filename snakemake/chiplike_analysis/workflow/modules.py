@@ -269,8 +269,6 @@ def get_signalHeatmap_ContrastPeak_outname(
     """
     output example:
     "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.pdf"
-    ...
-    ]
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
@@ -278,3 +276,19 @@ def get_signalHeatmap_ContrastPeak_outname(
         outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.narrowPeak.pdf')
         outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.broadPeak.pdf')
     return outnames
+
+def get_corrHeatmap_peakCount_outname(
+    contrasts=["contrast1", "contrast2"], 
+    o = "parse_meta_contrast_obj"):
+    """
+    output example:
+    "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_count.heatmap.pdf"
+    """
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    outnames = []
+    for contrast,name in zip(contrasts, contrast_names):
+        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
+        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
+    return outnames
+
+

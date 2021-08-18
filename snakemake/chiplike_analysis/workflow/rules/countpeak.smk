@@ -18,7 +18,7 @@ rule peak2gtf_sample_level:
         perl workflow/scripts/peak2gtf.pl {input} > {output} 2> {log}
         """
 
-rule peak_count_sample_level:
+rule peak_count_sample_level_pe:
     # todo broad/narrow
     input:
         bam=expand("results/clean_reads/{sample}.bam", sample=SAMPLES),
@@ -66,7 +66,7 @@ rule peak2gtf_contrast_level:
         perl workflow/scripts/peak2gtf.pl {input} > {output} 2> {log}
         """
 
-rule peak_count_contrast_level:
+rule peak_count_contrast_level_pe:
     # todo broad/narrow
     input:
         bam=expand("results/clean_reads/{sample}.bam", sample=SAMPLES),

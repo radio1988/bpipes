@@ -1,5 +1,10 @@
+if (!require("PoiClaClu")) install.packages("PoiClaClu")
+if (!require("pheatmap")) install.packages("pheatmap")
+if (!require("RColorBrewer")) install.packages("RColorBrewer")
+
 library(PoiClaClu) # 
 library(pheatmap)
+library(RColorBrewer)
 
 args = commandArgs(trailingOnly=TRUE)
 
@@ -27,8 +32,11 @@ poisd <- PoissonDistance(t(cnt))
 samplePoisDistMatrix <- as.matrix( poisd$dd ) 
 rownames(samplePoisDistMatrix) <- colnames(cnt)
 colnames(samplePoisDistMatrix) <- colnames(cnt)
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+
 
 pheatmap(samplePoisDistMatrix, 
-         show_colnames = T, show_rownames = F, 
+         show_colnames = T, show_rownames = T, 
          angle_col = 315, legend = T,
+         color = colors,
          filename = outFile)
