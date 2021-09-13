@@ -15,7 +15,7 @@ rule corrHeatmap_peakCount:
         "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_count.heatmap.pdf.benchmark"
     shell:
         """
-        Rscript workflow/scripts/corrHeatmap.peakCount.r {input} {output} &> {log}
+        Rscript workflow/scripts/corrHeatmap.peakCount.R {input} {output} &> {log}
         """
 
 

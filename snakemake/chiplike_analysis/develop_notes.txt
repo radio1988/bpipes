@@ -1,0 +1,5 @@
+210717: 
+- bowtie2 PE chip confirmed working
+- sorted reads qc working
+- 
+

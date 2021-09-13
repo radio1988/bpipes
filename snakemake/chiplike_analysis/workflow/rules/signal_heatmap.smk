@@ -18,9 +18,9 @@ rule signalHeatmapMatrix_TSS:
         a=signalHeatmapWidth, # downstream
         b=signalHeatmapWidth  # upstream
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 8000
+        mem_mb=lambda wildcards, attempt: attempt * 16000
     threads:
-        8
+        4
     log:
         "log/clean_reads_qc/signalHeatmap/clean.all_sample.mat.gz.log"
     benchmark:
@@ -47,9 +47,9 @@ rule signalHeatmap_TSS:
     output:
         "results/clean_reads_qc/signalHeatmap/clean.all_sample.TSS.signalHeatmap.pdf"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 8000
+        mem_mb=lambda wildcards, attempt: attempt * 16000
     threads:
-        1
+        4
     log:
         "log/clean_reads_qc/signalHeatmap/clean.all_sample.TSS.signalHeatmap.pdf.log"
     benchmark:
@@ -77,7 +77,7 @@ rule signalHeatmapMatrix_ContrastPeak:
         a=signalHeatmapWidth, # downstream
         b=signalHeatmapWidth  # upstream
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 8000
+        mem_mb=lambda wildcards, attempt: attempt * 64000
     threads:
         4
     log:
@@ -102,7 +102,7 @@ rule signalHeatmap_ContrastPeak:
     output:
         "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.pdf"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 8000
+        mem_mb=lambda wildcards, attempt: attempt * 64000
     threads:
         1
     log:
