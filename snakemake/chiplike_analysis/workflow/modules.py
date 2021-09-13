@@ -292,3 +292,16 @@ def get_corrHeatmap_peakCount_outname(
     return outnames
 
 
+def get_chippeakanno_outname(
+    contrasts=["contrast1", "contrast2"], 
+    o = "parse_meta_contrast_obj"):
+    """
+    output example:
+    "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx"
+    """
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    outnames = []
+    for contrast,name in zip(contrasts, contrast_names):
+        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.narrowPeak.full_anno.xlsx')
+        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.broadPeak.full_anno.xlsx')
+    return outnames

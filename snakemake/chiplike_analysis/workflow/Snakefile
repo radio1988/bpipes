@@ -33,7 +33,8 @@ from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_control_lambda_bw_names_from_contrasts, \
     get_meme_peak_outname_from_contrasts, get_meme_summit_outname_from_contrasts, get_meme_summit_split_outname_from_contrasts, \
     get_narrow_count_names_from_contrasts, get_broad_count_names_from_contrasts, \
-    get_signalHeatmap_ContrastPeak_outname, get_corrHeatmap_peakCount_outname \
+    get_signalHeatmap_ContrastPeak_outname, get_corrHeatmap_peakCount_outname, \
+    get_chippeakanno_outname
 
 o=parse_meta_contrast(fmeta="config/meta.csv", fcontrast="config/contrast.csv") 
 
@@ -73,7 +74,9 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
             clean_broadpeaks_contrast_level=get_broadPeak_names_from_contrasts(contrasts=o.contrasts, o=o), 
             macs2_broad_peak_count_contrast = get_broad_count_names_from_contrasts(contrasts=o.contrasts, o=o),
 
+            # for all peaks (narrow/broad)
             corrHeatmap_peakCount=get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o),
+            chippeakanno=get_chippeakanno_outname(contrasts=o.contrasts, o=o),
 
 
             # # motifs narrow

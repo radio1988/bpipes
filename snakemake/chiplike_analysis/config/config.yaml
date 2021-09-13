@@ -27,6 +27,9 @@ maxFragmentLength: 1000 # 200 for mono-nucleosome ATACseq fragments
 signalHeatmapWidth: 3000 # upsteam/downstream of TSS/PeakCenter for plotHeatmap
 
 
+# Peak caller
+PEAKCALLER: narrow # narrow, broad, not developed yet
+
 # ChIPPeakAnno related
 BIDING_LEFT: 3000
 BIDING_RIGHT: 3000 # flanking TSS, for TSS ajacency peak count histogram
