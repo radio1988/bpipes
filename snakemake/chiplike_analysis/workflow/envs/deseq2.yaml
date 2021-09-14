@@ -1,4 +1,4 @@
-name: chippeakanno
+name: deseq2
 channels:
     - conda-forge
     - bioconda
@@ -6,18 +6,16 @@ channels:
 dependencies:
   # conda-forge
   - r-base=4.0.2
-  - r-devtools
-  - r-dplyr
+  # - r-devtools
+  # - r-dplyr
   # # new
   # - r-plyr
   # - r-gdata
   # - r-pheatmap
-  # - r-ashr
+  - r-ashr
 
   # bioconda
-  - bioconductor-chippeakanno
-  - bioconductor-genomicfeatures 
-  - bioconductor-rtracklayer 
+  - bioconductor-deseq2
   - r-readxl
   - r-writexls
   # - r-ggrepel
