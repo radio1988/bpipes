@@ -3,10 +3,6 @@ BIDING_LEFT=config['BIDING_LEFT']
 BIDING_RIGHT=config['BIDING_RIGHT']
 CHIPPEAKANNO_MODE=config['CHIPPEAKANNO_MODE']
 
-def clean_or_sorted_bams_input(wildcards):
-   return ["results/"+wildcards.cs_folder+"/"+sample+".bam" \
-            for sample in SAMPLES]
-
 
 rule chippeakanno:
     input:

@@ -52,10 +52,10 @@ peaks.gr <- makeGRangesFromDataFrame(peaks.df, keep.extra.columns = T)
 
 # transcript level annotation
 gr.anno <- annotatePeakInBatch(myPeakList = peaks.gr, 
-                               AnnotationData =  gene.gr, # transcript.gr, gene.gr
+                               AnnotationData =  gene.gr, # transcript.gr, gene.gr, todo: check
                                FeatureLocForDistance="TSS",
                                bindingRegion = bindingRegion,
-                               output = CHIPPEAKANNO_MODE, # overlapping, nearestLocation
+                               output = CHIPPEAKANNO_MODE, # overlapping, nearestLocation, both
                                select = 'all',
                                ignore.strand = T)
 peak.anno.df <- data.frame(gr.anno)
@@ -74,37 +74,45 @@ peak.anno.df<-peak.anno.df %>% distinct(dedup_id, .keep_all = TRUE) # keep the f
 peak.anno.df.protein_coding <- subset(peak.anno.df, gene_type=='protein_coding')
 WriteXLS(x = peak.anno.df,
          ExcelFileName = paste(prefix, 'anno.WithDup.xlsx', sep = "."),
-         row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+         row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
 WriteXLS(x = peak.anno.df.protein_coding,
          ExcelFileName = paste(prefix, 'anno.WithDup.protein_coding.xlsx', sep = "."),
-         row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+         row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
+
 # Collapse by peak_id (double check)
 RM <- function(x) gsub(",.*", "", x)
+
 collapse_anno <- function(peak.anno.df, outname){
       # collapse rows by peak_id
       peak.anno.df.collapsed <- peak.anno.df %>%
         group_by(peak_id) %>%
         summarise_each(funs(toString))
       # not collapse seqnames, start, end, width, strand, conc ...
-      peak.anno.df.collapsed <- data.frame(apply(peak.anno.df.collapsed[,1:10], 2, RM), 
-                                           peak.anno.df.collapsed[,11:14])  # number of columns matters
+      peak.anno.df.collapsed <- data.frame(apply(peak.anno.df.collapsed[,1:12], 2, RM), 
+                                           peak.anno.df.collapsed[,13:ncol(peak.anno.df.collapsed)])  # CHIPPEAKANNO_MODE, CALLER specific
       print(outname)
       print(dim(peak.anno.df.collapsed))
       WriteXLS(x = peak.anno.df.collapsed,
                ExcelFileName = outname,
-               row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+               row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
       return(peak.anno.df.collapsed)
       }
+
 peak.anno.df.collapsed <- collapse_anno(peak.anno.df, 
       paste(prefix, "anno.collapsed.xlsx", sep = "."))
+
 peak.anno.df.protein_coding.collapsed <- collapse_anno(peak.anno.df.protein_coding, 
       paste(prefix, "anno.protein_coding.collapsed.xlsx", sep = "."))
+
 # Full talbe including unannotated
-full.collapsed.df <- merge(peaks.df, peak.anno.df.collapsed[, c(1, 11:ncol(peak.anno.df.collapsed))], 
-                           by= "peak_id", all.x=T)
+full.collapsed.df <- merge(
+                        peaks.df, 
+                        peak.anno.df.collapsed[, c(1, 13:ncol(peak.anno.df.collapsed))], # anno part, CHIPPEAKANNO_MODE, CALLER specific
+                        by= "peak_id", all.x=T)
+
 WriteXLS(x = full.collapsed.df,
          ExcelFileName = paste(prefix, "full_anno.xlsx", sep = "."), 
-         row.names = F, SheetNames = 'sheet1', na = '-')  # for user
+         row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
 
 
 

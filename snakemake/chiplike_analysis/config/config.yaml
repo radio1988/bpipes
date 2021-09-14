@@ -35,6 +35,10 @@ BIDING_LEFT: 3000
 BIDING_RIGHT: 3000 # flanking TSS, for TSS ajacency peak count histogram
 CHIPPEAKANNO_MODE: both  # both, etc.
 
+# DB related
+MIN_LFC: 0.585
+MAX_FDR: 0.05
+
 
 # MEME related
 MEME_DB: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/motifs/hocomoco/HOCOMOCOv11_full_MOUSE_mono_meme_format.meme
