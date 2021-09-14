@@ -34,6 +34,7 @@ def parse_meta_contrast (fmeta="meta.csv", fcontrast="contrast.csv"):
 
     ### group2sample
     temp = meta.copy()
+    temp = temp[["sample", "group"]]
     temp['sample'] =  temp.groupby(['group']).transform(lambda x: ','.join(x))
     #                  sample group
     # 0                1-2_S1  ctrl
