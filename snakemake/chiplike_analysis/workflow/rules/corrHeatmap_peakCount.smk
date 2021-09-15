@@ -19,4 +19,4 @@ rule corrHeatmap_peakCount:
         """
 
 
-# todo: rule DESeq2
+# todo: move to  DESeq2, which uses real peaks (CPM filter: Pulldown > IgG)

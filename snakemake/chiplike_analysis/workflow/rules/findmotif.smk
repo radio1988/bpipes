@@ -4,12 +4,12 @@ ruleorder: get_peak_fasta_contrast_level > meme_peak_contrast_level > get_summit
 
 rule get_peak_fasta_contrast_level:
     input:
-        peak="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.narrowPeak",
+        peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak",
         genome=GENOME
     output:
-        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.narrowPeak.fa"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.fa"
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.narrowPeak.fa.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.fa.log"
     threads:
         1
     resources:
@@ -23,17 +23,17 @@ rule get_peak_fasta_contrast_level:
 
 rule meme_peak_contrast_level:
     input: 
-        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_clean.narrowPeak.fa",
+        fasta="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.fa",
         neg=GENOME,
         db=MEME_DB,
     output: 
-        touch("results/narrow_peaks_contrast_level/{contrast}/meme_clean_peaks/{contrast_name}.finished")
+        touch("results/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean.real_peaks/{contrast_name}.finished")
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/meme_clean_peaks/{contrast_name}.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean.real_peaks/{contrast_name}.log"
     benchmark:
-        "log/narrow_peaks_contrast_level/{contrast}/meme_clean_peaks/{contrast_name}.benchmark"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean.real_peaks/{contrast_name}.benchmark"
     params:
-        odir="results/narrow_peaks_contrast_level/{contrast}/meme_clean_peaks/",
+        odir="results/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean.real_peaks/",
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:
@@ -48,7 +48,7 @@ rule meme_peak_contrast_level:
 
 
 rule get_summit_neighbour:
-# todo: filter blacklist
+# todo: filter blacklist, cpm filter
     input:
         summit="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.bed",
         genome=GENOME

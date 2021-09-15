@@ -76,8 +76,8 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
 
             # for all peaks (narrow/broad)
             cpm_real_peak=get_cpm_filter_outname(contrasts=o.contrasts, o=o),
-            corrHeatmap_peakCount=get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o),
-            chippeakanno=get_chippeakanno_outname(contrasts=o.contrasts, o=o),
+            chippeakanno_real=get_chippeakanno_outname(contrasts=o.contrasts, o=o),
+            corrHeatmap_peakCount_clean=get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o),
 
             # # motifs narrow
             meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o), # narrow peak

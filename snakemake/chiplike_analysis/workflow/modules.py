@@ -216,7 +216,8 @@ def get_meme_peak_outname_from_contrasts(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/meme_clean_peaks/"+name+'.finished')
+        outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/meme_clean.real_peaks/"+name+'.finished')
+        outnames.append("results/broad_peaks_contrast_level/"+contrast+"/meme_clean.real_peaks/"+name+'.finished')
     return outnames
 
 
