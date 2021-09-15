@@ -309,18 +309,18 @@ def get_chippeakanno_outname(
 
 
 
-def get_deseq2_outname(
+def get_cpm_filter_outname(
     contrasts=["contrast1", "contrast2"], 
     o = "parse_meta_contrast_obj"):
     """
     output example:
-    "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast}.{contrast_name}.DESeq2.xlsx"
+        PEAK_UP="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak",,
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/' + contrast + "." +name+'.DESeq2.xlsx')
-        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/' + contrast + "." +name+'.DESeq2.xlsx')
+        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak')
+        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak')
     return outnames
 
 

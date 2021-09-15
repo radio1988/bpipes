@@ -33,7 +33,7 @@ PEAKCALLER: narrow # narrow, broad, not developed yet
 # ChIPPeakAnno related
 BIDING_LEFT: 3000
 BIDING_RIGHT: 3000 # flanking TSS, for TSS ajacency peak count histogram
-CHIPPEAKANNO_MODE: both  # both, etc.
+CHIPPEAKANNO_MODE: overlapping  # overlapping, both (overlapping and nearestLocation)
 
 # DB related
 MIN_LFC: 0

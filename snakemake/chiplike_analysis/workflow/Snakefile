@@ -34,7 +34,7 @@ from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_meme_peak_outname_from_contrasts, get_meme_summit_outname_from_contrasts, get_meme_summit_split_outname_from_contrasts, \
     get_narrow_count_names_from_contrasts, get_broad_count_names_from_contrasts, \
     get_signalHeatmap_ContrastPeak_outname, get_corrHeatmap_peakCount_outname, \
-    get_chippeakanno_outname, get_deseq2_outname
+    get_chippeakanno_outname, get_cpm_filter_outname
 
 o=parse_meta_contrast(fmeta="config/meta.csv", fcontrast="config/contrast.csv") 
 
@@ -75,9 +75,9 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
             macs2_broad_peak_count_contrast = get_broad_count_names_from_contrasts(contrasts=o.contrasts, o=o),
 
             # for all peaks (narrow/broad)
+            cpm_real_peak=get_cpm_filter_outname(contrasts=o.contrasts, o=o),
             corrHeatmap_peakCount=get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o),
             chippeakanno=get_chippeakanno_outname(contrasts=o.contrasts, o=o),
-            deseq2=get_deseq2_outname(contrasts=o.contrasts, o=o),
 
             # # motifs narrow
             meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o), # narrow peak
@@ -105,7 +105,7 @@ include: 'rules/macs2.smk'
 include: 'rules/chippeakanno.smk'
 include: 'rules/countpeak.smk'
 include: 'rules/corrHeatmap_peakCount.smk'
-include: 'rules/deseq2.smk'
+include: 'rules/cpm_filter.smk'
 include: 'rules/findmotif.smk'
 include: 'rules/snakemake_misc.smk'
 include: 'rules/save_resources.smk'

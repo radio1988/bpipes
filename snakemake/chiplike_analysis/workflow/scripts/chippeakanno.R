@@ -11,9 +11,9 @@ require(dplyr)
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args)==0) {
-      peakFile <- "results/narrow_peaks_contrast_level/c1/Mes_vs_Ctrl_clean.narrowPeak"
+      peakFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_clean.broadPeak"
       gtf_file <- "/project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM25.primary_assembly.annotation.gtf" # support GenCode format
-      CHIPPEAKANNO_MODE <- 'both'
+      CHIPPEAKANNO_MODE <- 'overlapping'
       BIDING_LEFT <- 3000
       BIDING_RIGHT <- 3000
 }else{
@@ -27,7 +27,6 @@ if (length(args)==0) {
 prefix <- peakFile
 odir <- dirname(peakFile)
 max_fdr <- 0.05 # for peaks
-CHIPPEAKANNO_MODE <- 'both'
 bindingRegion <- c(-BIDING_LEFT, BIDING_RIGHT)
 
 
@@ -60,18 +59,30 @@ gr.anno <- annotatePeakInBatch(myPeakList = peaks.gr,
                                ignore.strand = T)
 peak.anno.df <- data.frame(gr.anno)
 # select/drop columns (affects function collapse_anno) (to remove too much info in output)
-drops <- c('shortestDistance')
-peak.anno.df <- peak.anno.df[, !(names(peak.anno.df) %in% drops)]
-# merge to anno
-peak.anno.df$feature <- as.integer(peak.anno.df$feature)
-gene.gr.df$feature <- row.names(gene.gr.df)
-meta.df <- gene.gr.df[, c('feature', 'gene_name', 'gene_id', 'gene_type')] # gtf specific
-merged <- merge (peak.anno.df, meta.df, by='feature', all.x=T)
-peak.anno.df<- merged
-# Delete duplicated rows (same peak, same gene) (keep the first)
-peak.anno.df$dedup_id <- paste(peak.anno.df$peak_id,peak.anno.df$gene_name)
-peak.anno.df<-peak.anno.df %>% distinct(dedup_id, .keep_all = TRUE) # keep the first
-peak.anno.df.protein_coding <- subset(peak.anno.df, gene_type=='protein_coding')
+if (CHIPPEAKANNO_MODE == 'both'){
+      drops <- c('shortestDistance')
+      peak.anno.df <- peak.anno.df[, !(names(peak.anno.df) %in% drops)]
+      # merge to anno
+      peak.anno.df$feature <- as.integer(peak.anno.df$feature)
+      gene.gr.df$feature <- row.names(gene.gr.df)
+      meta.df <- gene.gr.df[, c('feature', 'gene_name', 'gene_id', 'gene_type')] # gtf specific
+      merged <- merge (peak.anno.df, meta.df, by='feature', all.x=T)
+      peak.anno.df<- merged
+      # Delete duplicated rows (same peak, same gene) (keep the first)
+      peak.anno.df$dedup_id <- paste(peak.anno.df$peak_id,peak.anno.df$gene_name)
+      peak.anno.df<-peak.anno.df %>% distinct(dedup_id, .keep_all = TRUE) # keep the first
+      peak.anno.df.protein_coding <- subset(peak.anno.df, gene_type=='protein_coding')
+} else if(CHIPPEAKANNO_MODE == 'overlapping'){
+      drops <- c('transcript_id', 'transcript_type', 'transcript_name', 'transcript_support_level', 'tag',
+            'havana_transcript', 'exon_number', 'exon_id', 'protein_id', 'ccdsid', 'ont', 'peak','extra')
+      peak.anno.df <- peak.anno.df[, !(names(peak.anno.df) %in% drops)]
+      # Delete duplicated rows (same peak, same gene) (keep the first)
+      peak.anno.df$dedup_id <- paste(peak.anno.df$peak_id,peak.anno.df$gene_name)
+      peak.anno.df<-peak.anno.df %>% distinct(dedup_id, .keep_all = TRUE) # keep the first
+      peak.anno.df.protein_coding <- subset(peak.anno.df, gene_type=='protein_coding')
+}
+
+
 WriteXLS(x = peak.anno.df,
          ExcelFileName = paste(prefix, 'anno.WithDup.xlsx', sep = "."),
          row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
@@ -88,8 +99,14 @@ collapse_anno <- function(peak.anno.df, outname){
         group_by(peak_id) %>%
         summarise_each(funs(toString))
       # not collapse seqnames, start, end, width, strand, conc ...
-      peak.anno.df.collapsed <- data.frame(apply(peak.anno.df.collapsed[,1:12], 2, RM), 
-                                           peak.anno.df.collapsed[,13:ncol(peak.anno.df.collapsed)])  # CHIPPEAKANNO_MODE, CALLER specific
+      if (CHIPPEAKANNO_MODE == 'both'){
+            peak.anno.df.collapsed <- data.frame(apply(peak.anno.df.collapsed[,1:12], 2, RM), 
+                                                 peak.anno.df.collapsed[,13:ncol(peak.anno.df.collapsed)])  # CHIPPEAKANNO_MODE, CALLER specific
+      } else if(CHIPPEAKANNO_MODE == 'overlapping'){
+            peak.anno.df.collapsed <- data.frame(apply(peak.anno.df.collapsed[,1:10], 2, RM), 
+                                                 peak.anno.df.collapsed[,11:ncol(peak.anno.df.collapsed)])  # CHIPPEAKANNO_MODE, CALLER specific
+      }
+
       print(outname)
       print(dim(peak.anno.df.collapsed))
       WriteXLS(x = peak.anno.df.collapsed,

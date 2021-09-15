@@ -6,7 +6,7 @@ CHIPPEAKANNO_MODE=config['CHIPPEAKANNO_MODE']
 
 rule chippeakanno:
     input:
-        peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak",
+        peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak",
         gtf=GTF,
         config='config/config.yaml'
     output:
