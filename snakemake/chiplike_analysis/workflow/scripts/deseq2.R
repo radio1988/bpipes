@@ -91,7 +91,7 @@ if (length(args)==0) {
 	metaFile <- 'config/meta.csv'
 	contrastFile <- 'config/contrast.csv'
 	MAX_FDR <- 0.05
-	MIN_LFC <- 0.585
+	MIN_LFC <- 0
   }else{
    countFile <- args[1]
    annoFile <- args[2]
@@ -130,12 +130,15 @@ dev.off()
 
 # COUNT.xlsx, CPM.xlsx
 COUNT <- data.frame(df[, 6:ncol(df)])
+colnames(COUNT) = paste0(colnames(COUNT), '_COUNT')
 COUNT.out <- merge(anno, COUNT, by.x=1, by.y=0, all.y=T, sort=F)
 writeExcel(COUNT.out, file.path(odir, "COUNT.xlsx"))
 
 CPM <- calculateCPM(df[, 6:ncol(df)])
+colnames(CPM) = paste0(colnames(CPM), '_CPM')
 CPM.out <-  merge(anno, CPM, by.x=1, by.y=0, all.y=T, sort=F)
 writeExcel(CPM.out,    file.path(odir, "CPM.xlsx"))
+
 
 
 # DESeq2
@@ -163,7 +166,13 @@ if (length(levels(meta$batch)) > 1){
       design = ~  0 + group)  # converted to alph-order
   }
 
+sizeFactors(dds) <- colSums(COUNT) / min(colSums(COUNT)) # !!! unique for ChIPSeq (PullDown vs IgG)
+
 dds <-DESeq(dds)
+
+NormCount <- counts(dds, normalized=TRUE)
+colnames(NormCount) = paste0(colnames(NormCount), '_Norm')
+
 
 
 ## contrast
@@ -183,17 +192,21 @@ for (i in 1:dim(contrast.df)[1]){
 
   RES <- data.frame(
     peak_id = row.names(res.lfc), 
-    log2FC = res.lfc$log2FoldChange,
+    log2FC_shrinked = res.lfc$log2FoldChange, 
+    log2FC_raw = res.p$log2FoldChange, 
     pvalue = res.p$pvalue,
     FDR = res.p$padj
     )
 
   OUT <- merge(RES, CPM.out, by='peak_id', all.x=T)
+  OUT <- merge(OUT, COUNT, by.x=1, by.y = 0, all.x=T)
+  OUT <- merge(OUT, NormCount,  by.x=1, by.y = 0, all.x=T)
+
   writeExcel(OUT,    file.path(odir, paste0(c$name,".DESeq2.xlsx"))) 
   # "results/narrow_peaks_contrast_level/c1/c1.HA.Ab1_vs_IgG.DESeq2.xlsx"
-
-  OUT.up <- subset(OUT, FDR < MAX_FDR & log2FC > MIN_LFC)
-  OUT.down <- subset(OUT, FDR < MAX_FDR & log2FC < -MIN_LFC)
+ # subset(OUT, peak_id == 'HA_vs_IgG_peak_2393')
+  OUT.up <- subset(OUT, FDR < MAX_FDR & log2FC_raw > MIN_LFC)
+  OUT.down <- subset(OUT, FDR < MAX_FDR & log2FC_raw < -MIN_LFC)
   OUT.sig <- rbind(OUT.up, OUT.down)
   writeExcel(
     OUT.sig,    
