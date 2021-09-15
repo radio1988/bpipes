@@ -10,15 +10,15 @@ rule chippeakanno:
         gtf=GTF,
         config='config/config.yaml'
     output:
-        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.full_anno.xlsx"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 16000
     threads:
         1
     log:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.full_anno.xlsx.log"
     benchmark:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx.benchmark"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.full_anno.xlsx.benchmark"
     conda:
         "../envs/chippeakanno.yaml"
     shell:
