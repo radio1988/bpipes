@@ -86,8 +86,8 @@ get_contrast <- function(contrast.df, i){
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args)==0) {
-	countFile <- "results/narrow_peaks_contrast_level/c1/HA-Ab1_vs_IgG_count.txt"
-	annoFile <- "results/narrow_peaks_contrast_level/c1/HA-Ab1_vs_IgG_clean.narrowPeak.anno.collapsed.xlsx"
+	countFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_count.txt"
+	annoFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_clean.broadPeak.full_anno.xlsx"
 	metaFile <- 'config/meta.csv'
 	contrastFile <- 'config/contrast.csv'
 	MAX_FDR <- 0.05
@@ -97,12 +97,12 @@ if (length(args)==0) {
    annoFile <- args[2]
    metaFile <- args[3]
    contrastFile <- args[4]
-   MAX_FDR <- args[5]
-   MIN_LFC <- args[6]
+   MAX_FDR <- as.numeric(args[5])
+   MIN_LFC <- as.numeric(args[6])
  }
 
- indfilter <- FALSE
- cookscutoff <- TRUE
+indfilter <- FALSE
+cookscutoff <- TRUE
 
 
 # Prep
@@ -115,7 +115,7 @@ colnames(df) <- gsub("results.clean_reads.", "", colnames(df))
 df[, 6:ncol(df)] <- sapply(df[, 6:ncol(df)], as.integer)
 
 anno <- readExcel(annoFile) # peak_id, etc.
-anno <- anno[, c('peak_id', 'seqnames', 'start', 'end', 'width')] ##todo: include more
+anno <- anno[, c('peak_id', 'seqnames', 'start', 'end', 'gene_name', 'gene_id', 'gene_type')] ##todo: include more
 
 meta <- read.csv(metaFile, comment.char='#')
 contrast.df <- read.csv(contrastFile, comment.char='#')

@@ -36,7 +36,7 @@ BIDING_RIGHT: 3000 # flanking TSS, for TSS ajacency peak count histogram
 CHIPPEAKANNO_MODE: both  # both, etc.
 
 # DB related
-MIN_LFC: 0.585
+MIN_LFC: 0
 MAX_FDR: 0.05
 
 

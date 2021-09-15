@@ -6,7 +6,8 @@ MAX_FDR=config['MAX_FDR']
 rule deseq2:
     input:
         COUNT="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_count.txt",
-        ANNO="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx"
+        ANNO="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx",
+        config='config/config.yaml' # update if this update
     output:
         "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast}.{contrast_name}.DESeq2.xlsx"
     resources:
@@ -22,5 +23,5 @@ rule deseq2:
     shell:
         """
         Rscript workflow/scripts/deseq2.R {input.COUNT} {input.ANNO} \
-        config/meta.csv config/contrast.csv MAX_FDR MIN_LFC &> {log}
+        config/meta.csv config/contrast.csv {MAX_FDR} {MIN_LFC} &> {log}
         """

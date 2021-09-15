@@ -7,7 +7,8 @@ CHIPPEAKANNO_MODE=config['CHIPPEAKANNO_MODE']
 rule chippeakanno:
     input:
         peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak",
-        gtf=GTF
+        gtf=GTF,
+        config='config/config.yaml'
     output:
         "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx"
     resources:
@@ -22,5 +23,6 @@ rule chippeakanno:
         "../envs/chippeakanno.yaml"
     shell:
         """
-        Rscript workflow/scripts/chippeakanno.R {input.peak} {input.gtf} CHIPPEAKANNO_MODE BIDING_LEFT BIDING_RIGHT &> {log}
+        Rscript workflow/scripts/chippeakanno.R {input.peak} {input.gtf} \
+        {CHIPPEAKANNO_MODE} {BIDING_LEFT} {BIDING_RIGHT} &> {log}
         """
