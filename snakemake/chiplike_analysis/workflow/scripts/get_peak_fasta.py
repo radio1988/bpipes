@@ -5,8 +5,9 @@ from Bio import SeqIO
 
 
 if len(sys.argv) != 4:
-    print("usage: python scripts/get_peak_fasta.py <genome> <input_clean.narrowPeak> <outout.fa>")
-    print("e.g.: python scripts/get_peak_fasta.py genome.fa contrast.narrowPeak  peak.fa")
+    print("usage: python scripts/get_peak_fasta.py <genome> <input.narrowPeak> <outout.fa>")
+    print("e.g.: python scripts/get_peak_fasta.py genome.fa contrast_clean.real.narrowPeak  peak.fa")
+    print("Getting the whole peak region, padded with N")
     exit("cmd error")
 else:
     print("cmd:", sys.argv)

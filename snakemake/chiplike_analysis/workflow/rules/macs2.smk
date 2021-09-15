@@ -2,6 +2,7 @@ BLACKLIST=config['BLACKLIST']
 MODE=config['MODE']
 GSIZE=config['GSIZE']
 SizeFile=config['SizeFile']
+MAX_FDR=config['MAX_FDR']
 
 
 
@@ -26,7 +27,7 @@ if DATA_TYPE == 'DamID' and 'MODE' == 'SITE':
         shell:
             """
              macs2 callpeak -t {input} \
-             -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q 0.05 --keep-dup all \
+             -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q {MAX_FDR} --keep-dup all \
              -n {wildcards.sample} --outdir results/narrow_peaks_sample_level -B &> {log}
             """
 
@@ -62,7 +63,7 @@ if DATA_TYPE == 'DamID' and 'MODE' == 'SITE':
         shell:
             """
             macs2 callpeak -t {input.treatment} -c {input.control} \
-            -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q 0.05 --keep-dup all \
+            -f BAM --nomodel --shift -60 --extsize 100 -g {GSIZE} -q {MAX_FDR} --keep-dup all \
             -n {params.contrast_name} --outdir results/narrow_peaks_contrast_level/{wildcards.contrast} -B &> {log}
             """
 elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
@@ -91,7 +92,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
         shell:
             """
              macs2 callpeak -t {input} \
-             -f {params.pse} -g {GSIZE} -q 0.05 --keep-dup all \
+             -f {params.pse} -g {GSIZE} -q {MAX_FDR} --keep-dup all \
              -n {wildcards.sample} --outdir {params.odir} -B &> {log}
             """
 
@@ -118,7 +119,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
         shell:
             """
              macs2 callpeak -t {input} \
-             -f {params.pse} -g {GSIZE} -q 0.05 --keep-dup all \
+             -f {params.pse} -g {GSIZE} -q {MAX_FDR} --keep-dup all \
              -n {wildcards.sample} --outdir {params.odir} \
              --broad --broad-cutoff 0.1 &> {log}
             """
@@ -158,7 +159,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
         shell:
             """
             macs2 callpeak -t {input.treatment} -c {input.control} \
-            -f {params.pse} -g {GSIZE} -q 0.05 --keep-dup all \
+            -f {params.pse} -g {GSIZE} -q {MAX_FDR} --keep-dup all \
             -n {params.contrast_name} --outdir results/narrow_peaks_contrast_level/{wildcards.contrast} -B &> {log}
             """
 
@@ -189,7 +190,7 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
         shell:
             """
             macs2 callpeak -t {input.treatment} -c {input.control} \
-            -f {params.pse} -g {GSIZE} -q 0.05 --keep-dup all \
+            -f {params.pse} -g {GSIZE} -q {MAX_FDR} --keep-dup all \
             -n {params.contrast_name} --outdir results/broad_peaks_contrast_level/{wildcards.contrast} \
             --broad --broad-cutoff 0.1 &> {log}
             """

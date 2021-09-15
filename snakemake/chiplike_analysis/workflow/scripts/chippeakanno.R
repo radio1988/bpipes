@@ -44,8 +44,8 @@ TxDb  # todo: save and load
 peaks.df <- read.table(peakFile, header = F)
 dim(peaks.df)
 colnames(peaks.df) <- c("seqnames", "start", "end", "peak_id", "score", "strand", "signalValue", "pValue", "qValue" )
-peaks.df <- subset(peaks.df, qValue> -log10(max_fdr))
-dim(peaks.df)
+# peaks.df <- subset(peaks.df, qValue> -log10(max_fdr)) # confusion in workflow, skipped
+# dim(peaks.df)
 peaks.gr <- makeGRangesFromDataFrame(peaks.df, keep.extra.columns = T)
 
 
@@ -74,7 +74,7 @@ if (CHIPPEAKANNO_MODE == 'both'){
       peak.anno.df.protein_coding <- subset(peak.anno.df, gene_type=='protein_coding')
 } else if(CHIPPEAKANNO_MODE == 'overlapping'){
       drops <- c('transcript_id', 'transcript_type', 'transcript_name', 'transcript_support_level', 'tag',
-            'havana_transcript', 'exon_number', 'exon_id', 'protein_id', 'ccdsid', 'ont', 'peak','extra')
+            'havana_transcript', 'exon_number', 'exon_id', 'protein_id', 'ccdsid', 'ont', 'peak','phase', 'score.1', 'level', 'extra')
       peak.anno.df <- peak.anno.df[, !(names(peak.anno.df) %in% drops)]
       # Delete duplicated rows (same peak, same gene) (keep the first)
       peak.anno.df$dedup_id <- paste(peak.anno.df$peak_id,peak.anno.df$gene_name)
