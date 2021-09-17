@@ -74,7 +74,8 @@ if (CHIPPEAKANNO_MODE == 'both'){
       peak.anno.df.protein_coding <- subset(peak.anno.df, gene_type=='protein_coding')
 } else if(CHIPPEAKANNO_MODE == 'overlapping'){
       drops <- c('transcript_id', 'transcript_type', 'transcript_name', 'transcript_support_level', 'tag',
-            'havana_transcript', 'exon_number', 'exon_id', 'protein_id', 'ccdsid', 'ont', 'peak','phase', 'score.1', 'level', 'extra')
+            'havana_transcript', 'exon_number', 'exon_id', 'protein_id', 'ccdsid', 'ont', 'peak','phase', 
+            'score.1', 'level', 'dedup_id', 'extra')
       peak.anno.df <- peak.anno.df[, !(names(peak.anno.df) %in% drops)]
       # Delete duplicated rows (same peak, same gene) (keep the first)
       peak.anno.df$dedup_id <- paste(peak.anno.df$peak_id,peak.anno.df$gene_name)

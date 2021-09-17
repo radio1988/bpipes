@@ -69,10 +69,10 @@ get_contrast <- function(contrast.df, i){
   name2s <- strsplit(name2, ";") [[1]]
   name1 <- gsub(";", ".", name1)
   name2 <- gsub(";", ".", name2)
-  
   name <- paste(name1, name2, sep = "_vs_") # HA.Ab1_vs_IgG
   name <- paste(contrast.df[i,1], name, sep = '.') # c1.HA.Ab1_vs_IgG
-  if (nchar(name) > 100) {name = contrast.df[i,1]} # c1
+
+  #if (nchar(name) > 100) {name = contrast.df[i,1]} # c1
   
   resultnames <- gsub("group", "", resultsNames(dds)) #  "group.HA.Ab1" "groupHA.Ab1"  "groupIgG"
   poss <- match(name1s, resultnames) # 2
@@ -96,6 +96,7 @@ if (length(args)==0) {
   realPeakFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_clean.real.broadPeak"
 	metaFile <- 'config/meta.csv'
 	contrastFile <- 'config/contrast.csv'
+  outputExcelFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG.clean.DESeq2.xlsx"
 	# MAX_FDR <- 0.05
 	# MIN_LFC <- 0
   }else{
@@ -104,6 +105,7 @@ if (length(args)==0) {
    realPeakFile <- args[3]
    metaFile <- args[4]
    contrastFile <- args[5]
+   outputExcelFile <- args[6]
    # MAX_FDR <- as.numeric(args[5])
    # MIN_LFC <- as.numeric(args[6])
  }
@@ -216,7 +218,7 @@ for (i in 1:dim(contrast.df)[1]){
   OUT <- merge(OUT, COUNT, by.x=1, by.y = 0, all.x=T)
   OUT <- merge(OUT, NormCount,  by.x=1, by.y = 0, all.x=T)
 
-  writeExcel(OUT,    file.path(odir, paste0(c$name, ".DESeq2.xlsx"))) 
+  writeExcel(OUT,   outputExcelFile) # "c1/HA_vs_IgG_clean.real.broadPeak"
   # "results/narrow_peaks_contrast_level/c1/c1.HA.Ab1_vs_IgG.DESeq2.xlsx"
  # subset(OUT, peak_id == 'HA_vs_IgG_peak_2393')
   OUT.up <- subset(OUT, log2FC_raw > 0) # for PullDown vs IgG
