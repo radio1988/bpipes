@@ -37,7 +37,7 @@ gene.gr.df <- as.data.frame(gene.gr)
 transcript.gr <- gtf.gr[gtf.gr$type=='transcript']
 TxDb <- makeTxDbFromGRanges(gtf.gr)
 TxDb.gr <- toGRanges(TxDb)
-TxDb  # todo: save and load
+TxDb  
 
 
 # read and filter peak
@@ -125,8 +125,10 @@ peak.anno.df.protein_coding.collapsed <- collapse_anno(peak.anno.df.protein_codi
 # Full talbe including unannotated
 full.collapsed.df <- merge(
                         peaks.df, 
-                        peak.anno.df.collapsed[, c(1, 13:ncol(peak.anno.df.collapsed))], # anno part, CHIPPEAKANNO_MODE, CALLER specific
+                        peak.anno.df.collapsed[, c(1, (ncol(peaks.df)+2):ncol(peak.anno.df.collapsed))], # anno part, CHIPPEAKANNO_MODE, CALLER specific
                         by= "peak_id", all.x=T)
+full.collapsed.df <- full.collapsed.df[, !(names(full.collapsed.df) %in% c("dedup_id","distance"))]
+
 
 WriteXLS(x = full.collapsed.df,
          ExcelFileName = paste(prefix, "full_anno.xlsx", sep = "."), 

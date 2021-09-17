@@ -304,8 +304,8 @@ def get_chippeakanno_outname(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak.full_anno.xlsx')
-        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak.full_anno.xlsx')
+        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak.final_anno.xlsx')
+        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak.final_anno.xlsx')
     return outnames
 
 
