@@ -51,13 +51,14 @@ peaks.gr <- makeGRangesFromDataFrame(peaks.df, keep.extra.columns = T)
 
 # transcript level annotation
 gr.anno <- annotatePeakInBatch(myPeakList = peaks.gr, 
-                               AnnotationData =  gene.gr, # transcript.gr, gene.gr, todo: check
+                               AnnotationData =  transcript.gr, # transcript.gr, gene.gr, todo: check
                                FeatureLocForDistance="TSS",
                                bindingRegion = bindingRegion,
                                output = CHIPPEAKANNO_MODE, # overlapping, nearestLocation, both
                                select = 'all',
                                ignore.strand = T)
 peak.anno.df <- data.frame(gr.anno)
+
 # select/drop columns (affects function collapse_anno) (to remove too much info in output)
 if (CHIPPEAKANNO_MODE == 'both'){
       drops <- c('shortestDistance')
@@ -84,14 +85,14 @@ if (CHIPPEAKANNO_MODE == 'both'){
 }
 
 
-WriteXLS(x = peak.anno.df,
-         ExcelFileName = paste(prefix, 'anno.WithDup.xlsx', sep = "."),
-         row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
-WriteXLS(x = peak.anno.df.protein_coding,
-         ExcelFileName = paste(prefix, 'anno.WithDup.protein_coding.xlsx', sep = "."),
-         row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
+# WriteXLS(x = peak.anno.df,
+#          ExcelFileName = paste(prefix, 'anno.WithDup.xlsx', sep = "."),
+#          row.names = F, SheetNames = 'sheet1', na = 'NA')  
+# WriteXLS(x = peak.anno.df.protein_coding,
+#          ExcelFileName = paste(prefix, 'anno.WithDup.protein_coding.xlsx', sep = "."),
+#          row.names = F, SheetNames = 'sheet1', na = 'NA')  
 
-# Collapse by peak_id (double check)
+# Collapse by peak_id 
 RM <- function(x) gsub(",.*", "", x)
 
 collapse_anno <- function(peak.anno.df, outname){
@@ -99,9 +100,9 @@ collapse_anno <- function(peak.anno.df, outname){
       peak.anno.df.collapsed <- peak.anno.df %>%
         group_by(peak_id) %>%
         summarise_each(funs(toString))
-      # not collapse seqnames, start, end, width, strand, conc ...
+
       if (CHIPPEAKANNO_MODE == 'both'){
-            peak.anno.df.collapsed <- data.frame(apply(peak.anno.df.collapsed[,1:12], 2, RM), 
+            peak.anno.df.collapsed <- data.frame(apply(peak.anno.df.collapsed[,1:12], 2, RM),       # not collapse seqnames, start, end, width, strand, conc ...
                                                  peak.anno.df.collapsed[,13:ncol(peak.anno.df.collapsed)])  # CHIPPEAKANNO_MODE, CALLER specific
       } else if(CHIPPEAKANNO_MODE == 'overlapping'){
             peak.anno.df.collapsed <- data.frame(apply(peak.anno.df.collapsed[,1:10], 2, RM), 
@@ -110,9 +111,9 @@ collapse_anno <- function(peak.anno.df, outname){
 
       print(outname)
       print(dim(peak.anno.df.collapsed))
-      WriteXLS(x = peak.anno.df.collapsed,
-               ExcelFileName = outname,
-               row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
+      # WriteXLS(x = peak.anno.df.collapsed,
+      #          ExcelFileName = outname,
+      #          row.names = F, SheetNames = 'sheet1', na = 'NA') 
       return(peak.anno.df.collapsed)
       }
 
@@ -127,9 +128,7 @@ full.collapsed.df <- merge(
                         peaks.df, 
                         peak.anno.df.collapsed[, c(1, (ncol(peaks.df)+2):ncol(peak.anno.df.collapsed))], # anno part, CHIPPEAKANNO_MODE, CALLER specific
                         by= "peak_id", all.x=T)
-full.collapsed.df <- full.collapsed.df[, !(names(full.collapsed.df) %in% c("dedup_id","distance"))]
-
-
+full.collapsed.df <- full.collapsed.df[, !(names(full.collapsed.df) %in% c("dedup_id","distance", 'peak', 'NA\\.', '\\.\\.\\.10'))]
 WriteXLS(x = full.collapsed.df,
          ExcelFileName = paste(prefix, "full_anno.xlsx", sep = "."), 
          row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
@@ -137,7 +136,7 @@ WriteXLS(x = full.collapsed.df,
 
 
 # Anno QC
-pdf(file.path(odir, 'anno_stats2.pdf'))
+pdf(file.path(odir, 'anno_stats.1.pdf'))
 barplot(table(gr.anno$insideFeature))
 dev.off()
 
@@ -165,7 +164,7 @@ aCR<-assignChromosomeRegion(peaks.gr,
                             proximal.promoter.cutoff	<- 3000,
                             immediate.downstream.cutoff	<- 1000, 
                             TxDb=TxDb)
-pdf(file.path(odir, 'anno_stats.pdf'))
+pdf(file.path(odir, 'anno_stats.2.pdf'))
 op <- par(mar=c(11,4,4,2)) # allows the names.arg below the barplot
 barplot(aCR$percentage, las=3)
 rm(op)
