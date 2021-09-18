@@ -34,7 +34,7 @@ from modules import parse_meta_contrast, get_treatment_bams_from_contrast, \
     get_meme_peak_outname_from_contrasts, get_meme_summit_outname_from_contrasts, get_meme_summit_split_outname_from_contrasts, \
     get_narrow_count_names_from_contrasts, get_broad_count_names_from_contrasts, \
     get_signalHeatmap_ContrastPeak_outname, get_corrHeatmap_peakCount_outname, \
-    get_chippeakanno_outname, get_cpm_filter_outname
+    get_chippeakanno_outname, get_cpm_filter_outname, get_enrichment_analysis_outname
 
 o=parse_meta_contrast(fmeta="config/meta.csv", fcontrast="config/contrast.csv") 
 
@@ -44,49 +44,88 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
         input:
             # qc
             fastqc="results/fastqc/multiqc_report.html", # not in main workflow, so list here
+
             multiqc_sorted_reads="results/sorted_reads_qc/multiqc_report.html",
+
             multiqc_clean_reads="results/clean_reads_qc/multiqc_report.html",
+
             chipqc1="results/clean_reads_qc/fingerprint.pdf",
             chipqc1s="results/sorted_reads_qc/fingerprint.pdf",
+
             chipqc2="results/clean_reads_qc/fragment_size.pdf", # test 
             chipqc2s="results/sorted_reads_qc/fragment_size.pdf", # test 
+
             chipqc3="results/clean_reads_qc/multiBamSummary.heatmap.pdf",
             chipqc4="results/clean_reads_qc/multiBamSummary.pca.pdf",
-            chipqc5=expand("results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
-            signalHeatmap_TSS="results/clean_reads_qc/signalHeatmap/clean.all_sample.TSS.signalHeatmap.pdf",
-            signalHeatmap_ContrastPeak=get_signalHeatmap_ContrastPeak_outname(contrasts=o.contrasts, o=o),
+
+            chipqc5=expand(
+                "results/clean_reads_qc/insert_size/{sample}.insert_size.pdf", sample=SAMPLES),
+
+            signalHeatmap_TSS="results/clean_reads_qc/signalHeatmap/"\
+                +"clean.all_sample.TSS.signalHeatmap.pdf",
+
+            signalHeatmap_ContrastPeak=get_signalHeatmap_ContrastPeak_outname(
+                contrasts=o.contrasts, o=o),
 
 
             # tracks
             tracks=expand("results/clean_reads_bigWig/{sample}.cpm.bw", sample=SAMPLES),
 
-            # peaks
-            clean_narrowpeak_sample_level=expand("results/narrow_peaks_sample_level/{sample}/{sample}_clean.narrowPeak", sample=SAMPLES),
-            macs2_sample_treat_pileup_bw=expand("results/narrow_peaks_sample_level/{sample}/{sample}_treat_pileup.bw", sample=SAMPLES),
+            # sample peaks
+            clean_narrowpeak_sample_level=expand(
+                "results/narrow_peaks_sample_level/{sample}/{sample}_clean.narrowPeak", 
+                sample=SAMPLES),
+
+            macs2_sample_treat_pileup_bw=expand(
+                "results/narrow_peaks_sample_level/{sample}/{sample}_treat_pileup.bw", 
+                sample=SAMPLES),
+
             # macs2_narrow_peak_count_sample = expand("results/narrow_peaks_sample_level/{sample}/{sample}.count.txt", sample=SAMPLES),
 
-            clean_narrowpeaks_contrast_level=get_narrowPeak_names_from_contrasts(contrasts=o.contrasts, o=o), 
-            macs2_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
-            macs2_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o),
-            macs2_narrow_peak_count_contrast = get_narrow_count_names_from_contrasts(contrasts=o.contrasts, o=o),
+            # contrast peaks
+            clean_narrowpeaks_contrast_level=get_narrowPeak_names_from_contrasts(
+                contrasts=o.contrasts, o=o), 
 
-            clean_broadpeak_sample_level=expand("results/broad_peaks_sample_level/{sample}/{sample}_clean.broadPeak", sample=SAMPLES),
-            clean_broadpeaks_contrast_level=get_broadPeak_names_from_contrasts(contrasts=o.contrasts, o=o), 
-            macs2_broad_peak_count_contrast = get_broad_count_names_from_contrasts(contrasts=o.contrasts, o=o),
+            macs2_contrast_treat_pileup_bw=get_treat_pileup_bw_names_from_contrasts(
+                contrasts=o.contrasts, o=o),
 
-            # for all peaks (narrow/broad)
+            macs2_contrast_control_lambda_bw=get_control_lambda_bw_names_from_contrasts(
+                contrasts=o.contrasts, o=o),
+
+            macs2_narrow_peak_count_contrast = get_narrow_count_names_from_contrasts(
+                contrasts=o.contrasts, o=o),
+
+            clean_broadpeak_sample_level=expand(
+                "results/broad_peaks_sample_level/{sample}/{sample}_clean.broadPeak", 
+                sample=SAMPLES),
+
+            clean_broadpeaks_contrast_level=get_broadPeak_names_from_contrasts(
+                contrasts=o.contrasts, o=o), 
+
+            macs2_broad_peak_count_contrast = get_broad_count_names_from_contrasts(
+                contrasts=o.contrasts, o=o),
+
+            # for all contrast peaks (narrow/broad)
             t_vs_c_real_peak=get_cpm_filter_outname(contrasts=o.contrasts, o=o),
+
             chippeakanno_real=get_chippeakanno_outname(contrasts=o.contrasts, o=o),
-            corrHeatmap_peakCount_clean=get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o),
+
+            corrHeatmap_peakCount_clean=get_corrHeatmap_peakCount_outname(
+                contrasts=o.contrasts, o=o),
+
+            enrichment_analysis=get_enrichment_analysis_outname(contrasts=o.contrasts, o=o),
 
             # # motifs narrow
             meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o), # narrow peak
-            meme_summit=get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
+           
+            meme_summit=get_meme_summit_outname_from_contrasts(
+                contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
             #meme_split=get_meme_summit_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, CHRS=config['CHRS'], o=o),
             # Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
             # save resources
             blacklist= "resources/"+os.path.split(BLACKLIST)[1]+".gz",
+
             gtf= "resources/"+os.path.split(GTF)[1]+".gz",
 
             dag="Workflow_DAG.svg"
@@ -107,6 +146,7 @@ include: 'rules/corrHeatmap_peakCount.smk'
 include: 'rules/t_vs_c_filter.smk'
 include: 'rules/chippeakanno.smk'
 include: 'rules/merge_tab_anno.smk'
+include: 'rules/enrichment_analysis.smk'
 include: 'rules/findmotif.smk'
 include: 'rules/snakemake_misc.smk'
 include: 'rules/save_resources.smk'

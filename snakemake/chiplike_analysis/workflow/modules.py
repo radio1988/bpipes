@@ -152,7 +152,8 @@ def get_treat_pileup_bw_names_from_contrasts(contrasts=["contrast1", "contrast2"
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     treat_pileup_bdg_names = []
     for contrast,name in zip(contrasts, contrast_names):
-        treat_pileup_bdg_names.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_treat_pileup.bw")
+        treat_pileup_bdg_names.append(
+            "results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_treat_pileup.bw")
     return treat_pileup_bdg_names
 
 def get_control_lambda_bdg_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
@@ -167,7 +168,8 @@ def get_control_lambda_bdg_names_from_contrasts(contrasts=["contrast1", "contras
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     control_lambda_bdg_names = []
     for contrast,name in zip(contrasts, contrast_names):
-        control_lambda_bdg_names.append("results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_control_lambda.bdg")
+        control_lambda_bdg_names.append(
+            "results/narrow_peaks_contrast_level/"+contrast+"/"+name+"_control_lambda.bdg")
     return control_lambda_bdg_names
 
 def get_control_lambda_bw_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
@@ -194,7 +196,8 @@ def get_narrow_count_names_from_contrasts(contrasts=["contrast1", "contrast2"], 
     return outnames
 
 
-def get_broad_count_names_from_contrasts(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj"):
+def get_broad_count_names_from_contrasts(contrasts=["contrast1", "contrast2"], 
+    o = "parse_meta_contrast_obj"):
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
@@ -209,15 +212,19 @@ def get_meme_peak_outname_from_contrasts(
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
     output example:
-    [narrow_peaks_contrast_level/contrast1/memechip.2000/G1_vs_ctrl.finished
+    [narrow_peaks_contrast_level/contrast1/memeSummit.2000/G1_vs_ctrl.finished
     ...
     ]
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/meme_clean.real_peaks/"+name+'.finished')
-        outnames.append("results/broad_peaks_contrast_level/"+contrast+"/meme_clean.real_peaks/"+name+'.finished')
+        outnames.append(
+            "results/narrow_peaks_contrast_level/"+contrast\
+            +"/meme_clean.real_peaks/"+name+'.finished')
+        outnames.append(
+            "results/broad_peaks_contrast_level/"+contrast\
+            +"/meme_clean.real_peaks/"+name+'.finished')
     return outnames
 
 
@@ -230,7 +237,7 @@ def get_meme_summit_outname_from_contrasts(
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
     output example:
-    [narrow_peaks_contrast_level/contrast1/memechip.2000/G1_vs_ctrl.finished
+    [narrow_peaks_contrast_level/contrast1/memeSummit.2000/G1_vs_ctrl.finished
     ...
     ]
     """
@@ -238,7 +245,9 @@ def get_meme_summit_outname_from_contrasts(
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
         for w in PEAK_WIDTH:
-            outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/memechip." + str(w) + "/" + name + '.finished') # broadpeak no summit
+            outnames.append(
+                "results/narrow_peaks_contrast_level/"+contrast\
+                +"/memeSummit." + str(w) + "/" + name + '.finished') # broadpeak no summit
     return outnames
 
 
@@ -252,7 +261,7 @@ def get_meme_summit_split_outname_from_contrasts(
 
     output example:
     [
-    narrow_peaks_contrast_level/contrast1/memechip_chr.100_chrX/G1_vs_ctrl.finished
+    narrow_peaks_contrast_level/contrast1/memeSummit_chr.100_chrX/G1_vs_ctrl.finished
     ...
     ]
     """
@@ -261,7 +270,9 @@ def get_meme_summit_split_outname_from_contrasts(
     for contrast,name in zip(contrasts, contrast_names):
         for w in PEAK_WIDTH:
             for chr in CHRS:
-                outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/memechip_chr." + str(w) + "_" + chr + '/' + name + '.finished')
+                outnames.append(
+                    "results/narrow_peaks_contrast_level/"+contrast\
+                    +"/memeSummit_chr." + str(w) + "_" + chr + '/' + name + '.finished')
     return outnames
 
 
@@ -275,8 +286,10 @@ def get_signalHeatmap_ContrastPeak_outname(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak.pdf')
-        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak.pdf')
+        outnames.append(
+            'results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak.pdf')
+        outnames.append(
+            'results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak.pdf')
     return outnames
 
 def get_corrHeatmap_peakCount_outname(
@@ -289,8 +302,10 @@ def get_corrHeatmap_peakCount_outname(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
-        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
+        outnames.append(
+            'results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
+        outnames.append(
+            'results/broad_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
     return outnames
 
 
@@ -304,8 +319,12 @@ def get_chippeakanno_outname(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak.final_anno.xlsx')
-        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak.final_anno.xlsx')
+        outnames.append(
+            'results/narrow_peaks_contrast_level/'+contrast\
+            +'/'+name+'_clean.real.narrowPeak.final_anno.xlsx')
+        outnames.append(
+            'results/broad_peaks_contrast_level/'+contrast\
+            +'/'+name+'_clean.real.broadPeak.final_anno.xlsx')
     return outnames
 
 
@@ -320,9 +339,30 @@ def get_cpm_filter_outname(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak')
-        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak')
+        outnames.append(
+            'results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak')
+        outnames.append(
+            'results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak')
     return outnames
 
+
+def get_enrichment_analysis_outname(
+    contrasts=["contrast1", "contrast2"], 
+    o = "parse_meta_contrast_obj"):
+    """
+    output example:
+    "results/{narrowbroad}_peaks_contrast_level/" \
+                 + "{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.enrichment.finished"
+    """
+    contrast_names = map(o.contrast2contrast_name.get, contrasts)
+    outnames = []
+    for contrast,name in zip(contrasts, contrast_names):
+        outnames.append(
+            'results/narrow_peaks_contrast_level/'+contrast+\
+            '/'+name+'_clean.real.narrowPeak.enrichment.finished')
+        outnames.append(
+            'results/broad_peaks_contrast_level/'+contrast+\
+            '/'+name+'_clean.real.broadPeak.enrichment.finished')
+    return outnames
 
     

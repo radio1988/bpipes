@@ -35,6 +35,9 @@ BIDING_LEFT: 3000
 BIDING_RIGHT: 3000 # flanking TSS, for TSS ajacency peak count histogram
 CHIPPEAKANNO_MODE: overlapping  # overlapping, both (overlapping and nearestLocation), just use overlapping, both mode buggy
 
+# Enrichment Analysis
+ORG_EG_DB: org.Mm.eg.db # org.Mm.eg.db, org.Hs.eg.db
+
 # DB related
 MIN_LFC: 0
 MAX_FDR: 0.05
