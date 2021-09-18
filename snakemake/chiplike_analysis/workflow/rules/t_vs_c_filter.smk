@@ -43,10 +43,10 @@ rule t_vs_c_summit_filter:
     output called "real" peaks
     '''
     input:
-        PEAK_UP="results/narrow_peaks_contrast_level/"\
-            +"{contrast}/{contrast_name}_clean.real.narrowPeak",
         SUMMIT="results/narrow_peaks_contrast_level/"\
              +"{contrast}/{contrast_name}_summits.bed",
+        PEAK_UP="results/narrow_peaks_contrast_level/"\
+            +"{contrast}/{contrast_name}_clean.real.narrowPeak",
     output:
         "results/narrow_peaks_contrast_level/"\
             +"{contrast}/{contrast_name}_summits.real.bed"

@@ -2,6 +2,7 @@
 # output Any LFC_RAW > 0
 # Use colSum(COUNT) as SizeFactor
 # Pvalue not very useful, LFC_RAW good for this step
+# todo: Each Treatment must > mean(IgG)?
 
 
 library(DESeq2)

@@ -43,7 +43,6 @@ MAX_FDR: 0.05
 # MEME related
 MEME_DB: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/motifs/hocomoco/HOCOMOCOv11_full_MOUSE_mono_meme_format.meme
 PEAK_WIDTH: # center in peak summit
-    - 500
     - 1000
     - 2000
 CHRS:
