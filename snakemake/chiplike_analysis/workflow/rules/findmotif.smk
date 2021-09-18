@@ -76,13 +76,13 @@ rule meme_neibour:
         neg=GENOME,
         db=MEME_DB,
     output: 
-        touch("results/narrow_peaks_contrast_level/{contrast}/memechip.{width}/{contrast_name}.finished")
+        touch("results/narrow_peaks_contrast_level/{contrast}/memeSummit.{width}/{contrast_name}.finished")
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/memechip.{width}/{contrast_name}.log"
+        "log/narrow_peaks_contrast_level/{contrast}/memeSummit.{width}/{contrast_name}.log"
     benchmark:
-        "log/narrow_peaks_contrast_level/{contrast}/memechip.{width}/{contrast_name}.benchmark"
+        "log/narrow_peaks_contrast_level/{contrast}/memeSummit.{width}/{contrast_name}.benchmark"
     params:
-        odir="results/narrow_peaks_contrast_level/{contrast}/memechip.{width}/",
+        odir="results/narrow_peaks_contrast_level/{contrast}/memeSummit.{width}/",
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:
@@ -122,13 +122,13 @@ rule meme_neibour_chr_split:
         neg=GENOME,
         db=MEME_DB,
     output: 
-        touch("results/narrow_peaks_contrast_level/{contrast}/memechip_chr.{width}_{chr}/{contrast_name}.finished")
+        touch("results/narrow_peaks_contrast_level/{contrast}/memeSummit_chr.{width}_{chr}/{contrast_name}.finished")
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/memechip_chr.{width}_{chr}/{contrast_name}.log"
+        "log/narrow_peaks_contrast_level/{contrast}/memeSummit_chr.{width}_{chr}/{contrast_name}.log"
     benchmark:
-        "log/narrow_peaks_contrast_level/{contrast}/memechip_chr.{width}_{chr}/{contrast_name}.benchmark"
+        "log/narrow_peaks_contrast_level/{contrast}/memeSummit_chr.{width}_{chr}/{contrast_name}.benchmark"
     params:
-        odir="results/narrow_peaks_contrast_level/{contrast}/memechip_chr.{width}_{chr}/",
+        odir="results/narrow_peaks_contrast_level/{contrast}/memeSummit_chr.{width}_{chr}/",
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:
