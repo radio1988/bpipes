@@ -1,6 +1,7 @@
 todo: 
 - merge peaks then DESeq2
 - t_vs_c step has to take 1 rep only
+- MEME summit 
 
 Notes:
 - peaks: called by macs2, narrow, broad

@@ -5,7 +5,7 @@ from Bio import SeqIO
 
 
 if len(sys.argv) != 5:
-    print("usage: python scripts/get_summit_neighbour.py <genome> <input.summit.bed> <width-around_summit> <outout.fa>")
+    print("usage: python scripts/get_summit_neighbour.py <genome> <input.summit.bed> <width-of-target-region> <outout.fa>")
     print("e.g.: python scripts/get_summit_neighbour.py /project/umw_mccb/genome/Homo_sapiens/ucsc_hg38_primary/hg38.primary.fa macs2_DamID_contrast/contrast1/G1_vs_ctrl_summits.bed 1000 macs2_DamID_contrast/contrast1/G1_vs_ctrl_summits.1000.fa")
     exit("cmd error")
 else:

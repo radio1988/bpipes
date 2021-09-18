@@ -28,7 +28,7 @@ signalHeatmapWidth: 3000 # upsteam/downstream of TSS/PeakCenter for plotHeatmap
 
 
 # Peak caller
-PEAKCALLER: narrow # narrow, broad, not developed yet
+PEAKCALLER: narrow # narrow, broad, not implemented yet
 
 # ChIPPeakAnno related
 BIDING_LEFT: 3000
@@ -43,18 +43,12 @@ MAX_FDR: 0.05
 # MEME related
 MEME_DB: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/motifs/hocomoco/HOCOMOCOv11_full_MOUSE_mono_meme_format.meme
 PEAK_WIDTH: # center in peak summit
-    - 100
     - 500
+    - 1000
     - 2000
 CHRS:
     - chr1
     - chr2
-    - chr3
-    - chr4
-    - chr5
-    - chr6
-    - chr10
-    - chr11
     - chrM
     - chrX
     - chrY

@@ -1,4 +1,8 @@
 rule create_dag:
+    input:
+        'config/config.yaml',
+        'config/contrast.csv',
+        'config/meta.csv'
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000 
     threads:

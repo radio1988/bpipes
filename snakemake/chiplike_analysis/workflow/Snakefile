@@ -81,7 +81,7 @@ if DATA_TYPE == "ChIP" and MODE in ['PE', 'SE']:
 
             # # motifs narrow
             meme_peak=get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o), # narrow peak
-            #meme_summit=get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
+            meme_summit=get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o),
             #meme_split=get_meme_summit_split_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, CHRS=config['CHRS'], o=o),
             # Learn: Good trick to use tagets input to do contrast2contrast_name and more
 

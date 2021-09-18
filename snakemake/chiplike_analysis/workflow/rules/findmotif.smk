@@ -2,6 +2,8 @@ MEME_DB=config['MEME_DB']
 
 ruleorder: get_peak_fasta_contrast_level > meme_peak_contrast_level > get_summit_neighbour > split_fa_by_chr > meme_neibour > meme_neibour_chr_split
 
+## PEAK REGION ##
+
 rule get_peak_fasta_contrast_level:
     input:
         peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak",
@@ -46,16 +48,17 @@ rule meme_peak_contrast_level:
         """
 
 
+## SUMMIT REGION ##
 
 rule get_summit_neighbour:
 # todo: filter blacklist, cpm filter
     input:
-        summit="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.bed",
+        summit="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.bed",
         genome=GENOME
     output:
-        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.{width}.fa"
+        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.{width}.fa"
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.{width}.fa.log"
+        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.{width}.fa.log"
     threads:
         1
     resources:
@@ -67,27 +70,9 @@ rule get_summit_neighbour:
         python workflow/scripts/get_summit_neighbour.py {input.genome} {input.summit} {wildcards.width} {output} &> {log}
         """
 
-rule split_fa_by_chr:
-    input:
-        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.{width}.fa"
-    output:
-        "results/narrow_peaks_contrast_level/{contrast}/by_chr/{contrast_name}_summits.{width}.{chr}.fa"
-    log:
-        "log/narrow_peaks_contrast_level/{contrast}/by_chr/{contrast_name}_summits.{width}.{chr}.fa.log"
-    threads:
-        1
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 1000
-    conda:
-        "../envs/chiplike.yaml"
-    shell:
-        """
-        grep -A 1 '>{wildcards.chr}:' {input} > {output} 2> {log}
-        """
-
 rule meme_neibour:
     input: 
-        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.{width}.fa",
+        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.{width}.fa",
         neg=GENOME,
         db=MEME_DB,
     output: 
@@ -108,6 +93,28 @@ rule meme_neibour:
         """
         meme-chip -oc {params.odir} -meme-p {threads} -db {input.db} {input.fasta} &> {log}
         """
+
+
+## SUMMIT REGION BY CHR ##
+
+rule split_fa_by_chr:
+    input:
+        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.{width}.fa"
+    output:
+        "results/narrow_peaks_contrast_level/{contrast}/by_chr/{contrast_name}_summits.real.{width}.{chr}.fa"
+    log:
+        "log/narrow_peaks_contrast_level/{contrast}/by_chr/{contrast_name}_summits.real.{width}.{chr}.fa.log"
+    threads:
+        1
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000
+    conda:
+        "../envs/chiplike.yaml"
+    shell:
+        """
+        grep -A 1 '>{wildcards.chr}:' {input} > {output} 2> {log}
+        """
+
 
 rule meme_neibour_chr_split:
     input: 
@@ -132,4 +139,3 @@ rule meme_neibour_chr_split:
         """
         meme-chip -oc {params.odir} -meme-p {threads} -db {input.db} {input.fasta} &> {log}
         """
-        

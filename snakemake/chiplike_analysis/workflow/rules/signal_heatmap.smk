@@ -70,9 +70,9 @@ rule signalHeatmap_TSS:
 rule signalHeatmapMatrix_ContrastPeak:
     input:
         BWS=expand("results/clean_reads_bigWig/{sample}.cpm.bw", sample=SAMPLES),
-        peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak",
+        peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak",
     output:
-        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.mat.gz"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.mat.gz"
     params:
         a=signalHeatmapWidth, # downstream
         b=signalHeatmapWidth  # upstream
@@ -81,9 +81,9 @@ rule signalHeatmapMatrix_ContrastPeak:
     threads:
         4
     log:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.mat.gz.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.mat.gz.log"
     benchmark:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.mat.gz.benchmark"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.mat.gz.benchmark"
     conda:
         "../envs/deeptools.yaml"
     shell:
@@ -98,17 +98,17 @@ rule signalHeatmapMatrix_ContrastPeak:
 
 rule signalHeatmap_ContrastPeak:
     input:
-        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.mat.gz"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.mat.gz"
     output:
-        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.pdf"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.pdf"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 64000
     threads:
         1
     log:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.pdf.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.pdf.log"
     benchmark:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.pdf.benchmark"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.pdf.benchmark"
     conda:
         "../envs/deeptools.yaml"
     shell:

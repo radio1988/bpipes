@@ -238,7 +238,7 @@ def get_meme_summit_outname_from_contrasts(
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
         for w in PEAK_WIDTH:
-            outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/memechip." + str(w) + "/" + name + '.finished')
+            outnames.append("results/narrow_peaks_contrast_level/"+contrast+"/memechip." + str(w) + "/" + name + '.finished') # broadpeak no summit
     return outnames
 
 
@@ -270,13 +270,13 @@ def get_signalHeatmap_ContrastPeak_outname(
     o = "parse_meta_contrast_obj"):
     """
     output example:
-    "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.pdf"
+    "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.pdf"
     """
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.narrowPeak.pdf')
-        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.broadPeak.pdf')
+        outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak.pdf')
+        outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak.pdf')
     return outnames
 
 def get_corrHeatmap_peakCount_outname(
