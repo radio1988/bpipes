@@ -137,8 +137,8 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
             control=lambda wildcards: get_control_bams_from_contrast(contrast=wildcards.contrast, o=o),
         output:
             # lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast)
-            "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_peaks.narrowPeak", # e.g. "narrow_peaks_contrast_level/contrast1/G1_vs_ctrl_peaks.narrowPeak"
-            "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.bed", # for narrowPeak
+            temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_peaks.narrowPeak"), # e.g. "narrow_peaks_contrast_level/contrast1/G1_vs_ctrl_peaks.narrowPeak"
+            temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.bed"), # for narrowPeak
             temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_treat_pileup.bdg"),
             temp("results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_control_lambda.bdg")
         params:
@@ -168,10 +168,10 @@ elif (DATA_TYPE == 'DamID' or DATA_TYPE=='ChIP') and MODE in ['PE', 'SE']:
             treatment=lambda wildcards: get_treatment_bams_from_contrast(contrast=wildcards.contrast, o=o),
             control=lambda wildcards: get_control_bams_from_contrast(contrast=wildcards.contrast, o=o),
         output:
-            "results/broad_peaks_contrast_level/{contrast}/{contrast_name}_peaks.broadPeak", 
+            temp("results/broad_peaks_contrast_level/{contrast}/{contrast_name}_peaks.broadPeak"), 
             # e.g. "broad_peaks_contrast_level/contrast1/G1_vs_ctrl_peaks.broadPeak"
-            "results/broad_peaks_contrast_level/{contrast}/{contrast_name}_peaks.gappedPeak", 
-            "results/broad_peaks_contrast_level/{contrast}/{contrast_name}_peaks.xls", 
+            temp("results/broad_peaks_contrast_level/{contrast}/{contrast_name}_peaks.gappedPeak"), 
+            temp("results/broad_peaks_contrast_level/{contrast}/{contrast_name}_peaks.xls"), 
         params:
             contrast_name=lambda wildcards: get_contrast_name_from_contrast(contrast=wildcards.contrast, o=o),
             pse='BAMPE'
