@@ -54,6 +54,7 @@ calculateCPM <- function(counts) {
   return(t(t(x)*1e6/colSums(x)))
 }
 
+
 clean_name <- function(name){
   # group names in contrast
   name <- gsub(" ", "", name)
@@ -62,22 +63,25 @@ clean_name <- function(name){
   return (name)
 }
 
+read_csv <- function(fname, sep=','){
+  df <- read.csv(fname, comment.char='#', sep=sep)
+  df <- df[,colSums(is.na(df))<nrow(df)]  # remove columns with all NA
+  df <- data.frame(lapply(df, clean_name))
+  return(df)
+}
+
 get_contrast <- function(contrast.df, i){
   # get names
   name1 <- clean_name(contrast.df[i,2])
   name2 <- clean_name(contrast.df[i,3])
-  name1s <- strsplit(name1, ";") [[1]] # A;B ready
-  name2s <- strsplit(name2, ";") [[1]]
-  name1 <- gsub(";", ".", name1)
-  name2 <- gsub(";", ".", name2)
   name <- paste(name1, name2, sep = "_vs_") # HA.Ab1_vs_IgG
-  name <- paste(contrast.df[i,1], name, sep = '.') # c1.HA.Ab1_vs_IgG
+#  name <- paste(contrast.df[i,1], name, sep = '.') # c1.HA.Ab1_vs_IgG
 
   #if (nchar(name) > 100) {name = contrast.df[i,1]} # c1
   
   resultnames <- gsub("group", "", resultsNames(dds)) #  "group.HA.Ab1" "groupHA.Ab1"  "groupIgG"
-  poss <- match(name1s, resultnames) # 2
-  negs <- match(name2s, resultnames) # 3
+  poss <- match(name1, resultnames) # 2
+  negs <- match(name2, resultnames) # 3
   contrast <- rep(0, length(resultsNames(dds))) # 0, 0, 0
   contrast[poss] <- 1/length(poss)
   contrast[negs] <- -1/length(negs) # 0, 1, -1; or 0, 1/2, 1/2, -1/2, -1/2 if ; used
@@ -91,24 +95,23 @@ get_contrast <- function(contrast.df, i){
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args)==0) {
-	countFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_count.txt"
-	#annoFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_clean.broadPeak.full_anno.xlsx"
-  peakFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_clean.broadPeak"
-  realPeakFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_clean.real.broadPeak"
+	countFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_count.txt"
+  peakFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.narrowPeak"
+  outPeakFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.real.narrowPeak"
 	metaFile <- 'config/meta.csv'
 	contrastFile <- 'config/contrast.csv'
-  outputExcelFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG.clean.DESeq2.xlsx"
-	# MAX_FDR <- 0.05
-	# MIN_LFC <- 0
+  contrast_name <- 'K4me3-KO'
+  outputExcelFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.t_vs_c.xlsx"
+  SizeFactorFile <- "results/clean_reads_qc/stats/reads_mapped.txt"
   }else{
    countFile <- args[1]
    peakFile <- args[2]
-   realPeakFile <- args[3]
+   outPeakFile <- args[3]
    metaFile <- args[4]
    contrastFile <- args[5]
-   outputExcelFile <- args[6]
-   # MAX_FDR <- as.numeric(args[5])
-   # MIN_LFC <- as.numeric(args[6])
+   contrast_name <- args[6]
+   outputExcelFile <- args[7]
+   SizeFactorFile <- args[8]
  }
 
 indfilter <- FALSE
@@ -122,32 +125,43 @@ df 	<- 	read.table(countFile, sep="\t", header=TRUE,
  comment.char = '#', row.names = 1)
 colnames(df) <- gsub("\\.bam$", "", colnames(df))
 colnames(df) <- gsub("results.clean_reads.", "", colnames(df))
+print(head(df))
+print(dim(df))
 df[, 6:ncol(df)] <- sapply(df[, 6:ncol(df)], as.integer)
 
-# anno <- readExcel(annoFile) # peak_id, etc.
-# anno <- anno[, c('peak_id', 'seqnames', 'start', 'end', 'gene_name', 'gene_id', 'gene_type')] ##todo: include more
-
 peaks <- read.table(peakFile) # V4 is peak_id
+print(head(peaks))
 
-meta <- read.csv(metaFile, comment.char='#')
-contrast.df <- read.csv(contrastFile, comment.char='#')
+meta <- read_csv(metaFile)
+print(meta)
 
+contrast.df <- read_csv(contrastFile)
+print(contrast.df)
+
+contrast_name <- clean_name(contrast_name)
 
 # Filter
-df <- df_filter(df, min_rowsum=10, min_colsum=2e4)
+# df <- df_filter(df, min_rowsum=10, min_colsum=2e4)
 
 pdf(file.path(odir, 'lib_size.pdf'))
-boxplot(log10(df[, 6:ncol(df)]+1), las=2, main = "library size after filtering")
+boxplot(
+  log10(df[, 6:ncol(df)]+1), 
+  las=2, 
+  main = "library size after filtering"
+  )
 dev.off()
 
 # COUNT.xlsx, CPM.xlsx
 COUNT <- data.frame(df[, 6:ncol(df)])
 colnames(COUNT) = paste0(colnames(COUNT), '_COUNT')
+print(head(COUNT))
 # COUNT.out <- merge(anno, COUNT, by.x=1, by.y=0, all.y=T, sort=F)
 # writeExcel(COUNT, file.path(odir, "COUNT.xlsx"))
 
 CPM <- calculateCPM(df[, 6:ncol(df)])
 colnames(CPM) = paste0(colnames(CPM), '_CPM')
+CPM <- round(CPM,1)
+print(head(CPM))
 # CPM.out <-  merge(anno, CPM, by.x=1, by.y=0, all.y=T, sort=F)
 # writeExcel(CPM,    file.path(odir, "CPM.xlsx"))
 
@@ -156,12 +170,14 @@ colnames(CPM) = paste0(colnames(CPM), '_CPM')
 # DESeq2
 ## design
 meta <- meta[match(colnames(df[, 6:ncol(df)]), meta$sample), ]
+print(meta)
 
 coldata <- data.frame(row.names=colnames(df[, 6:ncol(df)]), 
   sample=factor(meta$sample),
   group=factor(meta$group),
   batch=factor(meta$batch)
   )
+print(coldata)
 
 writeLines(capture.output(coldata), 
   file.path(odir,"design.txt"))
@@ -181,7 +197,15 @@ if (length(levels(meta$batch)) > 1){
  # !!! unique for ChIPSeq (PullDown vs IgG)
  # If use default, will assume overall binding profile same in PullDown and IgG, 
  # make pos (+LFC) to neg (-LFC)
-sizeFactors(dds) <- colSums(COUNT) / min(colSums(COUNT))
+
+# Size factor
+sf <- read_csv(SizeFactorFile, sep='\t')
+sf$count <- as.numeric(as.character(sf$count))
+print(sf )
+colnames(dds)
+
+sf <- sf[match(colnames(dds),sf$file ), ]
+sizeFactors(dds) <- sf$count / min(sf$count)
 writeLines(capture.output(sizeFactors(dds)), 
   file.path(odir,"size_factor.txt"))
 
@@ -193,47 +217,53 @@ colnames(NormCount) = paste0(colnames(NormCount), '_Norm')
 
 
 ## contrast
-for (i in 1:dim(contrast.df)[1]){
-  c = get_contrast(contrast.df, i)
-  
-  res.lfc <- lfcShrink(
-    dds, 
-    contrast = c$contrast, 
-    type = 'ashr') 
+i = which(contrast.df$type == contrast_name)
+i = i[1]
 
-  res.p <- results(
-    dds, 
-    contrast = c$contrast, 
-    independentFilter=indfilter, 
-    cooksCutoff=cookscutoff) 
+c = get_contrast(contrast.df, i)
+print(c)
 
-  RES <- data.frame(
-    peak_id = row.names(res.lfc), 
-    log2FC_shrinked = res.lfc$log2FoldChange, 
-    log2FC_raw = res.p$log2FoldChange, 
-    pvalue = res.p$pvalue,
-    FDR = res.p$padj
-    )
+if (sum(c$contrast != 0) < 2){
+  stop("less than 2 groups in contrast, maybe due to filtering")
+}
 
-  OUT <- merge(RES, CPM,by.x=1, by.y = 0, all.x=T)
-  OUT <- merge(OUT, COUNT, by.x=1, by.y = 0, all.x=T)
-  OUT <- merge(OUT, NormCount,  by.x=1, by.y = 0, all.x=T)
+res.lfc <- lfcShrink(
+  dds, 
+  contrast = c$contrast, 
+  type = 'ashr') 
 
-  writeExcel(OUT,   outputExcelFile) # "c1/HA_vs_IgG_clean.real.broadPeak"
-  # "results/narrow_peaks_contrast_level/c1/c1.HA.Ab1_vs_IgG.DESeq2.xlsx"
- # subset(OUT, peak_id == 'HA_vs_IgG_peak_2393')
-  OUT.up <- subset(OUT, log2FC_raw > 0) # for PullDown vs IgG
-  # OUT.down <- subset(OUT, FDR < MAX_FDR & log2FC_raw < -MIN_LFC)
-  # OUT.sig <- rbind(OUT.up, OUT.down)
-  # writeExcel(
-  #   OUT.up,    
-  #   file.path(odir, paste0(c$name,".DESeq2.", ".up.xlsx"))) 
-  peaks.up <- peaks[peaks[,4] %in% OUT.up$peak_id,]
-  write.table(peaks.up, realPeakFile, sep='\t', row.names=F, col.names=F, quote=F)
-  peaks.down <- peaks[!peaks[,4] %in% OUT.up$peak_id,]
-  write.table(peaks.down, paste0(realPeakFile, '.down'), sep='\t', row.names=F, col.names=F, quote=F)
+res.p <- results(
+  dds, 
+  contrast = c$contrast, 
+  independentFilter=indfilter, 
+  cooksCutoff=cookscutoff) 
 
-} 
+RES <- data.frame(
+  peak_id = row.names(res.lfc), 
+  log2FC_shrinked = res.lfc$log2FoldChange, 
+  log2FC_raw = res.p$log2FoldChange, 
+  pvalue = res.p$pvalue,
+  FDR = res.p$padj
+  )
+
+OUT <- merge(RES, CPM,by.x=1, by.y = 0, all.x=T)
+OUT <- merge(OUT, COUNT, by.x=1, by.y = 0, all.x=T)
+OUT <- merge(OUT, NormCount,  by.x=1, by.y = 0, all.x=T)
+
+writeExcel(OUT,   outputExcelFile) # "c1/HA_vs_IgG_clean.real.broadPeak"
+# "results/narrow_peaks_contrast_level/c1/c1.HA.Ab1_vs_IgG.DESeq2.xlsx"
+# subset(OUT, peak_id == 'HA_vs_IgG_peak_2393')
+OUT.up <- subset(OUT, log2FC_raw > 0) # for PullDown vs IgG
+# OUT.down <- subset(OUT, FDR < MAX_FDR & log2FC_raw < -MIN_LFC)
+# OUT.sig <- rbind(OUT.up, OUT.down)
+# writeExcel(
+#   OUT.up,    
+#   file.path(odir, paste0(c$name,".DESeq2.", ".up.xlsx"))) 
+peaks.up <- peaks[peaks[,4] %in% OUT.up$peak_id,]
+write.table(peaks.up, outPeakFile, sep='\t', row.names=F, col.names=F, quote=F)
+peaks.down <- peaks[!peaks[,4] %in% OUT.up$peak_id,]
+write.table(peaks.down, paste0(outPeakFile, '.down'), sep='\t', row.names=F, col.names=F, quote=F)
+
 
 
 

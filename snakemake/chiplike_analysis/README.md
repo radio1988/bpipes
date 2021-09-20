@@ -4,6 +4,7 @@ todo:
 - MEME summit 
 
 Notes:
+- sample names [a-Z0-9_.] only
 - peaks: called by macs2, narrow, broad
 - clean_peaks: filtered with blacklist
 - clean.real.peaks: filtered with CPM, Pulldown > IgG

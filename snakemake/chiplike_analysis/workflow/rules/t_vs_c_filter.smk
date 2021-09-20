@@ -1,6 +1,32 @@
 MIN_LFC=config['MIN_LFC']
 MAX_FDR=config['MAX_FDR']
+SAMPLES=config['SAMPLES']
 
+rule get_size_factor:
+    '''
+    set size factor porportional to reads mapped for each lib
+    reads in peaks not good for inputs, especially for Cut and tag (low background)
+    '''
+    input:
+        expand("results/clean_reads_qc/stats/{sample}.stats.txt", sample=SAMPLES)
+    output:
+        "results/clean_reads_qc/stats/reads_mapped.txt"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000
+    threads:
+        1
+    log:
+        "log/clean_reads_qc/stats/reads_mapped.log"
+    shell:
+        '''
+        echo -e "file\tcount" > {output}
+        grep "reads mapped:" {input} | \
+        sed "s/.stats.txt:SN//" | \
+        sed "s/reads mapped://"| \
+        sed 's/results\/clean_reads_qc\/stats\///' |\
+        sed "s/\t\t/\t/g" \
+        >> {output} 2> {log}
+        '''
 
 rule t_vs_c_peak_filter:
     '''
@@ -12,6 +38,7 @@ rule t_vs_c_peak_filter:
              +"{contrast}/{contrast_name}_count.txt",
         PEAK="results/{narrowbroad}_peaks_contrast_level/"\
              +"{contrast}/{contrast_name}_clean.{narrowbroad}Peak",
+        SizeFactor="results/clean_reads_qc/stats/reads_mapped.txt"
     output:
         PEAK_UP="results/{narrowbroad}_peaks_contrast_level/"\
                 +"{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak",
@@ -32,7 +59,7 @@ rule t_vs_c_peak_filter:
     shell:
         """
         Rscript workflow/scripts/t_vs_c_filter.R {input.COUNT} {input.PEAK} {output.PEAK_UP} \
-        config/meta.csv config/contrast.csv {output.TAB} &> {log}
+        config/meta.csv config/contrast.csv {wildcards.contrast} {output.TAB} {input.SizeFactor}  &> {log}
         """
 
 
