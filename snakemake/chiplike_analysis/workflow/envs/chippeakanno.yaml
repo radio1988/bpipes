@@ -8,6 +8,7 @@ dependencies:
   - r-base=4.0.2
   - r-devtools
   - r-dplyr
+  - r-biocmanager 
   # # new
   # - r-plyr
   # - r-gdata

@@ -16,13 +16,13 @@ if (length(args)==0) {
 
 # packages
 if (!requireNamespace("BiocManager", quietly = TRUE))
-install.packages("BiocManager")
+install.packages("BiocManager", repos='http://cran.us.r-project.org')
 
 if (!requireNamespace(org_eg_eb, quietly = TRUE))
-BiocManager::install(org_eg_eb)
+BiocManager::install(org_eg_eb, update = FALSE, ask = FALSE)
 
 if (!requireNamespace("KEGG.db", quietly = TRUE))
-BiocManager::install("KEGG.db")
+BiocManager::install("KEGG.db", update = FALSE, ask = FALSE)
 
 
 library(WriteXLS)
@@ -51,6 +51,7 @@ writeExcel <- function(df, name){
 odir <- dirname(peakAnnoFile)
 peak.anno.df <- readExcel(peakAnnoFile)
 keys <- unique(unlist(strsplit(peak.anno.df$gene_name, ", ")))
+write.table(keys, file.path(odir, 'genes.txt'), quote=F, row.names=F, col.names=F)
 
 ## GO
 print(org_eg_eb)
