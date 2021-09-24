@@ -31,8 +31,8 @@ signalHeatmapWidth: 3000 # upsteam/downstream of TSS/PeakCenter for plotHeatmap
 PEAKCALLER: narrow # narrow, broad, not implemented yet
 
 # ChIPPeakAnno related
-BIDING_LEFT: 3000
-BIDING_RIGHT: 3000 # flanking TSS, for TSS ajacency peak count histogram
+BIDING_LEFT: 5000
+BIDING_RIGHT: 5000 # flanking TSS, for TSS ajacency peak count histogram
 CHIPPEAKANNO_MODE: overlapping  # overlapping, both (overlapping and nearestLocation), just use overlapping, both mode buggy
 
 # Enrichment Analysis
@@ -45,6 +45,7 @@ MAX_FDR: 0.05
 
 # MEME related
 MEME_DB: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/motifs/hocomoco/HOCOMOCOv11_full_MOUSE_mono_meme_format.meme
+# /project/umw_mccb/genome/Homo_sapiens/motifs/hocomoco/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
 PEAK_WIDTH: # center in peak summit
     - 1000
     - 2000

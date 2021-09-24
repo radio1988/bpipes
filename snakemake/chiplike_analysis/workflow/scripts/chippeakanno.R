@@ -50,10 +50,11 @@ peaks.gr <- makeGRangesFromDataFrame(peaks.df, keep.extra.columns = T)
 
 
 # transcript level annotation
-gr.anno <- annotatePeakInBatch(myPeakList = peaks.gr, 
+gr.anno <- annotatePeakInBatch(myPeakList = peaks.gr,
                                AnnotationData =  transcript.gr, # transcript.gr, gene.gr, todo: check
-                               FeatureLocForDistance="TSS",
-                               bindingRegion = bindingRegion,
+                               PeakLocForDistance="middle", # default start
+                               FeatureLocForDistance = 'TSS', # default TSS
+                               bindingRegion = bindingRegion, # c(-5000, 5000)
                                output = CHIPPEAKANNO_MODE, # overlapping, nearestLocation, both
                                select = 'all',
                                ignore.strand = T)
@@ -85,9 +86,9 @@ if (CHIPPEAKANNO_MODE == 'both'){
 }
 
 
-# WriteXLS(x = peak.anno.df,
-#          ExcelFileName = paste(prefix, 'anno.WithDup.xlsx', sep = "."),
-#          row.names = F, SheetNames = 'sheet1', na = 'NA')  
+WriteXLS(x = peak.anno.df,
+         ExcelFileName = paste(prefix, 'anno.WithDup.xlsx', sep = "."),
+         row.names = F, SheetNames = 'sheet1', na = 'NA')  
 # WriteXLS(x = peak.anno.df.protein_coding,
 #          ExcelFileName = paste(prefix, 'anno.WithDup.protein_coding.xlsx', sep = "."),
 #          row.names = F, SheetNames = 'sheet1', na = 'NA')  
