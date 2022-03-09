@@ -11,8 +11,8 @@ require(dplyr)
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args)==0) {
-      peakFile <- "results/broad_peaks_contrast_level/c1/HA_vs_IgG_clean.broadPeak"
-      gtf_file <- "/project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM25.primary_assembly.annotation.gtf" # support GenCode format
+      peakFile <- "K27me-WT/K27m-WT_vs_NoAb_clean.real.broadPeak"
+      gtf_file <- "../../resources/gencode.vM25.primary_assembly.annotation.gtf" # support GenCode format
       CHIPPEAKANNO_MODE <- 'overlapping'
       BIDING_LEFT <- 3000
       BIDING_RIGHT <- 3000
@@ -150,7 +150,19 @@ binOverFeature(peaks.gr, annotationData=transcript.gr,
                radius=10000, nbins=500, FUN=length, 
                errFun=0,
                ylab="count", 
-               main="Distribution of aggregated peak numbers around TSS")
+               main="#Peak numbers around TSS")
+dev.off()
+
+# TTS QC
+pdf(file.path(odir, 'TTS.transcripts.pdf'))
+binOverFeature(peaks.gr, annotationData=transcript.gr,
+               # select = "nearest",
+               # PeakLocForDistance="middle",
+               featureSite="FeatureEnd",
+               radius=10000, nbins=500, FUN=length, 
+               errFun=0,
+               ylab="count", 
+               main="#Peaks around TTS")
 dev.off()
 
 # Gene structure QC
