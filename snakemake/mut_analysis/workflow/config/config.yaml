@@ -1,0 +1,11 @@
+MODE: PE
+SAMPLES:
+    - sample1
+    - sample2
+    - input1 
+    - input2
+
+
+GENOME: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/mm10.ucsc.fa
+GTF: /project/umw_mccb/genome/Mus_musculus_UCSC_mm10/gencode.vM25.primary_assembly.annotation.gtf
+BLACKLIST: /project/umw_mccb/genome/Blacklist/lists/mm10-blacklist.v2.bed

@@ -1,0 +1,8 @@
+name: bamqc
+
+channels:
+    - bioconda
+
+dependencies:
+    - multiqc
+    - samtools
