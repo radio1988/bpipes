@@ -1,0 +1,12 @@
+name: java11_py3.8
+
+channels:
+  - conda-forge
+  - anaconda
+
+dependencies:
+  # conda forge
+  - openjdk=11.0.1
+  # anaconda
+  - python=3.8
+  - pandas

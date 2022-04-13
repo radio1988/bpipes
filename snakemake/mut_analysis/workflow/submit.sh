@@ -1,6 +1,6 @@
 # bsub -W 48:00 -q long -R select[rh=8] 'source activate snakemake; bash workflow/submit.sh &> submit.log '
 
-source activate snakemake
+source activate snakepipes
 
 snakemake -k -p --ri \
 --notemp \

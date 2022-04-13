@@ -8,10 +8,12 @@ SAMPLES=config['SAMPLES']
 rule targets:
     input:
         fastqc="results/fastqc/multiqc_report.html",
+        fastqc2="results/trimmed_reads_fastqc/multiqc_report.html",
         sorted_reads=expand("results/sorted_reads/{sample}.bam", sample=SAMPLES),
         multiqc_sorted_reads="results/sorted_reads_qc/multiqc_report.html"
 
+include: 'rules/trimmomatic.smk'
 include: 'rules/fastqc.smk'
-include: 'rules/bowtie2.smk'
+include: 'rules/bwa.smk'
 include: 'rules/bamqc.smk'
 
