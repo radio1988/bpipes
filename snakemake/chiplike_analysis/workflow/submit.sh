@@ -1,9 +1,12 @@
 #nohup bash submit.sh &
 # bsub -W 48:00 -q long -R select[rh=8] 'source activate snakemake; bash workflow/submit.sh &> submit.log '
-source activate snakemake6
-snakemake -k -p --ri \
+
+source activate snakemake7
+
+snakemake -kp --ri \
 --notemp \
---use-conda  --conda-prefix "~/anaconda3/envs/" \
+--use-conda  --conda-prefix "~/anaconda3/envs/chip" \
+--conda-frontend mamba \
 --use-envmodules \
 --ri  --restart-times 1 \
 --jobs 99  --latency-wait 20 \
@@ -11,7 +14,7 @@ snakemake -k -p --ri \
 
 snakemake -k -p --ri \
 --notemp \
---use-conda  --conda-prefix "~/anaconda3/envs/" \
+--use-conda  --conda-prefix "~/anaconda3/envs/chip" \
 --use-envmodules \
 --ri  --restart-times 1 \
 --jobs 99  --latency-wait 20 \
