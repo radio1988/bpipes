@@ -18,7 +18,7 @@ rule fastqc:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/fastqc.yaml"
     shell:
         # {input/output} don't have to be in command
         # have to load module in one block
