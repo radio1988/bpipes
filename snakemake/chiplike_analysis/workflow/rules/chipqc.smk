@@ -22,7 +22,7 @@ def plotFingerprint_params(wildcards):
         sys.exit("MODE Error")
 
         
-rule plotFingerprint_pe:
+rule plotFingerprint:
     input:
         clean_or_sorted_bams_input
     output:
