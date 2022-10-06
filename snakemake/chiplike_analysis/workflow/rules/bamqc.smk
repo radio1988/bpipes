@@ -18,7 +18,7 @@ rule sorted_reads_qc:
         flagstat="log/sorted_reads_qc/flagstat/{sample}.flagstat.log",
         stats="log/sorted_reads_qc/stats/{sample}.stats.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/samtools.yaml"
     shell:
         """
         samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} 
@@ -43,7 +43,7 @@ rule clean_reads_qc:
         flagstat="log/clean_reads_qc/flagstat/{sample}.flagstat.log",
         stats="log/clean_reads_qc/stats/{sample}.stats.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/samtools.yaml"
     shell:
         """
         samtools idxstats {input.bam} > {output.idxstats} 2> {log.idxstats} 
@@ -66,7 +66,7 @@ rule multiQC_sorted_reads:
     log:
         "log/sorted_reads_qc/multiqc.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/fastqc.yaml"
     shell:
         """
         multiqc -f {input.stats} {input.idxstats} {input.flagstat} -o results/sorted_reads_qc/ &> {log}
@@ -88,7 +88,7 @@ rule multiQC_clean_reads:
     log:
         "log/clean_reads_qc/multiqc.log"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/fastqc.yaml"
     shell:
         """
         multiqc -f {input.stats} {input.idxstats} {input.flagstat} {input.markdup} \
