@@ -1,3 +1,5 @@
+import sys
+
 SAMPLES=config['SAMPLES']
 minFragmentLength=config['minFragmentLength']
 maxFragmentLength=config['maxFragmentLength']
@@ -7,12 +9,27 @@ BIN_SIZE=config['BIN_SIZE']
 def clean_or_sorted_bams_input(wildcards):
    return ["results/"+wildcards.cs_folder+"/"+sample+".bam" for sample in SAMPLES]
 
+
+def plotFingerprint_params(wildcards):
+    if config['MODE'] == "PE":
+        return (
+            "--minFragmentLength {} --maxFragmentLength {} --extendReads --centerReads".\
+            format(config['minFragmentLength'], config['maxFragmentLength'])
+        )
+    elif config['MODE'] == "SE":
+        return " " 
+    else:
+        sys.exit("MODE Error")
+
+        
 rule plotFingerprint_pe:
     input:
         clean_or_sorted_bams_input
     output:
         plot="results/{cs_folder}_qc/fingerprint.pdf",
         txt="results/{cs_folder}_qc/fingerprint.txt",
+    params:
+        mode=plotFingerprint_params
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 2500
     threads:
@@ -30,14 +47,9 @@ rule plotFingerprint_pe:
             --outRawCounts {output.txt} \
             --plotTitle "Fingerprint Plot" \
             --smartLabels \
-            --minMappingQuality {MQ_MIN} \
             --binSize {BIN_SIZE} \
-            --minFragmentLength {minFragmentLength} \
-            --maxFragmentLength {maxFragmentLength} \
-            --extendReads \
-            --centerReads \
             --samFlagInclude 2 \
-            -p {threads} &> {log}
+            -p {threads} {params.mode} &> {log}
         """
         # --samFlagInclude 2: mate properly paired only
         # --extendReads: use mate into
