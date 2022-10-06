@@ -68,7 +68,7 @@ rule bam_sort_index:
     benchmark:
         "log/samtools_sort/{sample}.sort.benchmark"
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/samtools.yaml"
     shell:
         """
         samtools --version &> {log}

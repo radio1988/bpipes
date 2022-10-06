@@ -74,7 +74,7 @@ elif DATA_TYPE == 'ATAC':
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         conda:
-            "../envs/chiplike.yaml"
+            "../envs/samtools.yaml"
         shell:
             """
                 echo 'ATACseq mode'
@@ -102,7 +102,7 @@ elif DATA_TYPE == 'ChIP':
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 8000
         conda:
-            "../envs/chiplike.yaml"
+            "../envs/samtools.yaml"
         shell:
             """
             cp {input.bam} {output.bam} &> {log}

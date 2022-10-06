@@ -38,7 +38,7 @@ rule peak_count_sample_level_pe:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 8000
     conda: 
-        '../envs/chiplike.yaml'
+        '../envs/subread.yaml'
     shell:
         """
         featureCounts -a {input.gtf} -o {output} \
@@ -86,7 +86,7 @@ rule peak_count_contrast_level_pe:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 8000
     conda: 
-        '../envs/chiplike.yaml'
+        '../envs/subread.yaml'
     shell:
         """
         featureCounts -a {input.gtf} -o {output} \

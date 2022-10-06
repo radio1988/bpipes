@@ -108,8 +108,6 @@ rule split_fa_by_chr:
         1
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000
-    conda:
-        "../envs/chiplike.yaml"
     shell:
         """
         grep -A 1 '>{wildcards.chr}:' {input} > {output} 2> {log}
