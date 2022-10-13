@@ -1,7 +1,7 @@
 # note: column names must be kept as in this example file, this comment line is optional
 # note2: type, treatment, control names should not be numerical, must contain letters
-sample,group
-1-1_S36,ctrl
-2-1_S39,G1
-2-2_S40,G1
+sample,group,batch
+1-1_S36,ctrl,I
+2-1_S39,G1,I
+2-2_S40,G1,I
 
