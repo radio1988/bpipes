@@ -195,7 +195,7 @@ if (length(levels(meta$batch)) > 1){
   }else{
     coldata <- data.frame(row.names=colnames(df[, 6:ncol(df)]), 
                           sample=factor(meta$sample),
-                          group=factor(meta$group),
+                          group=factor(meta$group)
     )
     print(coldata)
     
@@ -282,3 +282,4 @@ write.table(peaks.down, paste0(outPeakFile, '.down'), sep='\t', row.names=F, col
 # SessionInfo
 writeLines(capture.output(sessionInfo()), 
   file.path(odir,"sessionInfo.txt"))
+
