@@ -1,23 +1,30 @@
 name: deseq2
 
 channels:
-    - conda-forge
-    - bioconda
-    - r
+  - conda-forge
+  - bioconda
+  - r
 
 dependencies:
   # conda-forge
   - r-base=4.0.2
   - r-devtools
-  # - r-dplyr
-  # # new
-  # - r-plyr
-  # - r-gdata
-  # - r-pheatmap
-  - r-ashr
-
-  # bioconda
-  - bioconductor-deseq2
   - r-readxl
   - r-writexls
-  # - r-ggrepel
+  - r-dplyr
+  - r-plyr 
+  - r-ashr 
+  - r-poiclaclu
+  - r-biocmanager 
+
+  # bioconda 
+  - bioconductor-deseq2
+  - bioconductor-enhancedvolcano
+  - r-ggrepel
+  - r-pheatmap 
+  - perl-compress-raw-zlib
+
+  # r
+  - r-rmarkdown
+  - r-gdata 
+  - r-gridextra 
