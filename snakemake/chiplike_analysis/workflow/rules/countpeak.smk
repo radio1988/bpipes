@@ -17,7 +17,14 @@ rule peak2gtf_sample_level:
         """
         perl workflow/scripts/peak2gtf.pl {input} > {output} 2> {log}
         """
-
+def feature_count_params(wildcards):
+    if config['MODE'] == "PE":
+        return "-p -B -C -d {} -D {}".format(config['minFragmentLength'], config['maxFragmentLength'])
+    if config['MODE'] == "SE":
+        return " "
+    sys.exit("MODE not SE nor PE")
+        
+        
 rule peak_count_sample_level_pe:
     # todo broad/narrow
     input:
@@ -32,8 +39,7 @@ rule peak_count_sample_level_pe:
     threads:
         4
     params:
-        maxFragmentLength=maxFragmentLength,
-        minFragmentLength=minFragmentLength,
+        pe_params=feature_count_params,
         MQ_MIN=MQ_MIN
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 8000
@@ -42,8 +48,9 @@ rule peak_count_sample_level_pe:
     shell:
         """
         featureCounts -a {input.gtf} -o {output} \
-        -T {threads} -g gene_id -t peak -s 0 -p -B -C -d {params.minFragmentLength} -D {params.maxFragmentLength} \
+        -T {threads} -g gene_id -t peak -s 0 \
         -Q {params.MQ_MIN} --minOverlap 1 --fracOverlap 0 \
+        {params.pe_params} \
         {input.bam} &> {log}
         """
 
@@ -80,8 +87,7 @@ rule peak_count_contrast_level_pe:
     threads:
         4
     params:
-        maxFragmentLength=maxFragmentLength,
-        minFragmentLength=minFragmentLength,
+        pe_params=feature_count_params,
         MQ_MIN=MQ_MIN
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 8000
@@ -90,7 +96,8 @@ rule peak_count_contrast_level_pe:
     shell:
         """
         featureCounts -a {input.gtf} -o {output} \
-        -T {threads} -g gene_id -t peak -s 0 -p -B -C -d {params.minFragmentLength} -D {params.maxFragmentLength} \
+        -T {threads} -g gene_id -t peak -s 0 \
         -Q {params.MQ_MIN} --minOverlap 1 --fracOverlap 0 \
+        {params.pe_params} \
         {input.bam} &> {log}
         """

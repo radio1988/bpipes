@@ -1,0 +1,7 @@
+name: subreads 
+
+channels:
+  - bioconda
+
+dependencies:
+  - subread=2.0.0
