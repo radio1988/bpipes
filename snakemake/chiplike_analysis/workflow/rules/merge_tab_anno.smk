@@ -24,7 +24,7 @@ rule merge_tab_anno:
         "log/{narrowbroad}_peaks_contrast_level/" \
              + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak.final_anno.benchmark"
     conda:
-        "../envs/chippeakanno.yaml"
+        "../envs/deseq2.yaml"
     shell:
         """
         Rscript workflow/scripts/merge_table.R {input.ANNO} {input.TAB} {output} &> {log}
