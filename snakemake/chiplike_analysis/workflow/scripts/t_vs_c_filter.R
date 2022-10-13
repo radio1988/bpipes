@@ -265,15 +265,6 @@ peaks.down <- peaks[!peaks[,4] %in% OUT.up$peak_id,]
 write.table(peaks.down, paste0(outPeakFile, '.down'), sep='\t', row.names=F, col.names=F, quote=F)
 
 
-
-
-
-
-
-
-
-
-
 # SessionInfo
 writeLines(capture.output(sessionInfo()), 
   file.path(odir,"sessionInfo.txt"))

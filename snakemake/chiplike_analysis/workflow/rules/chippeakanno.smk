@@ -7,22 +7,22 @@ CHIPPEAKANNO_MODE=config['CHIPPEAKANNO_MODE']
 rule chippeakanno:
     input:
         peak="results/{narrowbroad}_peaks_contrast_level/" \
-             + "{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak",
+             + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak",
         gtf=GTF,
         config='config/config.yaml'
     output:
         temp("results/{narrowbroad}_peaks_contrast_level/" \
-        + "{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.full_anno.xlsx")
+        + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx")
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 16000
     threads:
         1
     log:
         "log/{narrowbroad}_peaks_contrast_level/"\
-        +"{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.full_anno.xlsx.log"
+        +"{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx.log"
     benchmark:
         "log/{narrowbroad}_peaks_contrast_level/"\
-        +"{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.full_anno.xlsx.benchmark"
+        +"{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx.benchmark"
     conda:
         "../envs/chippeakanno.yaml"
     shell:

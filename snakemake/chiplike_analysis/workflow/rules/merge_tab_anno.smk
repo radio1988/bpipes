@@ -7,22 +7,22 @@ CHIPPEAKANNO_MODE=config['CHIPPEAKANNO_MODE']
 rule merge_tab_anno:
     input:
         ANNO="results/{narrowbroad}_peaks_contrast_level/" \
-             + "{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.full_anno.xlsx",
+             + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx",
         TAB="results/{narrowbroad}_peaks_contrast_level/"\
             + "{contrast}/{contrast_name}_clean.t_vs_c.xlsx"
     output:
         "results/{narrowbroad}_peaks_contrast_level/" \
-             + "{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.final_anno.xlsx"
+             + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak.final_anno.xlsx"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 16000
     threads:
         1
     log:
         "log/{narrowbroad}_peaks_contrast_level/" \
-             + "{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.final_anno.log"
+             + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak.final_anno.log"
     benchmark:
         "log/{narrowbroad}_peaks_contrast_level/" \
-             + "{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.final_anno.benchmark"
+             + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak.final_anno.benchmark"
     conda:
         "../envs/chippeakanno.yaml"
     shell:
