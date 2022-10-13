@@ -1,12 +1,14 @@
 name: deseq2
+
 channels:
     - conda-forge
     - bioconda
+    - r
 
 dependencies:
   # conda-forge
   - r-base=4.0.2
-  # - r-devtools
+  - r-devtools
   # - r-dplyr
   # # new
   # - r-plyr
