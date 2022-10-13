@@ -95,13 +95,21 @@ get_contrast <- function(contrast.df, i){
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args)==0) {
-	countFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_count.txt"
-  peakFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.narrowPeak"
-  outPeakFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.real.narrowPeak"
+  # countFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_count.txt"
+  # peakFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.narrowPeak"
+  # outPeakFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.real.narrowPeak"
+  # metaFile <- 'config/meta.csv'
+  # contrastFile <- 'config/contrast.csv'
+  # contrast_name <- 'K4me3-KO'
+  # outputExcelFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.t_vs_c.xlsx"
+  # SizeFactorFile <- "results/clean_reads_qc/stats/reads_mapped.txt"
+	countFile <- "results/narrow_peaks_contrast_level/merged/ChIP_vs_Input_count.txt"
+  peakFile <- "results/narrow_peaks_contrast_level/merged/ChIP_vs_Input_clean.narrowPeak"
+  outPeakFile <- "results/narrow_peaks_contrast_level/merged/ChIP_vs_Input_clean.real.narrowPeak"
 	metaFile <- 'config/meta.csv'
 	contrastFile <- 'config/contrast.csv'
-  contrast_name <- 'K4me3-KO'
-  outputExcelFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.t_vs_c.xlsx"
+  contrast_name <- 'merged'
+  outputExcelFile <- "results/narrow_peaks_contrast_level/merged/ChIP_vs_Input_clean.t_vs_c.xlsx"
   SizeFactorFile <- "results/clean_reads_qc/stats/reads_mapped.txt"
   }else{
    countFile <- args[1]
@@ -155,16 +163,13 @@ dev.off()
 COUNT <- data.frame(df[, 6:ncol(df)])
 colnames(COUNT) = paste0(colnames(COUNT), '_COUNT')
 print(head(COUNT))
-# COUNT.out <- merge(anno, COUNT, by.x=1, by.y=0, all.y=T, sort=F)
-# writeExcel(COUNT, file.path(odir, "COUNT.xlsx"))
+writeExcel(COUNT, file.path(odir, "COUNT.xlsx"))
 
 CPM <- calculateCPM(df[, 6:ncol(df)])
 colnames(CPM) = paste0(colnames(CPM), '_CPM')
-CPM <- round(CPM,1)
+CPM <- data.frame(round(CPM,1))
 print(head(CPM))
-# CPM.out <-  merge(anno, CPM, by.x=1, by.y=0, all.y=T, sort=F)
-# writeExcel(CPM,    file.path(odir, "CPM.xlsx"))
-
+writeExcel(CPM,    file.path(odir, "CPM.xlsx"))
 
 
 # DESeq2
@@ -172,27 +177,36 @@ print(head(CPM))
 meta <- meta[match(colnames(df[, 6:ncol(df)]), meta$sample), ]
 print(meta)
 
-coldata <- data.frame(row.names=colnames(df[, 6:ncol(df)]), 
-  sample=factor(meta$sample),
-  group=factor(meta$group),
-  batch=factor(meta$batch)
-  )
-print(coldata)
 
-writeLines(capture.output(coldata), 
-  file.path(odir,"design.txt"))
+
 
 if (length(levels(meta$batch)) > 1){
+  coldata <- data.frame(row.names=colnames(df[, 6:ncol(df)]), 
+                        sample=factor(meta$sample),
+                        group=factor(meta$group),
+                        batch=factor(meta$batch)
+  )
+  print(coldata)
+  
   dds <- DESeqDataSetFromMatrix(
     countData = df[, 6:ncol(df)], 
     colData = coldata, 
     design = ~  0 + group + batch)
   }else{
+    coldata <- data.frame(row.names=colnames(df[, 6:ncol(df)]), 
+                          sample=factor(meta$sample),
+                          group=factor(meta$group),
+    )
+    print(coldata)
+    
     dds <- DESeqDataSetFromMatrix(
       countData = df[, 6:ncol(df)], 
       colData = coldata, 
       design = ~  0 + group)  # converted to alph-order
   }
+
+writeLines(capture.output(coldata), 
+           file.path(odir,"design.txt"))
 
  # !!! unique for ChIPSeq (PullDown vs IgG)
  # If use default, will assume overall binding profile same in PullDown and IgG, 
