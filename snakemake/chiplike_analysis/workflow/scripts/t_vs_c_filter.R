@@ -163,13 +163,13 @@ dev.off()
 COUNT <- data.frame(df[, 6:ncol(df)])
 colnames(COUNT) = paste0(colnames(COUNT), '_COUNT')
 print(head(COUNT))
-writeExcel(COUNT, file.path(odir, "COUNT.xlsx"))
+write.csv(COUNT, file.path(odir, "COUNT.csv"))
 
 CPM <- calculateCPM(df[, 6:ncol(df)])
 colnames(CPM) = paste0(colnames(CPM), '_CPM')
 CPM <- data.frame(round(CPM,1))
 print(head(CPM))
-writeExcel(CPM,    file.path(odir, "CPM.xlsx"))
+write.csv(CPM,file.path(odir, "CPM.csv"))
 
 
 # DESeq2
