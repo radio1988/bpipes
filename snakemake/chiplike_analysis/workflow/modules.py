@@ -221,10 +221,10 @@ def get_meme_peak_outname_from_contrasts(
     for contrast,name in zip(contrasts, contrast_names):
         outnames.append(
             "results/narrow_peaks_contrast_level/"+contrast\
-            +"/meme_clean.real_peaks/"+name+'.finished')
+            +"/meme_clean_peaks/"+name+'.finished')
         outnames.append(
             "results/broad_peaks_contrast_level/"+contrast\
-            +"/meme_clean.real_peaks/"+name+'.finished')
+            +"/meme_clean_peaks/"+name+'.finished')
     return outnames
 
 
@@ -287,9 +287,9 @@ def get_signalHeatmap_ContrastPeak_outname(
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
         outnames.append(
-            'results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak.pdf')
+            'results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.narrowPeak.pdf')
         outnames.append(
-            'results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak.pdf')
+            'results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.broadPeak.pdf')
     return outnames
 
 def get_corrHeatmap_peakCount_outname(

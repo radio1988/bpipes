@@ -6,12 +6,12 @@ ruleorder: get_peak_fasta_contrast_level > meme_peak_contrast_level > get_summit
 
 rule get_peak_fasta_contrast_level:
     input:
-        peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak",
+        peak="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak",
         genome=GENOME
     output:
-        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.fa"
+        "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.fa"
     log:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.fa.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.fa.log"
     threads:
         1
     resources:
@@ -25,17 +25,17 @@ rule get_peak_fasta_contrast_level:
 
 rule meme_peak_contrast_level:
     input: 
-        fasta="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.fa",
+        fasta="results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.fa",
         neg=GENOME,
         db=MEME_DB,
     output: 
-        touch("results/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean.real_peaks/{contrast_name}.finished")
+        touch("results/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean_peaks/{contrast_name}.finished")
     log:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean.real_peaks/{contrast_name}.log"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean_peaks/{contrast_name}.log"
     benchmark:
-        "log/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean.real_peaks/{contrast_name}.benchmark"
+        "log/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean_peaks/{contrast_name}.benchmark"
     params:
-        odir="results/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean.real_peaks/",
+        odir="results/{narrowbroad}_peaks_contrast_level/{contrast}/meme_clean_peaks/",
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:

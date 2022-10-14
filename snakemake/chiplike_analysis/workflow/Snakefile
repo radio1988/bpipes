@@ -62,7 +62,7 @@ def chipseq_targets(o):
     L.append(get_chippeakanno_outname(contrasts=o.contrasts, o=o))
 #    L.append(get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o))
 #    L.append(get_enrichment_analysis_outname(contrasts=o.contrasts, o=o))
-#    L.append(get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o))
+   L.append(get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o))
 #    L.append(get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o))
 #    # save resources
 #    L.append("resources/"+os.path.split(BLACKLIST)[1]+".gz")
@@ -96,6 +96,6 @@ include: 'rules/t_vs_c_filter.smk'
 include: 'rules/chippeakanno.smk'
 include: 'rules/merge_tab_anno.smk'
 include: 'rules/enrichment_analysis.smk'
-include: 'rules/findmotif.smk'
+include: 'rules/meme.smk'
 include: 'rules/snakemake_misc.smk'
 include: 'rules/save_resources.smk'
