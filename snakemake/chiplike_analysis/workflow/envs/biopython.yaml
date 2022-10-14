@@ -6,8 +6,6 @@ channels:
 
 
 dependencies:
-  - python=3.9
-
   # bioconda
   - pysam=0.16.0.1  
   - biopython=1.70

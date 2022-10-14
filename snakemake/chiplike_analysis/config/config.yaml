@@ -28,7 +28,7 @@ signalHeatmapWidth: 3000 # upsteam/downstream of TSS/PeakCenter for plotHeatmap
 
 
 # Peak caller
-PEAKCALLER: narrow # narrow, broad, not implemented yet
+PEAKTYPE: narrow # narrow, broad, not implemented yet
 
 # ChIPPeakAnno related
 BIDING_LEFT: 5000

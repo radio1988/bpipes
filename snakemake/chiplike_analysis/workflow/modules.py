@@ -363,12 +363,12 @@ def get_enrichment_analysis_outname(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append(
-            'results/narrow_peaks_contrast_level/'+contrast+\
-            '/'+name+'_clean.real.narrowPeak.enrichment.finished')
-        outnames.append(
-            'results/broad_peaks_contrast_level/'+contrast+\
-            '/'+name+'_clean.real.broadPeak.enrichment.finished')
+        if PEAKTYPE == 'narrow':
+            outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.narrowPeak.enrichment.finished')
+        elif PEAKTYPE == 'broad':
+            outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.real.broadPeak.enrichment.finished')
+        else:
+            sys.exit("PEAKTYPE Error")
     return outnames
 
     
