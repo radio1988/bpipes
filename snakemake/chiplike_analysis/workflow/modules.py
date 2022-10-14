@@ -1,6 +1,9 @@
 import pandas as pd
 from functools import reduce
 
+configfile: 'config/config.yaml'
+
+
 class parse_meta_contrast_class:
   def __init__(self, y0, y1, y2, y3):
    self.contrast2contrast_name = y0
@@ -207,7 +210,8 @@ def get_broad_count_names_from_contrasts(contrasts=["contrast1", "contrast2"],
 
 def get_meme_peak_outname_from_contrasts(
     contrasts=["contrast1", "contrast2"], 
-    o = "parse_meta_contrast_obj"):
+    o = "parse_meta_contrast_obj", 
+    PEAKTYPE = 'narrow'):
     """
     Learn: Good trick to use tagets input to do contrast2contrast_name and more
 
@@ -219,12 +223,16 @@ def get_meme_peak_outname_from_contrasts(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append(
-            "results/narrow_peaks_contrast_level/"+contrast\
-            +"/meme_clean_peaks/"+name+'.finished')
-        outnames.append(
-            "results/broad_peaks_contrast_level/"+contrast\
-            +"/meme_clean_peaks/"+name+'.finished')
+        if PEAKTYPE == 'narrow':
+            outnames.append(
+                "results/narrow_peaks_contrast_level/"+contrast\
+                +"/meme_clean_peaks/"+name+'.finished')
+        elif PEAKTYPE == 'broad':
+            outnames.append(
+                "results/broad_peaks_contrast_level/"+contrast\
+                +"/meme_clean_peaks/"+name+'.finished')
+        else:
+            sys.exit("PEAKTYPE Error in config.yaml")
     return outnames
 
 
@@ -292,9 +300,7 @@ def get_signalHeatmap_ContrastPeak_outname(
             'results/broad_peaks_contrast_level/'+contrast+'/'+name+'_clean.broadPeak.pdf')
     return outnames
 
-def get_corrHeatmap_peakCount_outname(
-    contrasts=["contrast1", "contrast2"], 
-    o = "parse_meta_contrast_obj"):
+def get_corrHeatmap_peakCount_outname(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj", PEAKTYPE='narrow'):
     """
     output example:
     "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_count.heatmap.pdf"
@@ -302,16 +308,16 @@ def get_corrHeatmap_peakCount_outname(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append(
-            'results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
-        outnames.append(
-            'results/broad_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
+        if PEAKTYPE == 'narrow':
+            outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
+        elif PEAKTYPE == 'broad':
+            outnames.append('results/broad_peaks_contrast_level/'+contrast+'/'+name+'_count.heatmap.pdf')
+        else:
+            sys.exit("PEAKTYPE Error")
     return outnames
 
 
-def get_chippeakanno_outname(
-    contrasts=["contrast1", "contrast2"], 
-    o = "parse_meta_contrast_obj"):
+def get_chippeakanno_outname(contrasts=["contrast1", "contrast2"], o = "parse_meta_contrast_obj", PEAKTYPE = 'narrow'):
     """
     output example:
     "results/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx"
@@ -319,12 +325,12 @@ def get_chippeakanno_outname(
     contrast_names = map(o.contrast2contrast_name.get, contrasts)
     outnames = []
     for contrast,name in zip(contrasts, contrast_names):
-        outnames.append(
-            'results/narrow_peaks_contrast_level/'+contrast\
-            +'/'+name+'_clean.narrowPeak.final_anno.xlsx')
-        outnames.append(
-            'results/broad_peaks_contrast_level/'+contrast\
-            +'/'+name+'_clean.broadPeak.final_anno.xlsx')
+        if PEAKTYPE == 'narrow':
+            outnames.append('results/narrow_peaks_contrast_level/'+contrast+'/'+name+'_clean.narrowPeak.final_anno.xlsx')
+        elif PEAKTYPE == 'broad':
+            outnames.append('results/broad_peaks_contrast_level/'+contrast +'/'+name+'_clean.broadPeak.final_anno.xlsx')
+        else:
+            sys.exit("PEAKTYPE Error")
     return outnames
 
 
@@ -348,7 +354,7 @@ def get_cpm_filter_outname(
 
 def get_enrichment_analysis_outname(
     contrasts=["contrast1", "contrast2"], 
-    o = "parse_meta_contrast_obj"):
+    o = "parse_meta_contrast_obj", PEAKTYPE = 'narrow'):
     """
     output example:
     "results/{narrowbroad}_peaks_contrast_level/" \
