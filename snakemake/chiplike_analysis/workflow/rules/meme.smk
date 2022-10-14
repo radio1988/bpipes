@@ -53,12 +53,12 @@ rule meme_peak_contrast_level:
 rule get_summit_neighbour:
 # todo: filter blacklist, cpm filter
     input:
-        summit="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.bed",
+        summit="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.bed",
         genome=GENOME
     output:
-        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.{width}.fa"
+        "results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.{width}.fa"
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.{width}.fa.log"
+        "log/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.{width}.fa.log"
     threads:
         1
     resources:
@@ -72,7 +72,7 @@ rule get_summit_neighbour:
 
 rule meme_neibour:
     input: 
-        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.{width}.fa",
+        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.{width}.fa",
         neg=GENOME,
         db=MEME_DB,
     output: 
@@ -99,11 +99,11 @@ rule meme_neibour:
 
 rule split_fa_by_chr:
     input:
-        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.real.{width}.fa"
+        fasta="results/narrow_peaks_contrast_level/{contrast}/{contrast_name}_summits.{width}.fa"
     output:
-        "results/narrow_peaks_contrast_level/{contrast}/by_chr/{contrast_name}_summits.real.{width}.{chr}.fa"
+        "results/narrow_peaks_contrast_level/{contrast}/by_chr/{contrast_name}_summits.{width}.{chr}.fa"
     log:
-        "log/narrow_peaks_contrast_level/{contrast}/by_chr/{contrast_name}_summits.real.{width}.{chr}.fa.log"
+        "log/narrow_peaks_contrast_level/{contrast}/by_chr/{contrast_name}_summits.{width}.{chr}.fa.log"
     threads:
         1
     resources:

@@ -3,6 +3,7 @@ name: chippeakanno
 channels:
     - conda-forge
     - bioconda
+    - r
 
 dependencies:
   # conda-forge
@@ -20,7 +21,7 @@ dependencies:
   - bioconda::bioconductor-chippeakanno
   - bioconda::bioconductor-genomicfeatures 
   - bioconda::bioconductor-rtracklayer 
-  - bioconda::r-readxl
+  - r::r-readxl
   - r-writexls # don't specify channel for this one
   - perl-compress-raw-zlib 
   # - r-ggrepel

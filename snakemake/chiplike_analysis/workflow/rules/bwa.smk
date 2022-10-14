@@ -16,9 +16,9 @@ rule bwa_index:
     log:
         "log/bwa_index.log"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 12000
+        mem_mb=lambda wildcards, attempt: attempt * 16000
     threads:
-        2
+        1
     conda:
         "../envs/bwa.yaml"
     shell:
