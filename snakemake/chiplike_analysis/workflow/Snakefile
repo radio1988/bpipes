@@ -60,8 +60,8 @@ def chipseq_targets(o):
 #    # for all contrast peaks (narrow/broad)
 #    L.append(get_cpm_filter_outname(contrasts=o.contrasts, o=o))
     L.append(get_chippeakanno_outname(contrasts=o.contrasts, o=o))
-#    L.append(get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o))
-#    L.append(get_enrichment_analysis_outname(contrasts=o.contrasts, o=o))
+    L.append(get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o))
+    L.append(get_enrichment_analysis_outname(contrasts=o.contrasts, o=o))
     L.append(get_meme_peak_outname_from_contrasts(contrasts=o.contrasts, o=o))
 #    L.append(get_meme_summit_outname_from_contrasts(contrasts=o.contrasts, PEAK_WIDTH=PEAK_WIDTH, o=o))
 #    # save resources

@@ -17,6 +17,3 @@ rule corrHeatmap_peakCount:
         """
         Rscript workflow/scripts/corrHeatmap.peakCount.R {input} {output} &> {log}
         """
-
-
-# todo: move to  DESeq2, which uses real peaks (CPM filter: Pulldown > IgG)
