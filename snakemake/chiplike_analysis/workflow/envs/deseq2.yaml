@@ -28,3 +28,4 @@ dependencies:
   - r-rmarkdown
   - r-gdata 
   - r-gridextra 
+  - r-rcolorbrewer 

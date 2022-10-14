@@ -8,7 +8,7 @@ rule corrHeatmap_peakCount:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 2000
     conda: 
-        '../envs/chiplike.yaml'
+        '../envs/deseq2.yaml'
     log:
         "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_count.heatmap.pdf.log"
     benchmark:

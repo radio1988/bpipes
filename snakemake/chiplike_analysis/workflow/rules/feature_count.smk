@@ -10,7 +10,7 @@ rule peak2gtf_sample_level:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 2000
     conda: 
-        '../envs/chiplike.yaml'
+        '../envs/perl.yaml'
     log:
         "log/{narrowbroad}_peaks_sample_level_peak2gtf/{name1}/{name2}.log"
     shell:
@@ -65,7 +65,7 @@ rule peak2gtf_contrast_level:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 2000
     conda: 
-        '../envs/chiplike.yaml'
+        '../envs/perl.yaml'
     log:
         "log/{narrowbroad}_peaks_contrast_level/{contrast}/{contrast_name}_clean.gtf.log"
     shell:

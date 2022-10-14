@@ -17,7 +17,7 @@ rule get_peak_fasta_contrast_level:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 6000
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/biopython.yaml"
     shell:
         """
         python workflow/scripts/get_peak_fasta.py {input.genome} {input.peak} {output} &> {log}
@@ -41,7 +41,7 @@ rule meme_peak_contrast_level:
     threads:
         6
     envmodules:
-        "meme/5.0.5"
+        "meme/5.0.5" # todo: now only works on RH6, not working on RH8
     shell:
         """
         meme-chip -oc {params.odir} -meme-p {threads} -db {input.db} {input.fasta} &> {log}
@@ -64,7 +64,7 @@ rule get_summit_neighbour:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 6000
     conda:
-        "../envs/chiplike.yaml"
+        "../envs/biopython.yaml"
     shell:
         """
         python workflow/scripts/get_summit_neighbour.py {input.genome} {input.summit} {wildcards.width} {output} &> {log}

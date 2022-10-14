@@ -52,7 +52,7 @@ if DATA_TYPE == 'DamID':
         threads:
             1
         conda:
-            "../envs/chiplike.yaml"
+            "../envs/biopython.yaml"
         shell:
             """
             # need samtools/1.9

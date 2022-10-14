@@ -1,0 +1,7 @@
+name: perl 
+
+channels:
+  - conda-forge
+
+dependencies:
+  - perl

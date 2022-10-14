@@ -1,0 +1,17 @@
+name: biopython 
+
+channels:
+  - bioconda
+  - anaconda
+
+
+dependencies:
+  - python=3.9
+
+  # bioconda
+  - pysam=0.16.0.1  
+  - biopython=1.70
+
+  # anaconda
+  - xlrd # xlreader
+  - openpyxl # for xlsx2tsv.py
