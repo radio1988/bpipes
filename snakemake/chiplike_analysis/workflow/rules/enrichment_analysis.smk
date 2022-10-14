@@ -8,7 +8,7 @@ rule enrichment_analysis:
     '''
     input:
         "results/{narrowbroad}_peaks_contrast_level/" \
-             + "{contrast}/{contrast_name}_clean.real.{narrowbroad}Peak.final_anno.xlsx"
+             + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak.final_anno.xlsx"
     params:
         ORG_EG_DB
     output:
