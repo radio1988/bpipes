@@ -21,7 +21,8 @@ dependencies:
   - bioconda::bioconductor-chippeakanno
   - bioconda::bioconductor-genomicfeatures 
   - bioconda::bioconductor-rtracklayer 
-  - r::r-readxl
-  - r-writexls # don't specify channel for this one
+  - bioconda::r-readxl
+  - bioconda::r-writexls
+  - r::writexls # don't specify channel for this one
   - perl-compress-raw-zlib 
   # - r-ggrepel
