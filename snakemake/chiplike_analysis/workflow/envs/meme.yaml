@@ -1,0 +1,5 @@
+name: meme
+channels: 
+    - bioconda
+dependencies: 
+    - meme

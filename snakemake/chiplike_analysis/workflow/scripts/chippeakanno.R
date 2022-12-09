@@ -1,7 +1,7 @@
 library("ChIPpeakAnno")
 library("GenomicFeatures")
 library(rtracklayer)  # for import() function
-library(WriteXLS)
+library(xlsx)
 require(dplyr)
 
 ##todo: add intron/exon in anno
@@ -85,10 +85,8 @@ if (CHIPPEAKANNO_MODE == 'both'){
       peak.anno.df.protein_coding <- subset(peak.anno.df, gene_type=='protein_coding')
 }
 
-
-WriteXLS(x = peak.anno.df,
-         ExcelFileName = paste(prefix, 'anno.WithDup.xlsx', sep = "."),
-         row.names = F, SheetNames = 'sheet1', na = 'NA')  
+write.xlsx(peak.anno.df, paste(prefix, 'anno.WithDup.xlsx', sep = "."), 
+        row.names = F)
 # WriteXLS(x = peak.anno.df.protein_coding,
 #          ExcelFileName = paste(prefix, 'anno.WithDup.protein_coding.xlsx', sep = "."),
 #          row.names = F, SheetNames = 'sheet1', na = 'NA')  
@@ -130,9 +128,8 @@ full.collapsed.df <- merge(
                         peak.anno.df.collapsed[, c(1, (ncol(peaks.df)+2):ncol(peak.anno.df.collapsed))], # anno part, CHIPPEAKANNO_MODE, CALLER specific
                         by= "peak_id", all.x=T)
 full.collapsed.df <- full.collapsed.df[, !(names(full.collapsed.df) %in% c("dedup_id","distance", 'peak', 'NA\\.', '\\.\\.\\.10'))]
-WriteXLS(x = full.collapsed.df,
-         ExcelFileName = paste(prefix, "full_anno.xlsx", sep = "."), 
-         row.names = F, SheetNames = 'sheet1', na = 'NA')  # for user
+write.xlsx(full.collapsed.df, paste(prefix, "full_anno.xlsx", sep = "."), 
+         row.names = F)
 
 
 

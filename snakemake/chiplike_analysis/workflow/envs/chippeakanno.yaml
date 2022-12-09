@@ -11,18 +11,10 @@ dependencies:
   - conda-forge::r-devtools
   - conda-forge::r-dplyr
   - conda-forge::r-biocmanager 
-  # # new
-  # - r-plyr
-  # - r-gdata
-  # - r-pheatmap
-  # - r-ashr
 
   # bioconda
   - bioconda::bioconductor-chippeakanno
   - bioconda::bioconductor-genomicfeatures 
   - bioconda::bioconductor-rtracklayer 
-  - bioconda::r-readxl
-  - bioconda::r-writexls
-  - r::writexls # don't specify channel for this one
+  - r-xlsx
   - perl-compress-raw-zlib 
-  # - r-ggrepel
