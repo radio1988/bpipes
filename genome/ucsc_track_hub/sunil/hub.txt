@@ -1,0 +1,5 @@
+hub Sunil
+shortLabel Sunil
+longLabel SunilHub
+genomesFile genomes.txt
+email  liruiradiant@gmail.com
