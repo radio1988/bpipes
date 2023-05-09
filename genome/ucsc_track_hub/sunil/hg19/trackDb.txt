@@ -6,6 +6,7 @@ type bigWig
 visibility full
 color 0,20,120
 smoothingWindow 4
+windowingFunction mean+whiskers
 viewLimits 0:4
 
 
@@ -18,6 +19,7 @@ type bigWig
 visibility full
 color 20,0,120
 smoothingWindow 4
+windowingFunction mean+whiskers
 viewLimits 0:4
 
 
@@ -29,6 +31,7 @@ type bigWig
 visibility full
 color 133,8,8
 smoothingWindow 4
+windowingFunction mean+whiskers
 viewLimits 0:0.7
 
 
@@ -40,6 +43,7 @@ type bigWig
 visibility full
 color 50,50,50
 smoothingWindow 4
+windowingFunction mean+whiskers
 viewLimits 0:4
 
 
