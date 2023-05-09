@@ -4,7 +4,7 @@ shortLabel YAP
 longLabel YAP
 type bigWig
 visibility full
-color 0,0,150
+color 0,20,120
 
 
 
@@ -14,7 +14,7 @@ shortLabel TEAD1
 longLabel TEAD1
 type bigWig
 visibility full
-color 144,12,63  
+color 20,0,120
 
 track  H3K27Ac
 bigDataUrl https://dl.dropboxusercontent.com/s/krnx0cmm6vfo4ih/H3K27Ac.bw?dl=0 
@@ -22,7 +22,7 @@ shortLabel H3K27Ac
 longLabel H3K27Ac
 type bigWig
 visibility full
-color 150,75,0
+color 133,8,8
 
 
 track  Input
