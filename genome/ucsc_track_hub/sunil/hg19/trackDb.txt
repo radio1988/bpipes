@@ -4,6 +4,9 @@ shortLabel YAP
 longLabel YAP
 type bigWig
 visibility full
+color 0,0,150
+
+
 
 track  TEAD1
 bigDataUrl https://dl.dropboxusercontent.com/s/u2ewz4j9s2ye2z9/TEAD1.bw?dl=0 
@@ -11,6 +14,7 @@ shortLabel TEAD1
 longLabel TEAD1
 type bigWig
 visibility full
+color 0,0,150
 
 track  H3K27Ac
 bigDataUrl https://dl.dropboxusercontent.com/s/krnx0cmm6vfo4ih/H3K27Ac.bw?dl=0 
@@ -18,6 +22,8 @@ shortLabel H3K27Ac
 longLabel H3K27Ac
 type bigWig
 visibility full
+color 150,75,0
+
 
 track  Input
 bigDataUrl https://dl.dropboxusercontent.com/s/rmnro3tsj4rdso8/Input.bw?dl=0 
@@ -25,4 +31,6 @@ shortLabel Input
 longLabel Input
 type bigWig
 visibility full
+color 200,200,200
+
 
