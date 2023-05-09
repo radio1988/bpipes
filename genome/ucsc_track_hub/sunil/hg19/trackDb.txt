@@ -5,6 +5,11 @@ longLabel YAP
 type bigWig
 visibility full
 color 0,20,120
+smoothingWindow 4
+windowingFunction mean
+viewLimits 0:1
+alwaysZero on
+maxHeightPixels 100,50,10
 
 
 
@@ -15,6 +20,13 @@ longLabel TEAD1
 type bigWig
 visibility full
 color 20,0,120
+smoothingWindow 4
+windowingFunction mean
+viewLimits 0:1
+alwaysZero on
+maxHeightPixels 100,50,10
+
+
 
 track  H3K27Ac
 bigDataUrl https://dl.dropboxusercontent.com/s/krnx0cmm6vfo4ih/H3K27Ac.bw?dl=0 
@@ -23,6 +35,12 @@ longLabel H3K27Ac
 type bigWig
 visibility full
 color 133,8,8
+smoothingWindow 4
+windowingFunction mean
+viewLimits 0:0.5
+alwaysZero on
+maxHeightPixels 100,50,10
+
 
 
 track  Input
@@ -32,6 +50,13 @@ longLabel Input
 type bigWig
 visibility full
 color 50,50,50
+smoothingWindow 4
+windowingFunction mean
+viewLimits 0:1
+alwaysZero on
+maxHeightPixels 100,50,10
+
+
 
 track  lincRNA
 bigDataUrl https://raw.githubusercontent.com/radio1988/bpipes/master/genome/ucsc_track_hub/sunil/hg19/lincRNA.gff3
