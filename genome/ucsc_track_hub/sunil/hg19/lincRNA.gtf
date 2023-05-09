@@ -1,0 +1,4 @@
+chr7	hg19.chr7	exon	46341726	46341766	100.00	+	.	transcript_id "XR_927241.2.mrna1"; gene_id "XR_927241.2.path1"; gene_name "XR_927241.2";
+chr7	hg19.chr7	exon	46342325	46342446	100.00	+	.	transcript_id "XR_927241.2.mrna1"; gene_id "XR_927241.2.path1"; gene_name "XR_927241.2";
+chr7	hg19.chr7	exon	46385233	46385407	100.00	+	.	transcript_id "XR_927241.2.mrna1"; gene_id "XR_927241.2.path1"; gene_name "XR_927241.2";
+chr7	hg19.chr7	exon	46389768	46392751	100.00	+	.	transcript_id "XR_927241.2.mrna1"; gene_id "XR_927241.2.path1"; gene_name "XR_927241.2";
