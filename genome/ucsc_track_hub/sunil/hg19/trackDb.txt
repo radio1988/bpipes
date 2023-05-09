@@ -33,4 +33,10 @@ type bigWig
 visibility full
 color 50,50,50
 
-
+track  lincRNA
+bigDataUrl https://raw.githubusercontent.com/radio1988/bpipes/master/genome/ucsc_track_hub/sunil/hg19/lincRNA.gff3
+shortLabel LincRNA
+longLabel XR_927241.2_LOC105375265
+type gff3
+visibility dense
+color 0,0,0

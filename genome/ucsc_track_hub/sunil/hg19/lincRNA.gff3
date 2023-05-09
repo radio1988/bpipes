@@ -6,5 +6,3 @@ chr7	hg19.chr7	exon	46341726	46341766	100	+	.	ID=XR_927241.2.mrna1.exon1;Name=XR
 chr7	hg19.chr7	exon	46342325	46342446	100	+	.	ID=XR_927241.2.mrna1.exon2;Name=XR_927241.2;Parent=XR_927241.2.mrna1;Target=XR_927241.2 42 163 +
 chr7	hg19.chr7	exon	46385233	46385407	100	+	.	ID=XR_927241.2.mrna1.exon3;Name=XR_927241.2;Parent=XR_927241.2.mrna1;Target=XR_927241.2 164 338 +
 chr7	hg19.chr7	exon	46389768	46392751	100	+	.	ID=XR_927241.2.mrna1.exon4;Name=XR_927241.2;Parent=XR_927241.2.mrna1;Target=XR_927241.2 339 3322 +
-chr7	hg19.chr7	CDS	46391249	46391548	100	+	0	ID=XR_927241.2.mrna1.cds1;Name=XR_927241.2;Parent=XR_927241.2.mrna1;Target=XR_927241.2 1820 2119 +
-###
