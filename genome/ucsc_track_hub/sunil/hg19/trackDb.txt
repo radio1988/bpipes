@@ -59,9 +59,9 @@ maxHeightPixels 100,50,10
 
 
 track  lincRNA
-bigDataUrl https://raw.githubusercontent.com/radio1988/bpipes/master/genome/ucsc_track_hub/sunil/hg19/lincRNA.gff3
+bigDataUrl https://raw.githubusercontent.com/radio1988/bpipes/master/genome/ucsc_track_hub/sunil/hg19/lincRNA.bb
 shortLabel LincRNA
-longLabel XR_927241.2_LOC105375265
-type gff3
+longLabel lincRNA
+type bigGenePred
 visibility dense
 color 0,0,0
