@@ -10,6 +10,7 @@ windowingFunction mean
 viewLimits 0:1
 alwaysZero on
 maxHeightPixels 100,50,10
+container chr7:46076655-46405233
 
 
 
