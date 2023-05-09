@@ -6,8 +6,9 @@ type bigWig
 visibility full
 color 0,20,120
 smoothingWindow 4
-windowingFunction mean+whiskers
-viewLimits 0:4
+windowingFunction mean
+viewLimits 0:1
+alwaysZero on
 
 
 
@@ -19,8 +20,10 @@ type bigWig
 visibility full
 color 20,0,120
 smoothingWindow 4
-windowingFunction mean+whiskers
-viewLimits 0:4
+windowingFunction mean
+viewLimits 0:1
+alwaysZero on
+
 
 
 track  H3K27Ac
@@ -31,8 +34,10 @@ type bigWig
 visibility full
 color 133,8,8
 smoothingWindow 4
-windowingFunction mean+whiskers
-viewLimits 0:0.7
+windowingFunction mean
+viewLimits 0:0.5
+alwaysZero on
+
 
 
 track  Input
@@ -43,8 +48,10 @@ type bigWig
 visibility full
 color 50,50,50
 smoothingWindow 4
-windowingFunction mean+whiskers
-viewLimits 0:4
+windowingFunction mean
+viewLimits 0:1
+alwaysZero on
+
 
 
 track  lincRNA
