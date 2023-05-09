@@ -46,7 +46,7 @@ maxHeightPixels 100,50,10
 
 
 track  Input
-bigDataUrl https://dl.dropboxusercontent.coms/rmnro3tsj4rdso8/Input.bw?dl=0 
+bigDataUrl https://dl.dropboxusercontent.com/s/rmnro3tsj4rdso8/Input.bw?dl=0 
 shortLabel Input
 longLabel Input
 type bigWig
