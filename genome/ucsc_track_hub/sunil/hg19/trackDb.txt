@@ -9,6 +9,7 @@ smoothingWindow 4
 windowingFunction mean
 viewLimits 0:1
 alwaysZero on
+maxHeightPixels 100,50,10
 
 
 
@@ -23,6 +24,7 @@ smoothingWindow 4
 windowingFunction mean
 viewLimits 0:1
 alwaysZero on
+maxHeightPixels 100,50,10
 
 
 
@@ -37,6 +39,7 @@ smoothingWindow 4
 windowingFunction mean
 viewLimits 0:0.5
 alwaysZero on
+maxHeightPixels 100,50,10
 
 
 
@@ -51,6 +54,7 @@ smoothingWindow 4
 windowingFunction mean
 viewLimits 0:1
 alwaysZero on
+maxHeightPixels 100,50,10
 
 
 
