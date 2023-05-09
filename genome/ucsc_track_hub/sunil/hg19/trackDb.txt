@@ -1,13 +1,14 @@
-track  YAP
+# MCF7
+track  YAP1
 bigDataUrl https://dl.dropboxusercontent.com/s/5h8imetxhwcibme/YAP.bw?dl=0 
-shortLabel YAP
-longLabel YAP
+shortLabel YAP1
+longLabel YAP1
 type bigWig
 visibility full
 color 0,20,120
 smoothingWindow 4
 windowingFunction mean
-viewLimits 0:1
+viewLimits 0:0.5
 alwaysZero on
 maxHeightPixels 100,50,10
 container chr7:46076655-46405233
@@ -23,7 +24,7 @@ visibility full
 color 20,0,120
 smoothingWindow 4
 windowingFunction mean
-viewLimits 0:1
+viewLimits 0:0.5
 alwaysZero on
 maxHeightPixels 100,50,10
 
@@ -45,7 +46,7 @@ maxHeightPixels 100,50,10
 
 
 track  Input
-bigDataUrl https://dl.dropboxusercontent.com/s/rmnro3tsj4rdso8/Input.bw?dl=0 
+bigDataUrl https://dl.dropboxusercontent.coms/rmnro3tsj4rdso8/Input.bw?dl=0 
 shortLabel Input
 longLabel Input
 type bigWig
@@ -53,11 +54,74 @@ visibility full
 color 50,50,50
 smoothingWindow 4
 windowingFunction mean
-viewLimits 0:1
+viewLimits 0:0.5
 alwaysZero on
 maxHeightPixels 100,50,10
 
 
+
+# SF268
+track  YAP1_SF268
+bigDataUrl https://dl.dropboxusercontent.com/s/d88m40dco24mmk2/Yap1_SF268.bw?dl=0
+shortLabel YAP1_SF268
+longLabel YAP1_SF268
+type bigWig
+visibility full
+color 0,40,120
+smoothingWindow 4
+windowingFunction mean
+viewLimits 0:0.5
+alwaysZero on
+maxHeightPixels 100,50,10
+container chr7:46076655-46405233
+
+
+
+track  TEAD1_SF268
+bigDataUrl https://dl.dropboxusercontent.com/s/jwok3m74nuj67vi/Tead1_SF268.bw?dl=0
+shortLabel TEAD1_SF268
+longLabel TEAD1_SF268
+type bigWig
+visibility full
+color 40,0,120
+smoothingWindow 4
+windowingFunction mean
+viewLimits 0:0.5
+alwaysZero on
+maxHeightPixels 100,50,10
+
+
+
+track  H3K27Ac_SF268
+bigDataUrl https://dl.dropboxusercontent.com/s/35wcfaiuk0afy52/H3K27ac_SF268.bw?dl=0
+shortLabel H3K27Ac_SF268
+longLabel H3K27Ac_SF268
+type bigWig
+visibility full
+color 133,16,16
+smoothingWindow 4
+windowingFunction mean
+viewLimits 0:0.5
+alwaysZero on
+maxHeightPixels 100,50,10
+
+
+
+track  Input_SF268
+bigDataUrl https://dl.dropboxusercontent.com/s/n5ka5c2od3k2izm/Input_SF268.bw?dl=0
+shortLabel Input_SF268
+longLabel Input_SF268
+type bigWig
+visibility full
+color 10,10,10
+smoothingWindow 4
+windowingFunction mean
+viewLimits 0:0.5
+alwaysZero on
+maxHeightPixels 100,50,10
+
+
+# LINCRNA
 
 track  lincRNA
 bigDataUrl https://raw.githubusercontent.com/radio1988/bpipes/master/genome/ucsc_track_hub/sunil/hg19/lincRNA.bb
