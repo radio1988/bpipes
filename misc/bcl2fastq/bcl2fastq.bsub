@@ -1,0 +1,11 @@
+#BSUB -J "bcl2fastq"
+#BSUB -R rusage[mem=1200]  # for each cpu
+#BSUB -n 12  # n cpu
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+#BSUB -o ./lsf.log
+#BSUB -W 24:00
+#BSUB -q long
+#BSUB -N
+module load bcl2fastq2/2.20.0.422
+bcl2fastq -i ../MCnulcei/BCL/Data/Intensities/BaseCalls/ -R ../MCnulcei/BCL -o fastq &> bcl2fastq.log
+# used 10GB RAM for 140M PE fragments
