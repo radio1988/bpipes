@@ -100,8 +100,8 @@ def split_pe_fastq_by_barcode(input_fastq1, input_fastq2, output_directory):
                 barcode_file2 = open(f"{output_directory}/{key}.R2.fastq", 'a')
             else: # not recognized
                 n_unknown += 1
-                barcode_file1 = open(f"{output_directory}/unknown/{barcode}.R1.fastq", 'a')
-                barcode_file2 = open(f"{output_directory}/unknown/{barcode}.R2.fastq", 'a')
+                barcode_file1 = open(f"{output_directory}/unknown.R1.fastq", 'a')
+                barcode_file2 = open(f"{output_directory}/unknown.R2.fastq", 'a')
                 if test:
                     print(barcode)
                     sys.exit('barcode not recognized')
