@@ -18,6 +18,7 @@ from snakemake.utils import min_version
 min_version("6.0")
 
 configfile: 'config/config.yaml'
+#SAMPLES=read_table(config['META']).iloc[:,0].tolist()
 SAMPLES=config['SAMPLES']
 PEAK_WIDTH=config['PEAK_WIDTH']
 DATA_TYPE=config['DATA_TYPE']  # ChIP
@@ -40,25 +41,25 @@ o=parse_meta_contrast(fmeta="config/meta.csv", fcontrast="config/contrast.csv")
 
 def chipseq_targets(o):
     L = []
-#    L.append("results/fastqc/multiqc_report.html")
-#    L.append(["results/sorted_reads_qc/multiqc_report.html", "results/clean_reads_qc/multiqc_report.html"])
-#    L.append(["results/clean_reads_qc/fingerprint.pdf", "results/sorted_reads_qc/fingerprint.pdf"])
-#    L.append(["results/clean_reads_qc/multiBamSummary.heatmap.pdf", "results/clean_reads_qc/multiBamSummary.pca.pdf"])
-#    L.append("results/clean_reads_qc/signalHeatmap/clean.all_sample.TSS.signalHeatmap.pdf")
-#    L.append(get_signalHeatmap_ContrastPeak_outname(contrasts=o.contrasts, o=o))
-#    L.append(["results/clean_reads_bigWig/{s}.cpm.bw".format(s=s) for s in SAMPLES])
+    L.append("results/fastqc/multiqc_report.html")
+    L.append(["results/sorted_reads_qc/multiqc_report.html", "results/clean_reads_qc/multiqc_report.html"])
+    L.append(["results/clean_reads_qc/fingerprint.pdf", "results/sorted_reads_qc/fingerprint.pdf"])
+    L.append(["results/clean_reads_qc/multiBamSummary.heatmap.pdf", "results/clean_reads_qc/multiBamSummary.pca.pdf"])
+    L.append("results/clean_reads_qc/signalHeatmap/clean.all_sample.TSS.signalHeatmap.pdf")
+    L.append(get_signalHeatmap_ContrastPeak_outname(contrasts=o.contrasts, o=o))
+    L.append(["results/clean_reads_bigWig/{s}.cpm.bw".format(s=s) for s in SAMPLES])
 #    L.append(["results/narrow_peaks_sample_level/{s}/{s}_clean.narrowPeak".format(s=s) for s in SAMPLES])
 #    L.append(["results/narrow_peaks_sample_level/{s}/{s}_treat_pileup.bw".format(s=s) for s in SAMPLES])
 #    L.append(["results/broad_peaks_sample_level/{s}/{s}_clean.broadPeak".format(s=s) for s in SAMPLES])
 #    # contrast peaks
-#    L.append(get_narrowPeak_names_from_contrasts(contrasts=o.contrasts, o=o))
-#    L.append(get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o))
-#    L.append(get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o))
-#    L.append(get_narrow_count_names_from_contrasts(contrasts=o.contrasts, o=o))
+    L.append(get_narrowPeak_names_from_contrasts(contrasts=o.contrasts, o=o))
+    L.append(get_treat_pileup_bw_names_from_contrasts(contrasts=o.contrasts, o=o))
+    L.append(get_control_lambda_bw_names_from_contrasts(contrasts=o.contrasts, o=o))
+    L.append(get_narrow_count_names_from_contrasts(contrasts=o.contrasts, o=o))
 #    L.append(get_broadPeak_names_from_contrasts(contrasts=o.contrasts, o=o))
 #    L.append(get_broad_count_names_from_contrasts(contrasts=o.contrasts, o=o))
 #    # for all contrast peaks (narrow/broad)
-#    L.append(get_cpm_filter_outname(contrasts=o.contrasts, o=o))
+    L.append(get_cpm_filter_outname(contrasts=o.contrasts, o=o))
     L.append(get_chippeakanno_outname(contrasts=o.contrasts, o=o, PEAKTYPE=config['PEAKTYPE']))
     L.append(get_corrHeatmap_peakCount_outname(contrasts=o.contrasts, o=o, PEAKTYPE=config['PEAKTYPE']))
     L.append(get_enrichment_analysis_outname(contrasts=o.contrasts, o=o, PEAKTYPE=config['PEAKTYPE']))
@@ -67,10 +68,10 @@ def chipseq_targets(o):
 #    # save resources
 #    L.append("resources/"+os.path.split(BLACKLIST)[1]+".gz")
 #    L.append("resources/"+os.path.split(GTF)[1]+".gz")
-#    L.append("Workflow_DAG.svg")
-#    if config['MODE'] == 'PE':
-#        L.append(["results/clean_reads_qc/fragment_size.pdf", "results/sorted_reads_qc/fragment_size.pdf"])
-#        L.append(["results/clean_reads_qc/insert_size/{s}.insert_size.pdf".format(s=s) for s in SAMPLES])
+    L.append("rulegraph.pdf")
+    if config['MODE'] == 'PE':
+        L.append(["results/clean_reads_qc/fragment_size.pdf", "results/sorted_reads_qc/fragment_size.pdf"])
+        L.append(["results/clean_reads_qc/insert_size/{s}.insert_size.pdf".format(s=s) for s in SAMPLES])
 #             
     return L
 
@@ -99,3 +100,18 @@ include: 'rules/enrichment_analysis.smk'
 include: 'rules/meme.smk'
 include: 'rules/snakemake_misc.smk'
 include: 'rules/save_resources.smk'
+
+rule Create_DAG:
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
+    threads:
+        1
+    output:
+        "Workflow_DAG.all.pdf",
+        "rulegraph.pdf"
+    log:
+        "Workflow_DAG.all.pdf.log"
+    shell:
+        "snakemake --dag targets > dag 2> {log};"
+        "cat dag|dot -Tpdf > Workflow_DAG.all.pdf 2>> {log};"
+        "snakemake  --rulegraph targets > rulegraph; cat rulegraph| dot -Tpdf > rulegraph.pdf 2>> {log}"
