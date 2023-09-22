@@ -14,7 +14,7 @@ rule chippeakanno:
         temp("results/{narrowbroad}_peaks_contrast_level/" \
         + "{contrast}/{contrast_name}_clean.{narrowbroad}Peak.full_anno.xlsx")
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 16000
+        mem_mb=lambda wildcards, attempt: attempt * 32000
     threads:
         1
     log:
