@@ -40,8 +40,8 @@ rule meme_peak_contrast_level:
         mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:
         6
-    envmodules:
-        "meme/5.0.5" # todo: now only works on RH6, not working on RH8
+    conda:
+        "../envs/meme.yaml"
     shell:
         """
         meme-chip -oc {params.odir} -meme-p {threads} -db {input.db} {input.fasta} &> {log}
@@ -87,8 +87,8 @@ rule meme_neibour:
         mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:
         6
-    envmodules:
-        "meme/5.0.5"
+    conda:
+        "../envs/meme.yaml"
     shell:
         """
         meme-chip -oc {params.odir} -meme-p {threads} -db {input.db} {input.fasta} &> {log}
@@ -131,8 +131,8 @@ rule meme_neibour_chr_split:
         mem_mb=lambda wildcards, attempt: attempt * 1000
     threads:
         6
-    envmodules:
-        "meme/5.0.5"
+    conda:
+        '../envs/meme.yaml'
     shell:
         """
         meme-chip -oc {params.odir} -meme-p {threads} -db {input.db} {input.fasta} &> {log}
