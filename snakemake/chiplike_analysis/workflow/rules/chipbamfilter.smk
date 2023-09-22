@@ -42,7 +42,7 @@ if DATA_TYPE == 'DamID':
             bam="results/sorted_reads/{sample}.bam",
             bai="results/sorted_reads/{sample}.bam.bai"
         output:
-            "results/clean_reads/{sample}.bam"
+            protected("results/clean_reads/{sample}.bam")
         log:
             "log/clean_reads/{sample}.log"
         benchmark:
@@ -63,7 +63,7 @@ elif DATA_TYPE == 'ATAC':
         input:
             "results/markDup/{sample}.bam"
         output:
-            bam="results/clean_reads/{sample}.bam",
+            bam=protected("results/clean_reads/{sample}.bam"),
             bai="results/clean_reads/{sample}.bam.bai"
         log:
             "log/clean_reads/{sample}.log"
@@ -91,7 +91,7 @@ elif DATA_TYPE == 'ChIP':
         input:
             bam="results/markDup/{sample}.bam",
         output:
-            bam="results/clean_reads/{sample}.bam",
+            bam=protected("results/clean_reads/{sample}.bam"),
             bai="results/clean_reads/{sample}.bam.bai"
         log:
             "log/clean_reads/{sample}.log"
