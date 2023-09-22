@@ -9,6 +9,9 @@ BIN_SIZE=config['BIN_SIZE']
 def clean_or_sorted_bams_input(wildcards):
    return ["results/"+wildcards.cs_folder+"/"+sample+".bam" for sample in SAMPLES]
 
+def clean_or_sorted_bais_input(wildcards):
+   return ["results/"+wildcards.cs_folder+"/"+sample+".bam.bai" for sample in SAMPLES]
+
 
 def plotFingerprint_params(wildcards):
     if config['MODE'] == "PE":
@@ -24,7 +27,8 @@ def plotFingerprint_params(wildcards):
         
 rule plotFingerprint:
     input:
-        clean_or_sorted_bams_input
+        clean_or_sorted_bams_input,
+        clean_or_sorted_bais_input
     output:
         plot="results/{cs_folder}_qc/fingerprint.pdf",
         txt="results/{cs_folder}_qc/fingerprint.txt",
