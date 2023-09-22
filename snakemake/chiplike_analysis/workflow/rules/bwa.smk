@@ -51,16 +51,13 @@ rule bwa_map:
 
 
 
-rule bam_sort_index:
-# todo: remove temp files, which cause problems when re-run failed submissions
-    # 2M/min
+rule bam_sort:
     input:
         "results/mapped_reads/{sample}.bam"
     output:
-        bam=temp("results/sorted_reads/{sample}.bam"),
-        bai=temp("results/sorted_reads/{sample}.bam.bai")
+        bam=temp("results/sorted_reads/{sample}.bam")
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 2500
+        mem_mb=lambda wildcards, attempt: attempt * 4000
     threads:
         4
     log:
@@ -73,5 +70,23 @@ rule bam_sort_index:
         """
         samtools --version &> {log}
         samtools sort -@ {threads} -m 2G {input} -o {output.bam} &>> {log}
-        samtools index {output.bam} {output.bai} &>> {log}
+        """
+
+rule bam_index:
+    input:
+        "results/sorted_reads/{sample}.bam"
+    output:
+        bai="results/sorted_reads/{sample}.bam.bai"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000
+    threads:
+        1
+    log:
+        "log/samtools_sort/{sample}.bai.log"
+    conda:
+        "../envs/samtools.yaml"
+    shell:
+        """
+        samtools --version &> {log}
+        samtools index {input} {output.bai} &>> {log}
         """
