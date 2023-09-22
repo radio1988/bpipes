@@ -4,7 +4,7 @@
 # Pvalue not very useful, LFC_RAW good for this step
 # todo: Each Treatment must > mean(IgG)?
 
-
+#install.packages('ashr')
 library(DESeq2)
 library(ashr) 
 library(WriteXLS)
@@ -70,25 +70,39 @@ read_csv <- function(fname, sep=','){
   return(df)
 }
 
+parse_name <- function(name){
+  name <- gsub(" ", "", name)
+  name <- gsub(";$", "", name)
+  names <- strsplit(name, ";") [[1]]
+  name <- gsub(";", ".", name)
+  return (list(name=name, names=names))
+}
+
 get_contrast <- function(contrast.df, i){
   # get names
-  name1 <- clean_name(contrast.df[i,2])
-  name2 <- clean_name(contrast.df[i,3])
+  name1 <- parse_name(contrast.df[i,2])
+  name2 <- parse_name(contrast.df[i,3])
   name <- paste(name1, name2, sep = "_vs_") # HA.Ab1_vs_IgG
-#  name <- paste(contrast.df[i,1], name, sep = '.') # c1.HA.Ab1_vs_IgG
-
-  #if (nchar(name) > 100) {name = contrast.df[i,1]} # c1
+  #if (nchar(name) > 100) {name = contrast.df[i,1]} # c1 todo
+  
+  groups <- unique(c(name1$names, name2$names))
+  group_count <- plyr::count(meta[[2]])
+  with_sample <- groups %in% group_count[[1]]  # count >= 1
+  if (!all(with_sample)){
+    print(group_count)
+    stop('some groups has no samples')
+  }
   
   resultnames <- gsub("group", "", resultsNames(dds)) #  "group.HA.Ab1" "groupHA.Ab1"  "groupIgG"
-  poss <- match(name1, resultnames) # 2
-  negs <- match(name2, resultnames) # 3
+  poss <- match(name1$names, resultnames) # 2
+  negs <- match(name2$names, resultnames) # 3
   contrast <- rep(0, length(resultsNames(dds))) # 0, 0, 0
   contrast[poss] <- 1/length(poss)
   contrast[negs] <- -1/length(negs) # 0, 1, -1; or 0, 1/2, 1/2, -1/2, -1/2 if ; used
   print(data.frame(resNames=resultnames, 
    contrast=contrast))
 
-  return(list(contrast=contrast, name=name))
+  return(list(contrast=contrast, name=name[[1]]))
 }
 
 # params
@@ -103,13 +117,13 @@ if (length(args)==0) {
   # contrast_name <- 'K4me3-KO'
   # outputExcelFile <- "results/narrow_peaks_contrast_level/K4me3-KO/K4me3-KO_vs_NoAb-KO_clean.t_vs_c.xlsx"
   # SizeFactorFile <- "results/clean_reads_qc/stats/reads_mapped.txt"
-	countFile <- "results/narrow_peaks_contrast_level/merged/ChIP_vs_Input_count.txt"
-  peakFile <- "results/narrow_peaks_contrast_level/merged/ChIP_vs_Input_clean.narrowPeak"
-  outPeakFile <- "results/narrow_peaks_contrast_level/merged/ChIP_vs_Input_clean.real.narrowPeak"
+	countFile <- "results/narrow_peaks_contrast_level/H3K4me3/H3K4me3_WNK463_H3K4me3_DMSO_vs_Input_WNK463_Input_DMSO_count.txt"
+  peakFile <- "results/narrow_peaks_contrast_level/H3K4me3/H3K4me3_WNK463_H3K4me3_DMSO_vs_Input_WNK463_Input_DMSO_clean.narrowPeak"
+  outPeakFile <- "results/narrow_peaks_contrast_level/H3K4me3/H3K4me3_WNK463_H3K4me3_DMSO_vs_Input_WNK463_Input_DMSO_clean.real.narrowPeak"
 	metaFile <- 'config/meta.csv'
 	contrastFile <- 'config/contrast.csv'
-  contrast_name <- 'merged'
-  outputExcelFile <- "results/narrow_peaks_contrast_level/merged/ChIP_vs_Input_clean.t_vs_c.xlsx"
+  contrast_name <- 'H3K4me3'
+  outputExcelFile <- " results/narrow_peaks_contrast_level/H3K4me3/H3K4me3_WNK463_H3K4me3_DMSO_vs_Input_WNK463_Input_DMSO_clean.t_vs_c.xlsx"
   SizeFactorFile <- "results/clean_reads_qc/stats/reads_mapped.txt"
   }else{
    countFile <- args[1]
