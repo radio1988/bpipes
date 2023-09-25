@@ -1,7 +1,7 @@
 library("ChIPpeakAnno")
 library("GenomicFeatures")
 library(rtracklayer)  # for import() function
-library(xlsx)
+#library(xlsx)
 require(dplyr)
 
 ##todo: add intron/exon in anno
@@ -11,8 +11,8 @@ require(dplyr)
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args)==0) {
-      peakFile <- "K27me-WT/K27m-WT_vs_NoAb_clean.real.broadPeak"
-      gtf_file <- "../../resources/gencode.vM25.primary_assembly.annotation.gtf" # support GenCode format
+      peakFile <- "H3K27ac_WNK463_H3K27ac_DMSO_vs_Input_WNK463_Input_DMSO_clean.broadPeak"
+      gtf_file <- "/pi/mccb-umw/shared/OneStopRNAseq/genome/homo_sapiens/gencode.v34.primary_assembly.annotation.gtf" # support GenCode format
       CHIPPEAKANNO_MODE <- 'overlapping'
       BIDING_LEFT <- 3000
       BIDING_RIGHT <- 3000
@@ -85,7 +85,7 @@ if (CHIPPEAKANNO_MODE == 'both'){
       peak.anno.df.protein_coding <- subset(peak.anno.df, gene_type=='protein_coding')
 }
 
-write.xlsx(peak.anno.df, paste(prefix, 'anno.WithDup.xlsx', sep = "."), 
+WriteXLS(peak.anno.df, paste(prefix, 'anno.WithDup.xlsx', sep = "."), 
         row.names = F)
 # WriteXLS(x = peak.anno.df.protein_coding,
 #          ExcelFileName = paste(prefix, 'anno.WithDup.protein_coding.xlsx', sep = "."),
@@ -128,7 +128,7 @@ full.collapsed.df <- merge(
                         peak.anno.df.collapsed[, c(1, (ncol(peaks.df)+2):ncol(peak.anno.df.collapsed))], # anno part, CHIPPEAKANNO_MODE, CALLER specific
                         by= "peak_id", all.x=T)
 full.collapsed.df <- full.collapsed.df[, !(names(full.collapsed.df) %in% c("dedup_id","distance", 'peak', 'NA\\.', '\\.\\.\\.10'))]
-write.xlsx(full.collapsed.df, paste(prefix, "full_anno.xlsx", sep = "."), 
+WriteXLS(full.collapsed.df, paste(prefix, "full_anno.xlsx", sep = "."), 
          row.names = F)
 
 
