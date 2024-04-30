@@ -217,7 +217,7 @@ rule blacklist_filter:
         "../envs/bedtools.yaml"   
     shell:
         """
-        bedtools subtract -v -a {input.peak} -b {input.blacklist} > {output}
+        bedtools subtract -a {input.peak} -b {input.blacklist} > {output} 2> {log}
         """
 
 
